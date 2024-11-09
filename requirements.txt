@@ -1,0 +1,37 @@
+# Core Dependencies
+starlette==0.26.1               # ASGI framework for routing, middleware, and requests
+uvicorn==0.23.0                 # ASGI server for running Starlette applications
+
+# Asynchronous ORM (optional if you're planning on adding an ORM)
+databases==0.6.2                # Async database support (works with SQLAlchemy)
+
+# JWT Authentication
+pyjwt==2.7.0                    # JWT handling for token-based authentication
+
+# Dependency Injection (optional for OOP and better structure)
+injector==0.18.0                # Dependency injection library
+
+# Utilities: Encryption, Hashing, Time Handling
+cryptography==39.0.1            # For encryption, decryption, and key handling
+passlib==1.7.4                  # Password hashing utilities
+
+# File Handling
+aiofiles==23.1.0                # Asynchronous file I/O support
+python-multipart==0.0.5         # For parsing multipart form-data (used for file uploads)
+
+# Cloud Integration (e.g., for Cloudinary or other file upload services)
+cloudinary==1.30.0              # Cloudinary SDK for media handling
+
+# Testing & Debugging
+pytest==7.3.1                   # For unit testing and integration testing
+pytest-asyncio==0.21.0          # Async support for pytest
+httpx==0.24.1                   # Async HTTP client for testing API requests
+
+# CORS handling (to allow cross-origin requests          # CORS middleware for Starlette
+
+# Logging (optional but useful for production environments)
+
+# For database migrations (if you're integrating with an ORM like SQLAlche
+
+# For ORM support (if you're using SQLAlchemy or Peewee)
+

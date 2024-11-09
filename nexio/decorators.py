@@ -1,0 +1,41 @@
+from enum import Enum
+from typing import List,Union
+from .request import Request
+from .response import CustomResponse
+from functools import wraps
+from .types import HTTPMethod
+
+
+class RouteDecorator:
+    """Base class for all route decorators"""
+    def __init__(self):
+        self.handler = None
+
+    async def __call__(self, request: Request, response: CustomResponse, **kwargs):
+        if self.handler:
+            return await self.handler(request, response, **kwargs)
+        raise NotImplementedError("Handler not set")
+
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+        return self.__class__(obj)
+    
+
+
+class AllowedMethods(RouteDecorator):
+    def __init__(self, methods: List[Union[str, HTTPMethod]]):
+        super().__init__()
+        self.allowed_methods = [method.upper() if isinstance(method, str) else method.value 
+                              for method in methods]
+
+    def __call__(self, handler):
+        @wraps(handler)
+        async def wrapper(request: Request, response: CustomResponse, **kwargs):
+            if request.method not in self.allowed_methods:
+                return response.json({
+                    "error": f"Method {request.method} not allowed",
+                    "allowed_methods": self.allowed_methods
+                },status_code=405)
+            return await handler(request, response, **kwargs)
+        return wrapper
