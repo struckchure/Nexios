@@ -1,7 +1,7 @@
 import logging
 import time
 import traceback
-from ..request import Request
+from ..http.request import Request
 from ..response import Response
 
 # Set up advanced logging

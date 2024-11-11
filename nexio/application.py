@@ -1,12 +1,14 @@
 from typing import Any, Awaitable, Callable, Mapping, Sequence,List,Union
-from .request import Request
+from .http.request import Request
 from .response import CustomResponse
 from starlette.responses import JSONResponse
 import re
 from .types import HTTPMethod
 from .decorators import AllowedMethods
 from .routers import Router,Routes
-
+from enum import Enum
+from .config.settings import BaseConfig
+from .files import LocalFileStorage
 class NexioHTTPApp:
 
     #TODO :Custom type for handles
@@ -15,8 +17,10 @@ class NexioHTTPApp:
     start_function :Callable
     
 
-    def __init__(self):
-        pass 
+    def __init__(self, config :Enum = BaseConfig):
+        self.config = config
+        fileStorageBackend = LocalFileStorage(config)
+        
 
 
     def on_start(self, func :Callable):
@@ -55,7 +59,7 @@ class NexioHTTPApp:
             match = path_pattern.match(request.url.path)
             if match:
                 kwargs = match.groupdict()
-                # await middleware(await handler(request, response, **kwargs))
+                
                 try:
                     await self.execute_middleware_stack(request,
                                                   response,

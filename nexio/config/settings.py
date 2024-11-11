@@ -1,5 +1,10 @@
-class Config:
+from enum import Enum
+class BaseConfig(Enum):
 
-    debug :bool  = True
+    debug :bool  = False
 
-    middleware :list = []
+    middleware :list = [] 
+
+
+
+BaseConfig.debug

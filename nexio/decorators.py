@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import List,Union
-from .request import Request
+from .http.request import Request
 from .response import CustomResponse
 from functools import wraps
 from .types import HTTPMethod

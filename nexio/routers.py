@@ -47,6 +47,7 @@ class Routes:
     def __init__(self, route,handler,middleware = None):
         assert callable(handler), "Route handler most be callable"
         path_regex = re.sub(r"{(\w+)}", r"(?P<\1>[^/]+)", route)
+        
         self.route, self.handler,self.middleware = re.compile(f"^{path_regex}$"), handler, middleware
 
     def __call__(self) -> List[tuple[str,Callable]]:
