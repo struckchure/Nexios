@@ -23,7 +23,7 @@ class NexioHTTPApp:
         
 
 
-    def on_start(self, func :Callable):
+    async def on_start(self, func :Callable):
         self.start_function = func
 
 
@@ -102,7 +102,7 @@ class NexioHTTPApp:
     async def __call__(self, scope, receive, send) -> Any:
        
         if callable(self.start_function):
-            self.start_function()
+            await self.start_function()
         if scope['type'] == 'http':    
             await self.handle_request(scope, receive, send)
         else:

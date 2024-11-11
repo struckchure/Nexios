@@ -67,7 +67,7 @@ class HTTPConnection:
         self.scope = scope
 
     @property
-    def url(self) -> str:
+    def url(self) -> URL:
         return URL(scope=self.scope)
 
     def build_absolute_uri(self, path: Optional[str] = None) -> str:
@@ -171,5 +171,8 @@ class Request(HTTPConnection):
     @property
     async def files(self):
         return await parse_multipart_data(self)
+    
+
+    
 
 
