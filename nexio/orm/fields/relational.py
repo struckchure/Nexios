@@ -17,13 +17,13 @@ from typing import (
 from pypika import Table
 from typing_extensions import Literal
 
-from ..exceptions import ConfigurationError, NoValuesFetched, OperationalError
-from ..fields.base import CASCADE, SET_NULL, Field, OnDelete
+from nexio.orm.exceptions import ConfigurationError, NoValuesFetched, OperationalError
+from nexio.orm.fields.base import CASCADE, SET_NULL, Field, OnDelete
 
 if TYPE_CHECKING:  # pragma: nocoverage
-    from ..backends.base.client import BaseDBAsyncClient
-    from ..models import Model
-    from orm.queryset import Q, QuerySet
+    from nexio.orm.backends.base.client import BaseDBAsyncClient
+    from nexio.orm.models import Model
+    from nexio.orm.queryset import Q, QuerySet
 
 MODEL = TypeVar("MODEL", bound="Model")
 

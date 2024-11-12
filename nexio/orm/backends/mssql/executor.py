@@ -2,10 +2,10 @@ from typing import Any, Optional, Type, Union
 
 from pypika import Query
 
-from orm import Model, fields
-from orm.backends.odbc.executor import ODBCExecutor
-from orm.exceptions import UnSupportedError
-from orm.fields import BooleanField
+from nexio.orm import Model, fields
+from nexio.orm.backends.odbc.executor import ODBCExecutor
+from nexio.orm.exceptions import UnSupportedError
+from nexio.orm.fields import BooleanField
 
 
 def to_db_bool(

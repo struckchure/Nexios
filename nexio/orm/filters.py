@@ -17,11 +17,11 @@ from pypika.functions import Cast, Extract, Upper
 from pypika.terms import BasicCriterion, Criterion, Equality, Term, ValueWrapper
 from typing_extensions import NotRequired
 
-from .fields import Field, JSONField
-from .fields.relational import BackwardFKRelation, ManyToManyFieldInstance
+from nexio.orm.fields import Field, JSONField
+from nexio.orm.fields.relational import BackwardFKRelation, ManyToManyFieldInstance
 
 if TYPE_CHECKING:  # pragma: nocoverage
-    from orm.models import Model
+    from nexio.orm.models import Model
 
 
 ##############################################################################

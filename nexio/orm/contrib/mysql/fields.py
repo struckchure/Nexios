@@ -7,11 +7,11 @@ from typing import (  # noqa pylint: disable=unused-import
 )
 from uuid import UUID, uuid4
 
-from ...fields import Field
-from ...fields import UUIDField as UUIDFieldBase
+from nexio.orm.fields import Field
+from nexio.orm.fields import UUIDField as UUIDFieldBase
 
 if TYPE_CHECKING:  # pragma: nocoverage
-    from orm.models import Model  # noqa pylint: disable=unused-import
+    from nexio.orm.models import Model  # noqa pylint: disable=unused-import
 
 
 class GeometryField(Field):

@@ -5,7 +5,7 @@ from typing import Any, Callable, Dict, List
 from pypika.enums import JSONOperators
 from pypika.terms import BasicCriterion, Criterion, Term, ValueWrapper
 
-from ...filters import is_null, not_equal, not_null
+from nexio.orm.filters import is_null, not_equal, not_null
 
 
 def postgres_json_contains(field: Term, value: str) -> Criterion:

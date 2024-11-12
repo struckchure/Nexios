@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING, List, Optional, Type
 
-from .connection import connections
-from .exceptions import ConfigurationError
+from nexio.orm.connection import connections
+from nexio.orm.exceptions import ConfigurationError
 
 if TYPE_CHECKING:
-    from . import BaseDBAsyncClient, Model
+    from nexio.orm import BaseDBAsyncClient, Model
 
 
 class ConnectionRouter:
@@ -15,6 +15,7 @@ class ConnectionRouter:
         self._routers = [r() for r in routers]
 
     def _router_func(self, model: Type["Model"], action: str):
+        
         for r in self._routers:
             try:
                 method = getattr(r, action)

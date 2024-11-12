@@ -1,7 +1,7 @@
 import sys
 from typing import TYPE_CHECKING, Any, Iterable, Optional, Tuple
 
-from .log import logger
+from nexio.orm.log import logger
 
 if sys.version_info >= (3, 12):
     from itertools import batched
@@ -15,7 +15,7 @@ else:
 
 
 if TYPE_CHECKING:  # pragma: nocoverage
-    from .backends.base.client import BaseDBAsyncClient
+    from nexio.orm.backends.base.client import BaseDBAsyncClient
 
 
 def get_schema_sql(client: "BaseDBAsyncClient", safe: bool) -> str:

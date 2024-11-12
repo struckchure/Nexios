@@ -25,9 +25,9 @@ from pypika import Order, Query, Table
 from pypika.terms import Term
 from typing_extensions import Self
 
-from . import connections
-from .backends.base.client import BaseDBAsyncClient
-from .exceptions import (
+from nexio.orm import connections
+from nexio.orm.backends.base.client import BaseDBAsyncClient
+from nexio.orm.exceptions import (
     ConfigurationError,
     DoesNotExist,
     IncompleteInstanceError,
@@ -36,10 +36,10 @@ from .exceptions import (
     OperationalError,
     ParamsError,
 )
-from .expressions import Expression
-from .fields.base import Field
-from .fields.data import IntField
-from .fields.relational import (
+from nexio.orm.expressions import Expression
+from nexio.orm.fields.base import Field
+from nexio.orm.fields.data import IntField
+from nexio.orm.fields.relational import (
     BackwardFKRelation,
     BackwardOneToOneRelation,
     ForeignKeyFieldInstance,
@@ -49,10 +49,10 @@ from .fields.relational import (
     OneToOneFieldInstance,
     ReverseRelation,
 )
-from .filters import FilterInfoDict, get_filters_for_field
-from .indexes import Index
-from .manager import Manager
-from .queryset import (
+from nexio.orm.filters import FilterInfoDict, get_filters_for_field
+from nexio.orm.indexes import Index
+from nexio.orm.manager import Manager
+from nexio.orm.queryset import (
     BulkCreateQuery,
     BulkUpdateQuery,
     ExistsQuery,
@@ -61,9 +61,9 @@ from .queryset import (
     QuerySetSingle,
     RawSQLQuery,
 )
-from .router import router
-from .signals import Signals
-from .transactions import in_transaction
+from nexio.orm.router import router
+from nexio.orm.signals import Signals
+from nexio.orm.transactions import in_transaction
 
 MODEL = TypeVar("MODEL", bound="Model")
 EMPTY = object()
@@ -645,7 +645,7 @@ class ModelMeta(type):
 
 class Model(metaclass=ModelMeta):
     """
-    Base class for all orm ORM Models.
+    Base class for all nexio.orm ORM Models.
     """
 
     # I don' like this here, but it makes auto completion and static analysis much happier
@@ -854,7 +854,7 @@ class Model(metaclass=ModelMeta):
         """
         Register listener to current model class for special Signal.
 
-        :param signal: one of orm.signals.Signals
+        :param signal: one of nexio.orm.signals.Signals
         :param listener: callable listener
 
         :raises ConfigurationError: When listener is not callable
@@ -1471,7 +1471,7 @@ class Model(metaclass=ModelMeta):
                     "m2m_fields":           [...]   # Many-to-Many fields
                 }
 
-            Each field is specified as defined in :meth:`orm.fields.base.Field.describe`
+            Each field is specified as defined in :meth:`nexio.orm.fields.base.Field.describe`
         """
         return {
             "name": cls._meta.full_name,

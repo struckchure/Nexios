@@ -23,8 +23,8 @@ except ImportError:
 
 from pypika import MySQLQuery
 
-from orm import timezone
-from orm.backends.base.client import (
+from nexio.orm import timezone
+from nexio.orm.backends.base.client import (
     BaseDBAsyncClient,
     BaseTransactionWrapper,
     Capabilities,
@@ -34,9 +34,9 @@ from orm.backends.base.client import (
     TransactionContext,
     TransactionContextPooled,
 )
-from orm.backends.mysql.executor import MySQLExecutor
-from orm.backends.mysql.schema_generator import MySQLSchemaGenerator
-from orm.exceptions import (
+from nexio.orm.backends.mysql.executor import MySQLExecutor
+from nexio.orm.backends.mysql.schema_generator import MySQLSchemaGenerator
+from nexio.orm.exceptions import (
     DBConnectionError,
     IntegrityError,
     OperationalError,

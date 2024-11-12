@@ -4,8 +4,8 @@ from typing import Optional
 
 from pypika import Parameter
 
-from ...models import Model
-from ...backends.base_postgres.executor import BasePostgresExecutor
+from nexio.orm import Model
+from nexio.orm.backends.base_postgres.executor import BasePostgresExecutor
 
 
 class PsycopgExecutor(BasePostgresExecutor):

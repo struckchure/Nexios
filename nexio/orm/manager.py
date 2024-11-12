@@ -1,11 +1,11 @@
-from .queryset import QuerySet
+from nexio.orm.queryset import QuerySet
 
 
 class Manager:
     """
-    A Manager is the interface through which database query operations are provided to orm models.
+    A Manager is the interface through which database query operations are provided to nexio.orm models.
 
-    There is one default Manager for every orm model.
+    There is one default Manager for every nexio.orm model.
     """
 
     def __init__(self, model=None) -> None:

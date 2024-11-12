@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, cast
 
-from orm import Model
-from orm.backends.odbc.executor import ODBCExecutor
+from nexio.orm import Model
+from nexio.orm.backends.odbc.executor import ODBCExecutor
 
 if TYPE_CHECKING:
     from .client import OracleClient  # pylint: disable=W0611

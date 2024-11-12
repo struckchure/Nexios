@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 if TYPE_CHECKING:
-    from orm import Model, Type
+    from nexio.orm import Model, Type
 
 
 class BaseORMException(Exception):

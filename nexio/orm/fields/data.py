@@ -11,11 +11,11 @@ from pypika import functions
 from pypika.enums import SqlTypes
 from pypika.terms import Term
 
-# from . import timezone
-from ..exceptions import ConfigurationError, FieldError
-from ..fields.base import Field
-from ..timezone import get_default_timezone, get_timezone, get_use_tz, localtime
-from ..validators import MaxLengthValidator
+from nexio.orm import timezone
+from nexio.orm.exceptions import ConfigurationError, FieldError
+from nexio.orm.fields.base import Field
+from nexio.orm.timezone import get_default_timezone, get_timezone, get_use_tz, localtime
+from nexio.orm.validators import MaxLengthValidator
 
 try:
     from ciso8601 import parse_datetime
@@ -25,7 +25,7 @@ except ImportError:  # pragma: nocoverage
     parse_datetime = functools.partial(parse_date, default_timezone=None)
 
 if TYPE_CHECKING:  # pragma: nocoverage
-    from orm.models import Model
+    from nexio.orm.models import Model
 
 __all__ = (
     "BigIntField",

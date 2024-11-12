@@ -11,24 +11,24 @@ from typing import Coroutine, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 from pypika import Table
 
-from .backends.base.client import BaseDBAsyncClient
-from .backends.base.config_generator import expand_db_url, generate_config
-from .connection import connections
-from .exceptions import ConfigurationError
-from .fields.relational import (
+from nexio.orm.backends.base.client import BaseDBAsyncClient
+from nexio.orm.backends.base.config_generator import expand_db_url, generate_config
+from nexio.orm.connection import connections
+from nexio.orm.exceptions import ConfigurationError
+from nexio.orm.fields.relational import (
     BackwardFKRelation,
     BackwardOneToOneRelation,
     ForeignKeyFieldInstance,
     ManyToManyFieldInstance,
     OneToOneFieldInstance,
 )
-from .filters import get_m2m_filters
-from .log import logger
-from .models import Model, ModelMeta
-from .utils import generate_schema_for_client
+from nexio.orm.filters import get_m2m_filters
+from nexio.orm.log import logger
+from nexio.orm.models import Model, ModelMeta
+from nexio.orm.utils import generate_schema_for_client
 
 
-class orm:
+class NexioOrm:
     apps: Dict[str, Dict[str, Type["Model"]]] = {}
     _inited: bool = False
 
@@ -41,7 +41,7 @@ class orm:
 
         .. warning::
            This is deprecated and will be removed in a future release. Please use
-           :meth:`connections.get<orm.connection.ConnectionHandler.get>` instead.
+           :meth:`connections.get<nexio.orm.connection.ConnectionHandler.get>` instead.
         """
         return connections.get(connection_name)
 
@@ -59,13 +59,13 @@ class orm:
             ``False`` if you want raw python objects,
             ``True`` for JSON-serializable data. (Defaults to ``True``)
 
-        See :meth:`orm.models.Model.describe`
+        See :meth:`nexio.orm.models.Model.describe`
 
         .. warning::
-           This is deprecated, please use :meth:`orm.models.Model.describe` instead
+           This is deprecated, please use :meth:`nexio.orm.models.Model.describe` instead
         """
         warnings.warn(
-            "orm.describe_model(<MODEL>) is deprecated, please use <MODEL>.describe() instead",
+            "nexio.orm.describe_model(<MODEL>) is deprecated, please use <MODEL>.describe() instead",
             DeprecationWarning,
             stacklevel=2,
         )
@@ -315,7 +315,7 @@ class orm:
         _init_relations: bool = True,
     ) -> None:
         """
-        Early initialisation of orm ORM Models.
+        Early initialisation of nexio.orm ORM Models.
 
         Initialise the relationships between Models.
         This does not initialise any database connection.
@@ -397,7 +397,7 @@ class orm:
         routers: Optional[List[Union[str, Type]]] = None,
     ) -> None:
         """
-        Sets up orm-ORM.
+        Sets up nexio.orm-ORM.
 
         You can configure using only one of ``config``, ``config_file``
         and ``(db_url, modules)``.
@@ -413,11 +413,11 @@ class orm:
                         'connections': {
                             # Dict format for connection
                             'default': {
-                                'engine': 'orm.backends.asyncpg',
+                                'engine': 'nexio.orm.backends.asyncpg',
                                 'credentials': {
                                     'host': 'localhost',
                                     'port': '5432',
-                                    'user': 'orm',
+                                    'user': 'nexio.orm',
                                     'password': 'qwerty123',
                                     'database': 'test',
                                 }
@@ -504,7 +504,7 @@ class orm:
             )
 
         logger.debug(
-            "orm-ORM startup\n    connections: %s\n    apps: %s",
+            "nexio.orm-ORM startup\n    connections: %s\n    apps: %s",
             str_connection_config,
             str(apps_config),
         )
@@ -518,7 +518,7 @@ class orm:
 
     @classmethod
     def _init_routers(cls, routers: Optional[List[Union[str, type]]] = None):
-        from orm.router import router
+        from nexio.orm.router import router
 
         routers = routers or []
         router_cls = []
@@ -546,10 +546,10 @@ class orm:
 
         .. warning::
            This is deprecated and will be removed in a future release. Please use
-           :meth:`connections.close_all<orm.connection.ConnectionHandler.close_all>` instead.
+           :meth:`connections.close_all<nexio.orm.connection.ConnectionHandler.close_all>` instead.
         """
         await connections.close_all()
-        logger.info("orm-ORM shutdown")
+        logger.info("nexio.orm-ORM shutdown")
 
     @classmethod
     async def _reset_apps(cls) -> None:
@@ -607,10 +607,10 @@ def run_async(coro: Coroutine) -> None:
 
     Usage::
 
-        from orm import orm, run_async
+        from nexio.orm import nexio.orm, run_async
 
         async def do_stuff():
-            await orm.init(
+            await nexio.orm.init(
                 db_url='sqlite://db.sqlite3',
                 models={'models': ['app.models']}
             )
@@ -627,5 +627,10 @@ def run_async(coro: Coroutine) -> None:
 
 
 
-
-
+__all__ = [
+    "Model",
+    "nexio.orm",
+    "BaseDBAsyncClient",
+    "__version__",
+    "connections",
+]

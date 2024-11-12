@@ -7,14 +7,14 @@ import pytz
 
 def get_use_tz() -> bool:
     """
-    Get use_tz from env set in orm config.
+    Get use_tz from env set in nexio.orm config.
     """
     return os.environ.get("USE_TZ") == "True"
 
 
 def get_timezone() -> str:
     """
-    Get timezone from env set in orm config.
+    Get timezone from env set in nexio.orm config.
     """
     return os.environ.get("TIMEZONE") or "UTC"
 
@@ -33,7 +33,7 @@ def get_default_timezone() -> tzinfo:
     """
     Return the default time zone as a tzinfo instance.
 
-    This is the time zone defined by orm config.
+    This is the time zone defined by nexio.orm config.
     """
     return pytz.timezone(get_timezone())
 

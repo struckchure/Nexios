@@ -2,14 +2,14 @@ from typing import Any, SupportsInt
 
 from pypika.dialects import MSSQLQuery
 
-from orm.backends.base.client import (
+from nexio.orm.backends.base.client import (
     Capabilities,
     TransactionContext,
     TransactionContextPooled,
 )
-from orm.backends.mssql.executor import MSSQLExecutor
-from orm.backends.mssql.schema_generator import MSSQLSchemaGenerator
-from orm.backends.odbc.client import (
+from nexio.orm.backends.mssql.executor import MSSQLExecutor
+from nexio.orm.backends.mssql.schema_generator import MSSQLSchemaGenerator
+from nexio.orm.backends.odbc.client import (
     ODBCClient,
     ODBCTransactionWrapper,
     translate_exceptions,

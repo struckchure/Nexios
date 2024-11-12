@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Any, List
 
-from ..base.schema_generator import BaseSchemaGenerator
-from ...converters import encoders
+from nexio.orm.backends.base.schema_generator import BaseSchemaGenerator
+from nexio.orm.converters import encoders
 
 if TYPE_CHECKING:  # pragma: nocoverage
     from .client import BasePostgresClient

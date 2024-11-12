@@ -16,11 +16,11 @@ from typing import (
 
 from pypika import Query
 
-from ...backends.base.executor import BaseExecutor
-from ...backends.base.schema_generator import BaseSchemaGenerator
-from ...connection import connections
-from ...exceptions import TransactionManagementError
-from ...log import db_client_logger
+from nexio.orm.backends.base.executor import BaseExecutor
+from nexio.orm.backends.base.schema_generator import BaseSchemaGenerator
+from nexio.orm.connection import connections
+from nexio.orm.exceptions import TransactionManagementError
+from nexio.orm.log import db_client_logger
 
 T_conn = TypeVar("T_conn")  # Instance of client connection, such as: asyncpg.Connection()
 

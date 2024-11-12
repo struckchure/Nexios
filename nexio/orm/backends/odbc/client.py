@@ -6,16 +6,16 @@ from typing import Any, Callable, Coroutine, List, Optional, Tuple, TypeVar, Uni
 import asyncodbc
 import pyodbc
 
-from orm import BaseDBAsyncClient
-from orm.backends.base.client import (
+from nexio.orm import BaseDBAsyncClient
+from nexio.orm.backends.base.client import (
     BaseTransactionWrapper,
     ConnectionWrapper,
     NestedTransactionPooledContext,
     PoolConnectionWrapper,
     TransactionContext,
 )
-from orm.backends.odbc.executor import ODBCExecutor
-from orm.exceptions import (
+from nexio.orm.backends.odbc.executor import ODBCExecutor
+from nexio.orm.exceptions import (
     DBConnectionError,
     IntegrityError,
     OperationalError,

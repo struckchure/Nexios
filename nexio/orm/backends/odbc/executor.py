@@ -1,8 +1,8 @@
 from pypika import Parameter
 
-from orm import Model
-from orm.backends.base.executor import BaseExecutor
-from orm.fields import BigIntField, IntField, SmallIntField
+from nexio.orm import Model
+from nexio.orm.backends.base.executor import BaseExecutor
+from nexio.orm.fields import BigIntField, IntField, SmallIntField
 
 
 class ODBCExecutor(BaseExecutor):

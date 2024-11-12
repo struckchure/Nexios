@@ -19,27 +19,26 @@ from typing import (
     cast,
 )
 
-from pypika import JoinType, Query, Table
+from pypika import JoinType, Parameter, Query, Table
 from pypika.queries import QueryBuilder
 
-
-from ...exceptions import OperationalError
-from ...expressions import Expression, RawSQL, ResolveContext
-from ...fields.base import Field
-from ...fields.relational import (
+from nexio.orm.exceptions import OperationalError
+from nexio.orm.expressions import Expression, RawSQL, ResolveContext
+from nexio.orm.fields.base import Field
+from nexio.orm.fields.relational import (
     BackwardFKRelation,
     BackwardOneToOneRelation,
     ManyToManyFieldInstance,
     RelationalField,
 )
-from ...query_utils import QueryModifier
-from ...utils import chunk
+from nexio.orm.query_utils import QueryModifier
+from nexio.orm.utils import chunk
 
 if TYPE_CHECKING:  # pragma: nocoverage
-    from .client import BaseDBAsyncClient
-    from ...models import Model
-    from ...query_utils import Prefetch
-    from ...queryset import QuerySet
+    from nexio.orm.backends.base.client import BaseDBAsyncClient
+    from nexio.orm.models import Model
+    from nexio.orm.query_utils import Prefetch
+    from nexio.orm.queryset import QuerySet
 
 EXECUTOR_CACHE: Dict[
     Tuple[str, Optional[str], str],
@@ -195,7 +194,7 @@ class BaseExecutor:
     async def _process_insert_result(self, instance: "Model", results: Any) -> None:
         raise NotImplementedError()  # pragma: nocoverage
 
-    def parameter(self, pos: int):
+    def parameter(self, pos: int) -> Parameter:
         raise NotImplementedError()  # pragma: nocoverage
 
     async def execute_insert(self, instance: "Model") -> None:

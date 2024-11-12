@@ -1,11 +1,11 @@
 from functools import wraps
 from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, cast
 
-from . import connections
-from .exceptions import ParamsError
+from nexio.orm import connections
+from nexio.orm.exceptions import ParamsError
 
 if TYPE_CHECKING:  # pragma: nocoverage
-    from orm.backends.base.client import BaseDBAsyncClient, TransactionContext
+    from nexio.orm.backends.base.client import BaseDBAsyncClient, TransactionContext
 
 FuncType = Callable[..., Any]
 F = TypeVar("F", bound=FuncType)

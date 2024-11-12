@@ -2,7 +2,7 @@ from typing import Optional, Tuple
 
 from pypika.terms import Term, ValueWrapper
 
-from ...indexes import PartialIndex
+from nexio.orm.indexes import PartialIndex
 
 
 class PostgreSQLIndex(PartialIndex):

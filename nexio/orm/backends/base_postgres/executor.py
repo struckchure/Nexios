@@ -5,16 +5,16 @@ from pypika import Parameter
 from pypika.dialects import PostgreSQLQueryBuilder
 from pypika.terms import Term
 
-from orm import Model
-from ..base.executor import BaseExecutor
-from orm.contrib.postgres.json_functions import (
+from nexio.orm import Model
+from nexio.orm.backends.base.executor import BaseExecutor
+from nexio.orm.contrib.postgres.json_functions import (
     postgres_json_contained_by,
     postgres_json_contains,
     postgres_json_filter,
 )
-from ...contrib.postgres.regex import postgres_posix_regex
-from ...contrib.postgres.search import SearchCriterion
-from ...filters import (
+from nexio.orm.contrib.postgres.regex import postgres_posix_regex
+from nexio.orm.contrib.postgres.search import SearchCriterion
+from nexio.orm.filters import (
     json_contained_by,
     json_contains,
     json_filter,

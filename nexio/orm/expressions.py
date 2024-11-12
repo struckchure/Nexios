@@ -24,11 +24,11 @@ from pypika.terms import Function as PypikaFunction
 from pypika.terms import Term
 from pypika.utils import format_alias_sql
 
-from .exceptions import FieldError, OperationalError
-from .fields.base import Field
-from .fields.relational import RelationalField
-from .filters import FilterInfoDict
-from .query_utils import (
+from nexio.orm.exceptions import FieldError, OperationalError
+from nexio.orm.fields.base import Field
+from nexio.orm.fields.relational import RelationalField
+from nexio.orm.filters import FilterInfoDict
+from nexio.orm.query_utils import (
     QueryModifier,
     TableCriterionTuple,
     get_joins_for_related_field,
@@ -38,8 +38,8 @@ from .query_utils import (
 if TYPE_CHECKING:  # pragma: nocoverage
     from pypika.queries import Selectable
 
-    from orm.models import Model
-    from orm.queryset import AwaitableQuery
+    from nexio.orm.models import Model
+    from nexio.orm.queryset import AwaitableQuery
 
 
 @dataclass(frozen=True)

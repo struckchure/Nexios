@@ -2,15 +2,15 @@ import re
 from hashlib import sha256
 from typing import TYPE_CHECKING, Any, List, Set, Type, Union, cast
 
-from ...exceptions import ConfigurationError
-from ...fields import JSONField, TextField, UUIDField
-from ...indexes import Index
+from nexio.orm.exceptions import ConfigurationError
+from nexio.orm.fields import JSONField, TextField, UUIDField
+from nexio.orm.indexes import Index
 
 if TYPE_CHECKING:  # pragma: nocoverage
-    from .client import BaseDBAsyncClient
-    from ...fields.relational import ForeignKeyFieldInstance  # noqa
-    from ...fields.relational import ManyToManyFieldInstance
-    from ...models import Model
+    from nexio.orm.backends.base.client import BaseDBAsyncClient
+    from nexio.orm.fields.relational import ForeignKeyFieldInstance  # noqa
+    from nexio.orm.fields.relational import ManyToManyFieldInstance
+    from nexio.orm.models import Model
 
 # pylint: disable=R0201
 
@@ -431,7 +431,7 @@ class BaseSchemaGenerator:
         }
 
     def _get_models_to_create(self, models_to_create: "List[Type[Model]]") -> None:
-        from orm import orm
+        from nexio.orm import NexioOrm as orm
 
         for app in orm.apps.values():
             for model in app.values():

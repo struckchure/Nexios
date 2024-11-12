@@ -13,20 +13,20 @@ except ImportError:  # pragma: nocoverage
     parse_datetime = functools.partial(parse_date, default_timezone=None)
 from pypika import OracleQuery
 
-from orm.backends.base.client import (
+from nexio.orm.backends.base.client import (
     Capabilities,
     ConnectionWrapper,
     PoolConnectionWrapper,
     TransactionContext,
     TransactionContextPooled,
 )
-from orm.backends.odbc.client import (
+from nexio.orm.backends.odbc.client import (
     ODBCClient,
     ODBCTransactionWrapper,
     translate_exceptions,
 )
-from orm.backends.oracle.executor import OracleExecutor
-from orm.backends.oracle.schema_generator import OracleSchemaGenerator
+from nexio.orm.backends.oracle.executor import OracleExecutor
+from nexio.orm.backends.oracle.schema_generator import OracleSchemaGenerator
 
 if TYPE_CHECKING:  # pragma: nocoverage
     import asyncodbc  # pylint: disable=W0611

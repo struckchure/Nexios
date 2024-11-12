@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING, List, Optional, Tuple, Type, cast
 from pypika import Table
 from pypika.terms import Criterion, Term
 
-from .exceptions import ConfigurationError, OperationalError
-from .fields.base import Field
-from .fields.relational import (
+from nexio.orm.exceptions import ConfigurationError, OperationalError
+from nexio.orm.fields.base import Field
+from nexio.orm.fields.relational import (
     BackwardFKRelation,
     ForeignKeyFieldInstance,
     ManyToManyFieldInstance,
@@ -16,8 +16,8 @@ from .fields.relational import (
 )
 
 if TYPE_CHECKING:  # pragma: nocoverage
-    from .models import Model
-    from .queryset import QuerySet
+    from nexio.orm.models import Model
+    from nexio.orm.queryset import QuerySet
 
 
 TableCriterionTuple = Tuple[Table, Criterion]

@@ -27,36 +27,36 @@ from pypika.queries import QueryBuilder
 from pypika.terms import Case, Field, Term, ValueWrapper
 from typing_extensions import Literal, Protocol
 
-from .backends.base.client import BaseDBAsyncClient, Capabilities
-from .exceptions import (
+from nexio.orm.backends.base.client import BaseDBAsyncClient, Capabilities
+from nexio.orm.exceptions import (
     DoesNotExist,
     FieldError,
     IntegrityError,
     MultipleObjectsReturned,
     ParamsError,
 )
-from .expressions import Expression, Q, RawSQL, ResolveContext, ResolveResult
-from .fields.relational import (
+from nexio.orm.expressions import Expression, Q, RawSQL, ResolveContext, ResolveResult
+from nexio.orm.fields.relational import (
     ForeignKeyFieldInstance,
     OneToOneFieldInstance,
     RelationalField,
 )
-from .filters import FilterInfoDict
-from .query_utils import (
+from nexio.orm.filters import FilterInfoDict
+from nexio.orm.query_utils import (
     Prefetch,
     QueryModifier,
     TableCriterionTuple,
     get_joins_for_related_field,
 )
-from .router import router
-from .utils import chunk
+from nexio.orm.router import router
+from nexio.orm.utils import chunk
 
 # Empty placeholder - Should never be edited.
 
 QUERY: QueryBuilder = QueryBuilder()
 
 if TYPE_CHECKING:  # pragma: nocoverage
-    from orm.models import Model
+    from nexio.orm.models import Model
 
 MODEL = TypeVar("MODEL", bound="Model")
 T_co = TypeVar("T_co", covariant=True)
@@ -603,7 +603,7 @@ class QuerySet(AwaitableQuery[MODEL]):
 
         :raises TypeError: Value of kwarg is expected to be a ``Function`` instance.
         """
-        from orm.models import get_filters_for_field
+        from nexio.orm.models import get_filters_for_field
 
         queryset = self._clone()
         for key, annotation in kwargs.items():

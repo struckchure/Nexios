@@ -1,6 +1,6 @@
 from pypika import functions
 
-from orm.expressions import Aggregate, Function
+from nexio.orm.expressions import Aggregate, Function
 
 ##############################################################################
 # Standard functions

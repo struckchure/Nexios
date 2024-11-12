@@ -5,9 +5,9 @@ from typing import Optional, Type, Union
 import pytz
 from pypika import Parameter
 
-from ... import Model, fields, timezone
-from ...backends.base.executor import BaseExecutor
-from ...fields import (
+from nexio.orm import Model, fields, timezone
+from nexio.orm.backends.base.executor import BaseExecutor
+from nexio.orm.fields import (
     BigIntField,
     BooleanField,
     DatetimeField,

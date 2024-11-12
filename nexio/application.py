@@ -23,7 +23,7 @@ class NexioHTTPApp:
         
 
 
-    async def on_start(self, func :Callable):
+    def on_start(self, func :Callable):
         self.start_function = func
 
 

@@ -18,11 +18,11 @@ from typing import (
 
 from pypika.terms import Term
 
-from ..exceptions import ConfigurationError, ValidationError
-from ..validators import Validator
+from nexio.orm.exceptions import ConfigurationError, ValidationError
+from nexio.orm.validators import Validator
 
 if TYPE_CHECKING:  # pragma: nocoverage
-    from orm.models import Model
+    from nexio.orm.models import Model
 
 if sys.version_info >= (3, 11):
     from enum import StrEnum
@@ -77,7 +77,7 @@ class Field(Generic[VALUE], metaclass=_FieldMeta):
         The default value will not be part of the schema.
     :param unique: Is this field unique?
     :param db_index: Should this field be indexed by itself?
-    :param description: Field description. Will also appear in ``orm.describe_model()``
+    :param description: Field description. Will also appear in ``nexio.orm.describe_model()``
         and as DB comments in the generated DDL.
     :param validators: Validators for this field.
 
@@ -144,7 +144,7 @@ class Field(Generic[VALUE], metaclass=_FieldMeta):
             def function_cast(self, term: Term) -> Term:
                 return functions.Cast(term, SqlTypes.NUMERIC)
 
-    orm will then use the overridden attributes/functions for that dialect.
+    nexio.orm will then use the overridden attributes/functions for that dialect.
     If you need a dynamic attribute, you can use a property.
     """
 

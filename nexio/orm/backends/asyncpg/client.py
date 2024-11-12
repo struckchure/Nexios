@@ -4,9 +4,9 @@ from typing import Any, Callable, List, Optional, Tuple, TypeVar, Union
 import asyncpg
 from asyncpg.transaction import Transaction
 
-from .executor import AsyncpgExecutor
-from .schema_generator import AsyncpgSchemaGenerator
-from .client import (
+from nexio.orm.backends.asyncpg.executor import AsyncpgExecutor
+from nexio.orm.backends.asyncpg.schema_generator import AsyncpgSchemaGenerator
+from nexio.orm.backends.base.client import (
     BaseTransactionWrapper,
     ConnectionWrapper,
     NestedTransactionPooledContext,
@@ -14,11 +14,11 @@ from .client import (
     TransactionContext,
     TransactionContextPooled,
 )
-from .client import (
+from nexio.orm.backends.base_postgres.client import (
     BasePostgresClient,
     translate_exceptions,
 )
-from ...exceptions import (
+from nexio.orm.exceptions import (
     DBConnectionError,
     IntegrityError,
     OperationalError,

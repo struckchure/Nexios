@@ -1,4 +1,4 @@
-from .base import (
+from nexio.orm.fields.base import (
     CASCADE,
     NO_ACTION,
     RESTRICT,
@@ -7,7 +7,7 @@ from .base import (
     Field,
     OnDelete,
 )
-from .data import (
+from nexio.orm.fields.data import (
     BigIntField,
     BinaryField,
     BooleanField,
@@ -26,7 +26,7 @@ from .data import (
     TimeField,
     UUIDField,
 )
-from ..fields.relational import (
+from nexio.orm.fields.relational import (
     BackwardFKRelation,
     BackwardOneToOneRelation,
     ForeignKeyField,

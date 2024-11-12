@@ -8,19 +8,19 @@ import psycopg.pq
 import psycopg.rows
 import psycopg_pool
 
-from ..base import client as base_client
-from ..base_postgres import client as postgres_client
-import orm.backends.psycopg.executor as executor
-import orm.exceptions as exceptions
-from orm.backends.base.client import PoolConnectionWrapper
-from orm.backends.psycopg.schema_generator import PsycopgSchemaGenerator
+import nexio.orm.backends.base.client as base_client
+import nexio.orm.backends.base_postgres.client as postgres_client
+import nexio.orm.backends.psycopg.executor as executor
+import nexio.orm.exceptions as exceptions
+from nexio.orm.backends.base.client import PoolConnectionWrapper
+from nexio.orm.backends.psycopg.schema_generator import PsycopgSchemaGenerator
 
 FuncType = typing.Callable[..., typing.Any]
 F = typing.TypeVar("F", bound=FuncType)
 
 
 class AsyncConnectionPool(psycopg_pool.AsyncConnectionPool):
-    # ormORM has this interface hardcoded in the tests so we need to support it
+    # nexio.ormORM has this interface hardcoded in the tests so we need to support it
     async def acquire(self, *args, **kwargs) -> psycopg.AsyncConnection:
         return await self.getconn(*args, **kwargs)
 

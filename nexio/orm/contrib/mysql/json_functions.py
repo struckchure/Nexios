@@ -7,7 +7,7 @@ from pypika.terms import Criterion
 from pypika.terms import Function as PypikaFunction
 from pypika.terms import Term, ValueWrapper
 
-from ...filters import not_equal
+from nexio.orm.filters import not_equal
 
 
 class JSONContains(PypikaFunction):  # type: ignore

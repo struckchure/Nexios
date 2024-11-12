@@ -3,7 +3,7 @@ import uuid
 from types import ModuleType
 from typing import Any, Dict, Iterable, Optional, Union
 
-from ...exceptions import ConfigurationError
+from nexio.orm.exceptions import ConfigurationError
 
 urlparse.uses_netloc.append("postgres")
 urlparse.uses_netloc.append("asyncpg")
@@ -14,7 +14,7 @@ urlparse.uses_netloc.append("oracle")
 urlparse.uses_netloc.append("mssql")
 DB_LOOKUP: Dict[str, Dict[str, Any]] = {
     "psycopg": {
-        "engine": "orm.backends.psycopg",
+        "engine": "nexio.orm.backends.psycopg",
         "vmap": {
             "path": "database",
             "hostname": "host",
@@ -36,7 +36,7 @@ DB_LOOKUP: Dict[str, Dict[str, Any]] = {
         },
     },
     "asyncpg": {
-        "engine": "orm.backends.asyncpg",
+        "engine": "nexio.orm.backends.asyncpg",
         "vmap": {
             "path": "database",
             "hostname": "host",
@@ -58,14 +58,14 @@ DB_LOOKUP: Dict[str, Dict[str, Any]] = {
         },
     },
     "sqlite": {
-        "engine": "orm.backends.sqlite",
+        "engine": "nexio.orm.backends.sqlite",
         "skip_first_char": False,
         "vmap": {"path": "file_path"},
         "defaults": {"journal_mode": "WAL", "journal_size_limit": 16384},
         "cast": {"journal_size_limit": int},
     },
     "mysql": {
-        "engine": "orm.backends.mysql",
+        "engine": "nexio.orm.backends.mysql",
         "vmap": {
             "path": "database",
             "hostname": "host",
@@ -85,7 +85,7 @@ DB_LOOKUP: Dict[str, Dict[str, Any]] = {
         },
     },
     "mssql": {
-        "engine": "orm.backends.mssql",
+        "engine": "nexio.orm.backends.mssql",
         "vmap": {
             "path": "database",
             "hostname": "host",
@@ -102,7 +102,7 @@ DB_LOOKUP: Dict[str, Dict[str, Any]] = {
         },
     },
     "oracle": {
-        "engine": "orm.backends.oracle",
+        "engine": "nexio.orm.backends.oracle",
         "vmap": {
             "path": "database",
             "hostname": "host",

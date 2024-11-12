@@ -1,12 +1,12 @@
 from typing import TYPE_CHECKING, Any, List, Type
 
-from orm.backends.base.schema_generator import BaseSchemaGenerator
-from orm.converters import encoders
-from orm.fields import CASCADE, SET_NULL
+from nexio.orm.backends.base.schema_generator import BaseSchemaGenerator
+from nexio.orm.converters import encoders
+from nexio.orm.fields import CASCADE, SET_NULL
 
 if TYPE_CHECKING:  # pragma: nocoverage
-    from orm.backends.oracle import OracleClient
-    from orm.models import Model
+    from nexio.orm.backends.oracle import OracleClient
+    from nexio.orm.models import Model
 
 
 class OracleSchemaGenerator(BaseSchemaGenerator):

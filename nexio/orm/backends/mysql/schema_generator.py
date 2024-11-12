@@ -1,11 +1,11 @@
 from typing import TYPE_CHECKING, Any, List, Type
 
-from orm.backends.base.schema_generator import BaseSchemaGenerator
-from orm.converters import encoders
+from nexio.orm.backends.base.schema_generator import BaseSchemaGenerator
+from nexio.orm.converters import encoders
 
 if TYPE_CHECKING:  # pragma: nocoverage
-    from orm.backends.mysql.client import MySQLClient
-    from orm.models import Model
+    from nexio.orm.backends.mysql.client import MySQLClient
+    from nexio.orm.models import Model
 
 
 class MySQLSchemaGenerator(BaseSchemaGenerator):

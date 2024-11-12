@@ -2,8 +2,8 @@ from typing import Optional
 
 import asyncpg
 
-from ...models import Model
-from .executor import BasePostgresExecutor
+from nexio.orm import Model
+from nexio.orm.backends.base_postgres.executor import BasePostgresExecutor
 
 
 class AsyncpgExecutor(BasePostgresExecutor):

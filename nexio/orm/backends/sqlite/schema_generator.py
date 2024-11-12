@@ -1,7 +1,7 @@
 from typing import Any, List
 
-from ...backends.base.schema_generator import BaseSchemaGenerator
-from ...converters import encoders
+from nexio.orm.backends.base.schema_generator import BaseSchemaGenerator
+from nexio.orm.converters import encoders
 
 
 class SqliteSchemaGenerator(BaseSchemaGenerator):

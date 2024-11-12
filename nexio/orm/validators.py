@@ -4,7 +4,7 @@ import re
 from decimal import Decimal
 from typing import Any, Union
 
-from .exceptions import ValidationError
+from nexio.orm.exceptions import ValidationError
 
 
 class Validator(metaclass=abc.ABCMeta):

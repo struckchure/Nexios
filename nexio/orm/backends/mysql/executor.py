@@ -3,16 +3,16 @@ from pypika.enums import SqlTypes
 from pypika.terms import BasicCriterion, Criterion
 from pypika.utils import format_quotes
 
-from orm import Model
-from orm.backends.base.executor import BaseExecutor
-from orm.contrib.mysql.json_functions import (
+from nexio.orm import Model
+from nexio.orm.backends.base.executor import BaseExecutor
+from nexio.orm.contrib.mysql.json_functions import (
     mysql_json_contained_by,
     mysql_json_contains,
     mysql_json_filter,
 )
-from orm.contrib.mysql.search import SearchCriterion
-from orm.fields import BigIntField, IntField, SmallIntField
-from orm.filters import (
+from nexio.orm.contrib.mysql.search import SearchCriterion
+from nexio.orm.fields import BigIntField, IntField, SmallIntField
+from nexio.orm.filters import (
     Like,
     Term,
     ValueWrapper,

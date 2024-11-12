@@ -15,15 +15,15 @@ from typing import (
 
 from pypika import PostgreSQLQuery
 
-from ..base.client import (
+from nexio.orm.backends.base.client import (
     BaseDBAsyncClient,
     Capabilities,
     ConnectionWrapper,
     PoolConnectionWrapper,
     TransactionContext,
 )
-from orm.backends.base_postgres.executor import BasePostgresExecutor
-from orm.backends.base_postgres.schema_generator import BasePostgresSchemaGenerator
+from nexio.orm.backends.base_postgres.executor import BasePostgresExecutor
+from nexio.orm.backends.base_postgres.schema_generator import BasePostgresSchemaGenerator
 
 T = TypeVar("T")
 FuncType = Callable[..., Coroutine[None, None, T]]

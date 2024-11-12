@@ -17,7 +17,7 @@ from typing import (
 import aiosqlite
 from pypika import SQLLiteQuery
 
-from ...backends.base.client import (
+from nexio.orm.backends.base.client import (
     BaseDBAsyncClient,
     BaseTransactionWrapper,
     Capabilities,
@@ -25,9 +25,9 @@ from ...backends.base.client import (
     NestedTransactionContext,
     TransactionContext,
 )
-from orm.backends.sqlite.executor import SqliteExecutor
-from orm.backends.sqlite.schema_generator import SqliteSchemaGenerator
-from orm.exceptions import (
+from nexio.orm.backends.sqlite.executor import SqliteExecutor
+from nexio.orm.backends.sqlite.schema_generator import SqliteSchemaGenerator
+from nexio.orm.exceptions import (
     IntegrityError,
     OperationalError,
     TransactionManagementError,

@@ -5,11 +5,11 @@ from contextvars import ContextVar
 from copy import copy
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
 
-from .backends.base.config_generator import expand_db_url
-from .exceptions import ConfigurationError
+from nexio.orm.backends.base.config_generator import expand_db_url
+from nexio.orm.exceptions import ConfigurationError
 
 if TYPE_CHECKING:
-    from orm.backends.base.client import BaseDBAsyncClient
+    from nexio.orm.backends.base.client import BaseDBAsyncClient
 
     DBConfigType = Dict[str, Any]
 
@@ -38,16 +38,16 @@ class ConnectionHandler:
         Return the DB config.
 
         This is the same config passed to the
-        :meth:`orm.init<orm.orm.init>` method while initialization.
+        :meth:`nexio.orm.init<nexio.orm.nexio.orm.init>` method while initialization.
 
         :raises ConfigurationError:
             If this property is accessed before calling the
-            :meth:`orm.init<orm.orm.init>` method.
+            :meth:`nexio.orm.init<nexio.orm.nexio.orm.init>` method.
         """
         if self._db_config is None:
             raise ConfigurationError(
                 "DB configuration not initialised. Make sure to call "
-                "orm.init with a valid configuration before attempting "
+                "nexio.orm.init with a valid configuration before attempting "
                 "to create connections."
             )
         return self._db_config
@@ -104,7 +104,7 @@ class ConnectionHandler:
         Return the connection object for the given alias, creating it if needed.
 
         Used for accessing the low-level connection object
-        (:class:`BaseDBAsyncClient<orm.backends.base.client.BaseDBAsyncClient>`) for the
+        (:class:`BaseDBAsyncClient<nexio.orm.backends.base.client.BaseDBAsyncClient>`) for the
         given alias.
 
         :param conn_alias: The alias for which the connection has to be fetched
@@ -159,7 +159,7 @@ class ConnectionHandler:
         :param token:
             The token corresponding to the `context` to which the storage state has to
             be reset. Typically, this token is obtained by calling the
-            :meth:`set<orm.connection.ConnectionHandler.set>` method of this class.
+            :meth:`set<nexio.orm.connection.ConnectionHandler.set>` method of this class.
         """
         current_storage = self._get_storage()
         self._conn_storage.reset(token)

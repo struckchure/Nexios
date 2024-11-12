@@ -3,8 +3,8 @@ from typing import TYPE_CHECKING, Optional, Tuple, Type
 from pypika.terms import Term, ValueWrapper
 
 if TYPE_CHECKING:
-    from orm import Model
-    from orm.backends.base.schema_generator import BaseSchemaGenerator
+    from nexio.orm import Model
+    from nexio.orm.backends.base.schema_generator import BaseSchemaGenerator
 
 
 class Index:

@@ -3,7 +3,7 @@ from typing import Union
 from pypika.enums import Comparator
 from pypika.terms import BasicCriterion, Function, Term
 
-from ..postgres.functions import ToTsQuery, ToTsVector
+from nexio.orm.contrib.postgres.functions import ToTsQuery, ToTsVector
 
 
 class Comp(Comparator):  # type: ignore

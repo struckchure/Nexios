@@ -1,6 +1,6 @@
 from typing import Any
 
-from ...fields import Field
+from nexio.orm.fields import Field
 
 
 class TSVectorField(Field):

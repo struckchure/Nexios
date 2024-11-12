@@ -2,7 +2,7 @@ from typing import Optional, Tuple
 
 from pypika.terms import Term
 
-from ...indexes import Index
+from nexio.orm.indexes import Index
 
 
 class FullTextIndex(Index):

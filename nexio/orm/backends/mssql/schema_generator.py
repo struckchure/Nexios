@@ -1,11 +1,11 @@
 from typing import TYPE_CHECKING, Any, List, Type
 
-from orm.backends.base.schema_generator import BaseSchemaGenerator
-from orm.converters import encoders
+from nexio.orm.backends.base.schema_generator import BaseSchemaGenerator
+from nexio.orm.converters import encoders
 
 if TYPE_CHECKING:  # pragma: nocoverage
-    from orm.backends.mssql import MSSQLClient
-    from orm.models import Model
+    from nexio.orm.backends.mssql import MSSQLClient
+    from nexio.orm.models import Model
 
 
 class MSSQLSchemaGenerator(BaseSchemaGenerator):

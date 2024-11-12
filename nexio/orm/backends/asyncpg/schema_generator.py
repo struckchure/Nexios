@@ -1,9 +1,9 @@
 from typing import TYPE_CHECKING
 
-from orm.backends.base_postgres.schema_generator import BasePostgresSchemaGenerator
+from nexio.orm.backends.base_postgres.schema_generator import BasePostgresSchemaGenerator
 
 if TYPE_CHECKING:  # pragma: nocoverage
-    from .client import AsyncpgDBClient
+    from nexio.orm.backends.asyncpg.client import AsyncpgDBClient
 
 
 class AsyncpgSchemaGenerator(BasePostgresSchemaGenerator):
