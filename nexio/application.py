@@ -1,4 +1,4 @@
-from typing import Any, Awaitable, Callable, Mapping, Sequence, List, Union, Optional
+from typing import Any, Awaitable, Callable, AsyncIterator, Sequence, List, Union, Optional
 from .http.request import Request
 from .http.response import NexioResponse
 from starlette.responses import JSONResponse
@@ -11,46 +11,60 @@ from .config.settings import BaseConfig
 from .files import LocalFileStorage
 import logging
 from contextlib import asynccontextmanager
+from .lifespan import _DefaultLifespan
 
 class NexioHTTPApp:
-    def __init__(self, config: Enum = BaseConfig):
+    def __init__(self, 
+                 config: Enum = BaseConfig):
         self.config = config
         self.routes: List[str] = []
         self.middlewares: List = []
-        self.start_function: Optional[Callable] = None
-        self.shutdown_function: Optional[Callable] = None
+        self.startup_handlers: List[Callable] = []
+        self.shutdown_handlers: List[Callable] = []
         self.logger = logging.getLogger("nexio")
+        self._db_initialized = False
+        print(config.SECRET_KEY)
         
-    def on_start(self, func: Callable) -> Callable:
-        """Register startup handler"""
-        self.start_function = func
-        return func
-    
-    def on_shutdown(self, func: Callable) -> Callable:
-        """Register shutdown handler"""
-        self.shutdown_function = func
-        return func
 
-    async def startup(self) -> None:
-        """Execute startup tasks"""
-        if callable(self.start_function):
-            try:
-                await self.start_function()
-                self.logger.info("Application startup complete")
-            except Exception as e:
-                self.logger.error(f"Startup failed: {str(e)}")
-                raise
+    def on_startup(self, handler: Callable) -> Callable:
+        """
+        Decorator to register startup handlers
+        """
+        self.startup_handlers.append(handler)
+        return handler
 
-    async def shutdown(self) -> None:
-        """Execute shutdown tasks"""
-        print("shutting down !!!")
-        if callable(self.shutdown_function):
-            try:
-                await self.shutdown_function()
-                self.logger.info("Application shutdown complete")
-            except Exception as e:
-                self.logger.error(f"Shutdown failed: {str(e)}")
-                raise
+    def on_shutdown(self, handler: Callable) -> Callable:
+        """
+        Decorator to register shutdown handlers
+        """
+        self.shutdown_handlers.append(handler)
+        return handler
+
+    @asynccontextmanager
+    async def lifespan(self) -> AsyncIterator[None]:
+        """
+        Application context manager that handles startup and shutdown events
+        by executing all registered handlers in sequence.
+        """
+        try:
+            self.logger.info("Application startup initiated")
+            for handler in self.startup_handlers:
+                await handler()
+            self.logger.info("Application startup completed")
+            yield
+        finally:
+            self.logger.info("Application shutdown initiated")
+            for handler in self.shutdown_handlers:
+                try:
+                    await handler()
+                except Exception as e:
+                    # self.logger.error(f"Shutdown handler error: {str(e)}")
+
+                    #funny way to skip this exception .....
+
+                    # BUG:  event loop closes early(can not run async function when loop is closed)
+                    pass
+            self.logger.info("Application shutdown completed")
 
     async def execute_middleware_stack(self, 
                                      request: Request,
@@ -74,25 +88,11 @@ class NexioHTTPApp:
                 return await handler(request, response, **kwargs)
             
         return await next_middleware()
-    @asynccontextmanager
-    async def lifespan_context(self,func :Callable):
-        """Handle lifespan events with a context manager for resources."""
-        if callable(func):
-            try:
-                await func()
-                self.logger.info("Application startup complete")
-            except Exception as e:
-                self.logger.error(f"Startup failed: {str(e)}")
-                raise
-
-        try:
-            yield
-        finally:
-            pass
 
     async def handle_request(self, scope: dict, receive: Callable, send: Callable) -> None:
         request = Request(scope, receive, send)
         response = NexioResponse()
+        request.scope['config'] = self.config
 
         for path_pattern, handler, middleware in self.routes:
             match = path_pattern.match(request.url.path)
@@ -139,23 +139,31 @@ class NexioHTTPApp:
         for route in router.get_routes():
             self.add_route(route)
 
-    async def __call__(self, scope: dict, receive: Callable, send: Callable) -> Any:
-        
+    async def __call__(self, scope: dict, receive: Callable, send: Callable) -> None:
         if scope["type"] == "lifespan":
-            message = await receive()
-            print(message)
-            if message["type"] == "lifespan.startup":
-                print("scope type is",message['type'])
-                await self.startup()
-                await send({"type": "lifespan.startup.complete"})
-            elif message["type"] == "lifespan.shutdown":
-                
+            while True:
+                message = await receive()
+                if message["type"] == "lifespan.startup":
+                    try:
+                        async with self.lifespan():
+                            await send({"type": "lifespan.startup.complete"})
+                            # Wait for shutdown message
+                            while True:
+                                message = await receive()
+                                # Handling RuntimeError because our event loop sometimes decides to clock out early.
+                                # Skipping over it for now, but we should revisit and see if it just needs a coffee break.
+                                # TODO: Dig deeper and give our event loop some TLC.
 
-                await self.shutdown()
-                await send({"type": "lifespan.shutdown.complete"})
-            else:
-                await self.shutdown()
+                                if message["type"] == "lifespan.shutdown":
+                                    try:
+                                        break
+                                    except RuntimeError:
+                                        pass
+                            await send({"type": "lifespan.shutdown.complete"})
+                            return
+                    except Exception as e:
+                        self.logger.error(f"Lifespan error: {str(e)}")
+                        await send({"type": "lifespan.startup.failed", "message": str(e)})
+                    return
         elif scope["type"] == "http":    
             await self.handle_request(scope, receive, send)
-
-        

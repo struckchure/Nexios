@@ -6,10 +6,14 @@ from nexio.http.response import NexioResponse
 import uvicorn
 from nexio.exception_handlers import ErrorHandler
 from tortoise import Tortoise as db
-from nexio.middlewares.logging import LoggingMiddleware
+from nexio.middlewares.base import BaseMiddleware
 import traceback
 import os
+from tests import Aerichaq
 from contextlib import asynccontextmanager
+from nexio.contrib.sessions.backends.db import SessionStore
+from nexio.config.settings import BaseConfig
+
 # from tests import User
 
 TORTOISE_ORM = {
@@ -28,19 +32,21 @@ TORTOISE_ORM = {
 @AllowedMethods(["GET","POST"])
 async def home_handler(request: Request, response :NexioResponse, **kwargs):
     
-    # print(request.url.param)
-    a = await request.files
-    print(request.meta)
-    print(request.cookies)
-    print(request.url.include_query_params())
-    print(request.url_params)
-    print(request.app_config)
+    print(request.scope['config'])
     response.cookie(
         
         key="1",value="101"
 
 
     )
+    a =  await request.session.get_session("key")
+    b = await request.session.set_session("username","password")
+    print("a is ",a)
+    print(await request.session.items())
+
+    print(await Aerichaq.all())
+    print(await request.session.values())
+
     return response.json({"hell":"hi"})
 
 async def about_handler(request: Request, response, **kwargs):
@@ -53,24 +59,29 @@ async def user_handler(request: Request, response, id: str):
     return response.json({"error": "error"},status_code=500)
 
 
-app = NexioHTTPApp()
 
 async def  middleware(request,response,nex):
     print("Hello world")
     await nex()
     return 
-app.add_middleware(middleware)
+class AppConfig(BaseConfig):
+    SECRET_KEY = "dunamis winner"
+app = NexioHTTPApp(config=AppConfig())
 
+class LogRequestMiddleware(BaseMiddleware):
+    async def process_request(self, request, response):
+        print(f"Incoming request: {request.method} {request.url.path}")
 
-    
-@app.lifespan_context
+app.add_middleware(LogRequestMiddleware())
+@app.on_startup
 async def connect_db():
     cwd = os.getcwd()
     print(cwd)
+
     try:
        db_path = os.path.join(os.path.dirname(__file__), "db.sqlite3")
        await db.init(db_url=f"sqlite:///{db_path}",
-        modules={"models": ["tests"]})
+        modules={"models": ["tests","nexio.contrib.sessions.models"]})
        await db.generate_schemas()
     except Exception as e:
        print(traceback.format_exc())
@@ -82,6 +93,7 @@ async def connect_db():
 
 @app.on_shutdown
 async def disconnect_db():
+    print("hello")
     try:
         await db.close_connections()
         print("disconnecsted")
@@ -89,27 +101,46 @@ async def disconnect_db():
     except Exception as e:
         print(f"Error closing database connections: {e}")
         print(traceback.format_exc())
+
+# @app.on_shutdown
+# async def test_closing():
+#     print("restaring")
+@asynccontextmanager
+async def lifespan():
+    
+    try:
+        await connect_db()
+        yield
+    finally:
+        await disconnect_db()
+    
+app.add_middleware(middleware)
+
 app.add_route(
     Routes("/",home_handler)
     )
 
 r = Router()
 r.add_route(Routes("/user/{user_id}/{id}",home_handler))
-class AuthMiddleware:
-
-    def __init__(self, request, response,callnext):
-        self.request = request
-        self.response = response
-        self.callnext = callnext
-
-    async def __call__(self, *args ,**kwds):
-
-        print(self.request)
-        await self.callnext()
-
-        return
 app.mount_router(r)
+class SessionMiddleware(BaseMiddleware):
+    async def process_request(self, request:Request, response):
+        session = SessionStore(session_key="dunamis",config=request.scope['config'])
+        self.session = session
+        request.session = session
+        print(self.session.modified)
+        print(self.session.accessed)
+
+
+
+    async def process_response(self, request, response):
+        
+        print(self.session.modified)
+        
+
+
 app.add_middleware(ErrorHandler)
+app.add_middleware(SessionMiddleware())
 # app.add_middleware(LoggingMiddleware)
 
 

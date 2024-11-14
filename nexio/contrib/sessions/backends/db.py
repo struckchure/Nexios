@@ -4,10 +4,11 @@ import logging
 from tortoise import transactions,router
 from tortoise.exceptions import IntegrityError,DoesNotExist
 from .exceptions import SuspiciousOperation,CreateError,DatabaseError,UpdateError
+import asyncio
 class SessionStore(SessionBase):
 
-    def __init__(self, session_key=None):
-        super().__init__(session_key)
+    def __init__(self,config ,session_key=None):
+        super().__init__(config=config,session_key = session_key)
 
     @classmethod
     def get_model_class(cls):
@@ -22,44 +23,46 @@ class SessionStore(SessionBase):
     def model(self):
         return self.get_model_class()
 
-    def _get_session_from_db(self):
+    async def _get_session_from_db(self):
         try:
-            return self.model.objects.get(
+            return await self.model.objects.get(
                 session_key=self.session_key, expire_date__gt=timezone.now()
             )
-        except (self.model.DoesNotExist, SuspiciousOperation) as e:
+        except (DoesNotExist, SuspiciousOperation) as e:
             if isinstance(e, SuspiciousOperation):
                 logger = logging.getLogger("django.security.%s" % e.__class__.__name__)
                 logger.warning(str(e))
             self._session_key = None
 
-    def load(self):
-        s = self._get_session_from_db()
+    async def load(self):
+        s = await self._get_session_from_db()
+        print(s)
         return self.decode(s.session_data) if s else {}
 
-    def exists(self, session_key):
-        return self.model.objects.filter(session_key=session_key).exists()
+    async def exists(self, session_key):
+        check = self.model.filter(session_key = session_key).exists()
+        return await check
 
-    def create(self):
+    async def create(self):
         while True:
             self._session_key = self._get_new_session_key()
             try:
                 # Save immediately to ensure we have a unique entry in the
                 # database.
-                self.save(must_create=True)
+                await self.save()
             except CreateError:
                 # Key wasn't unique. Try again.
                 continue
             self.modified = True
             return
 
-    def create_model_instance(self, data):
+    async def create_model_instance(self, data):
         """
         Return a new instance of the session model object, which represents the
         current session state. Intended to be used for saving the session data
         to the database.
         """
-        return self.model(
+        return await self.model(
             session_key=self._get_or_create_session_key(),
             session_data=self.encode(data),
             expire_date=self.get_expiry_date(),
