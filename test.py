@@ -9,6 +9,7 @@ from tortoise import Tortoise as db
 from nexio.middlewares.logging import LoggingMiddleware
 import traceback
 import os
+from tests import Aerichaq
 from contextlib import asynccontextmanager
 # from tests import User
 
@@ -41,6 +42,7 @@ async def home_handler(request: Request, response :NexioResponse, **kwargs):
 
 
     )
+    print(await Aerichaq.all())
     return response.json({"hell":"hi"})
 
 async def about_handler(request: Request, response, **kwargs):
@@ -53,20 +55,19 @@ async def user_handler(request: Request, response, id: str):
     return response.json({"error": "error"},status_code=500)
 
 
-app = NexioHTTPApp()
 
 async def  middleware(request,response,nex):
     print("Hello world")
     await nex()
     return 
-app.add_middleware(middleware)
 
+app = NexioHTTPApp()
 
-    
-@app.lifespan_context
+@app.on_startup
 async def connect_db():
     cwd = os.getcwd()
     print(cwd)
+
     try:
        db_path = os.path.join(os.path.dirname(__file__), "db.sqlite3")
        await db.init(db_url=f"sqlite:///{db_path}",
@@ -82,6 +83,7 @@ async def connect_db():
 
 @app.on_shutdown
 async def disconnect_db():
+    print("hello")
     try:
         await db.close_connections()
         print("disconnecsted")
@@ -89,6 +91,18 @@ async def disconnect_db():
     except Exception as e:
         print(f"Error closing database connections: {e}")
         print(traceback.format_exc())
+
+@asynccontextmanager
+async def lifespan():
+    
+    try:
+        await connect_db()
+        yield
+    finally:
+        await disconnect_db()
+    
+app.add_middleware(middleware)
+
 app.add_route(
     Routes("/",home_handler)
     )
