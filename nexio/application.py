@@ -23,6 +23,8 @@ class NexioHTTPApp:
         self.shutdown_handlers: List[Callable] = []
         self.logger = logging.getLogger("nexio")
         self._db_initialized = False
+        print(config.SECRET_KEY)
+        
 
     def on_startup(self, handler: Callable) -> Callable:
         """
@@ -90,6 +92,7 @@ class NexioHTTPApp:
     async def handle_request(self, scope: dict, receive: Callable, send: Callable) -> None:
         request = Request(scope, receive, send)
         response = NexioResponse()
+        request.scope['config'] = self.config
 
         for path_pattern, handler, middleware in self.routes:
             match = path_pattern.match(request.url.path)

@@ -26,7 +26,9 @@ class BaseSessionManager(manager.Manager):
         return s
 
 class AbstractBaseSession(Model):
-    session_key = fields.CharField( max_length=40, primary_key=True)
+    session_key = fields.CharField( max_length=240, primary_key=True)
+
+    #session_key can be assumed to be a hmac_hash
     session_data = fields.TextField()
     expire_date = fields.DatetimeField(db_index=True)
 

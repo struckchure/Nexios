@@ -3,16 +3,29 @@ from nexio.utils import crypto
 from nexio.utils import timezone
 from datetime import datetime, timedelta, timezone, tzinfo
 from nexio.config.settings import BaseConfig
-
+from ..utils import SessionEncoder
+from nexio.utils import timezone
 class SessionBase:
     __not_given = object()
+    accessed = False
+    modified = False
+    deleted = False
+    modified_data :typing.Dict
+    
 
     def __init__(self,
-                 config :BaseConfig,
-                session_key = None ) -> None:
+                 config = None ,
+                 session_key = None ) -> None:
 
         self._session_key = session_key
         self.config = config
+        try:
+            secret_key = config.SECRET_KEY
+        except AttributeError:
+            raise AttributeError("""SECRET_KEY NOT FOUND IN YOUR CONFIG
+                                 HINT :add SESSION_KEY to your config class
+                                 """)
+        self.signer = SessionEncoder(secret_key)
 
 
     def __contains__(self, key :str) -> bool:
@@ -20,70 +33,98 @@ class SessionBase:
         return key in self._session 
 
 
-    def __getitem__(self, key :str) -> typing.Any:
+    async def get_session(self, key :str) -> typing.Any:
+        self.accessed = True
+        session = await self._session
+        try:
+            return session[key]
+        except KeyError:
+            return None
 
-        return self._session[key]
+    
 
-    def __delitem__(self, key :str) -> None:
+    async def set_session(self, key,value) -> None:
+        
+        self.modified = True
+        session = await self._session
+        self.modified_data = {key : value}
+        session[key] = value
+        
 
-        del self._session[key]
-
-
+    
     def get_salt(self) -> str:
         return "nexio.session"+self.__class__.__qualname__
 
     
-    def get(self, key :str) -> typing.Any:
+    async def get(self, key :str) -> typing.Any:
+        self.accessed = False
+        session = await self._session
 
-        return self._session.get(key)
+        return session.get(key)
 
-    def pop(self, key, default=__not_given):
+    async def pop(self, key, default=__not_given):
+
         args = () if default is self.__not_given else (default,)
-        return self._session.pop(key, *args)
+        session = await self._session
+        
+        return session.pop(key, *args)
 
-    def setdefault(self, key, value):
-        if key in self._session:
-            return self._session[key]
+    async def setdefault(self, key, value):
+        session = await self._session
+
+        self.modified = True
+        if key in session:
+            return session[key]
         else:
-            self._session[key] = value
+            session[key] = value
             return value
 
-    def update(self, dict_):
-        self._session.update(dict_)
+    async def update(self, dict_):
+        session = await self._session
+
+        session.update(dict_)
         self.modified = True
 
-    def has_key(self, key):
-        return key in self._session
+    async def has_key(self, key):
+        session = await self._session
 
-    def keys(self):
-        return self._session.keys()
+        return key in session
 
-    def values(self):
-        return self._session.values()
+    async def keys(self):
+        session = await self._session
 
-    def items(self):
-        return self._session.items()
+        return self.keys()
+
+    async def values(self):
+        session = await self._session
+        return  session.values()
+
+    async def items(self):
+        session = await self._session
+
+        return session.items()
 
     def clear(self):
        
         self._session_cache = {}
         
 
-    def is_empty(self):
+    async def is_empty(self):
+
         try:
             return not self._session_key and not self._session_cache
         except AttributeError:
             return True
 
-    def _get_new_session_key(self):
+    async def _get_new_session_key(self):
         while True:
             session_key = crypto.generate_random_string(32)
-            if not self.exists(session_key):
+            if not await self.exists(session_key):
                 return session_key
 
-    def _get_or_create_session_key(self):
+    async def _get_or_create_session_key(self):
         if self._session_key is None:
-            self._session_key = self._get_new_session_key()
+            self._session_key = await self._get_new_session_key()
         return self._session_key
 
     def _validate_session_key(self, key):
@@ -108,25 +149,29 @@ class SessionBase:
     session_key = property(_get_session_key)
     _session_key = property(_get_session_key, _set_session_key)
 
-    def _get_session(self, no_load=False):
+    async def _get_session(self, no_load=False):
         """
         Lazily load session from storage (unless "no_load" is True, when only
         an empty dict is stored) and store it in the current instance.
         """
         
-        try:
-            return self._session_cache
-        except AttributeError:
-            if self.session_key is None or no_load:
-                self._session_cache = {}
-            else:
-                self._session_cache = self.load()
-        return self._session_cache
+        # try:
+        #     return self._session_cache
+        # except AttributeError:
+        #     if self.session_key is None or no_load:
+                
+        #         self._session_cache = {}
+        #     else:
+                
+        #         self._session_cache = self.load()
+        # return self._session_cache
+        return await self.load()
 
-    _session = property(_get_session)
-
+    @property
+    async def _session(self):
+        return await self._get_session()
     def get_session_cookie_age(self):
-        return self.clearconfig.SESSION_COOKIE_AGE
+        return self.config.COOKIE_AGE
 
     def get_expiry_age(self, **kwargs):
         """Get the number of seconds until the session expires.
@@ -159,22 +204,9 @@ class SessionBase:
         Optionally, this function accepts `modification` and `expiry` keyword
         arguments specifying the modification and expiry of the session.
         """
-        try:
-            modification = kwargs["modification"]
-        except KeyError:
-            modification = timezone.now()
-        # Same comment as in get_expiry_age
-        try:
-            expiry = kwargs["expiry"]
-        except KeyError:
-            expiry = self.get("_session_expiry")
 
-        if isinstance(expiry, datetime):
-            return expiry
-        elif isinstance(expiry, str):
-            return datetime.fromisoformat(expiry)
-        expiry = expiry or self.get_session_cookie_age()
-        return modification + timedelta(seconds=expiry)
+        
+        return timezone.now() + timedelta(seconds=self.get_expiry_age())
 
     def set_expiry(self, value):
         """
@@ -220,6 +252,7 @@ class SessionBase:
         Remove the current session data from the database and regenerate the
         key.
         """
+        self.deleted = True
         self.clear()
         self.delete()
         self._session_key = None
@@ -292,6 +325,13 @@ class SessionBase:
         a built-in expiration mechanism, it should be a no-op.
         """
         raise NotImplementedError("This backend does not support clear_expired().")
+    
+    def encode(self,data):
+        return self.signer.encode_session(data)
+    
+    def decode(self, encoded_data):
+        return self.signer.decode_session(encoded_data)
+        
 
 
 

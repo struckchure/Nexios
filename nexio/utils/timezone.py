@@ -220,7 +220,7 @@ def localdate(value=None, timezone=None):
 
 def now():
     """
-    Return an aware or naive datetime.datetime, depending on settings.USE_TZ.
+    Return an aware or naive datetime.datetime .
     """
     return datetime.now(tz=timezone.utc)
 
