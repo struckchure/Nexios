@@ -1,9 +1,9 @@
 import logging
 import time
 import traceback
-from ..http.request import Request
-from ..response import Response
-
+from nexio.http.request import Request
+from nexio.http.response import Response,NexioResponse
+from .base import BaseMiddleware
 # Set up advanced logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -45,3 +45,21 @@ async def logging_middleware(request: Request, response: Response, nex):
         response.status_code = 500
         response.body = b"Internal Server Error"
         logger.error(f"Error occurred while processing the request: {e}")
+
+
+# Example usage of custom middleware
+class LoggingMiddleware(BaseMiddleware):
+    """
+    Example middleware that logs request and response details.
+    """
+    
+    async def process_request(self, request: Request, response: NexioResponse) -> None:
+        print(f"Processing request to: {request.url.path}")
+    
+    async def process_response(self, request: Request, response: NexioResponse) -> NexioResponse:
+        print(f"Processing response from: {request.url.path}")
+        return response
+    
+    async def process_exception(self, request: Request, response: NexioResponse, exc: Exception) -> NexioResponse:
+        print(f"Error processing {request.url.path}: {str(exc)}")
+        return await super().process_exception(request, response, exc)

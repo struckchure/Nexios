@@ -66,6 +66,8 @@ class HTTPConnection:
     def __init__(self, scope: Dict[str, Any]) -> None:
         self.scope = scope
 
+
+        
     @property
     def url(self) -> URL:
         return URL(scope=self.scope)
