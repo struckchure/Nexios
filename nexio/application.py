@@ -56,7 +56,12 @@ class NexioHTTPApp:
                 try:
                     await handler()
                 except Exception as e:
-                    self.logger.error(f"Shutdown handler error: {str(e)}")
+                    # self.logger.error(f"Shutdown handler error: {str(e)}")
+
+                    #funny way to skip this exception .....
+
+                    # BUG:  event loop closes early(can not run async function when loop is closed)
+                    pass
             self.logger.info("Application shutdown completed")
 
     async def execute_middleware_stack(self, 

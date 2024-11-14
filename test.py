@@ -6,11 +6,12 @@ from nexio.http.response import NexioResponse
 import uvicorn
 from nexio.exception_handlers import ErrorHandler
 from tortoise import Tortoise as db
-from nexio.middlewares.logging import LoggingMiddleware
+from nexio.middlewares.base import BaseMiddleware
 import traceback
 import os
 from tests import Aerichaq
 from contextlib import asynccontextmanager
+
 # from tests import User
 
 TORTOISE_ORM = {
@@ -29,13 +30,7 @@ TORTOISE_ORM = {
 @AllowedMethods(["GET","POST"])
 async def home_handler(request: Request, response :NexioResponse, **kwargs):
     
-    # print(request.url.param)
-    a = await request.files
-    print(request.meta)
-    print(request.cookies)
-    print(request.url.include_query_params())
-    print(request.url_params)
-    print(request.app_config)
+    
     response.cookie(
         
         key="1",value="101"
@@ -62,7 +57,11 @@ async def  middleware(request,response,nex):
     return 
 
 app = NexioHTTPApp()
+class LogRequestMiddleware(BaseMiddleware):
+    async def process_request(self, request, response):
+        print(f"Incoming request: {request.method} {request.url.path}")
 
+app.add_middleware(LogRequestMiddleware())
 @app.on_startup
 async def connect_db():
     cwd = os.getcwd()
@@ -92,6 +91,9 @@ async def disconnect_db():
         print(f"Error closing database connections: {e}")
         print(traceback.format_exc())
 
+# @app.on_shutdown
+# async def test_closing():
+#     print("restaring")
 @asynccontextmanager
 async def lifespan():
     
