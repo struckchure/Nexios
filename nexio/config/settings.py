@@ -6,5 +6,3 @@ class BaseConfig(Enum):
     middleware :list = [] 
 
 
-
-BaseConfig.debug

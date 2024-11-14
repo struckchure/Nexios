@@ -105,7 +105,13 @@ class URL:
     @property
     def is_secure(self) -> bool:
         return self.scheme in ("https", "wss")
-
+    @property
+    def params(self):
+        return 
+    
+    @params.setter
+    def params(self,value):
+        return value
     def replace(self, **kwargs: typing.Any) -> "URL":
         if (
             "username" in kwargs
@@ -708,3 +714,4 @@ class State:
         del self._state[key]
 
 
+    
