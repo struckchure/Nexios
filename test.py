@@ -32,19 +32,19 @@ TORTOISE_ORM = {
 @AllowedMethods(["GET","POST"])
 async def home_handler(request: Request, response :NexioResponse, **kwargs):
     
-    print(request.scope['config'])
+    #print(request.scope['config'])
     response.cookie(
         
         key="1",value="101"
 
 
     )
-    a =  await request.session.get_session("key")
-    b = await request.session.set_session("username","password")
-    print("a is ",a)
-    print(await request.session.items())
+    # a =  await request.session.items()
+    
+    # b = await request.session.set_session("username","password")
+    #print("a is ",a)
 
-    print(await Aerichaq.all())
+    #print(await Aerichaq.all())
     print(await request.session.values())
 
     return response.json({"hell":"hi"})
@@ -61,7 +61,7 @@ async def user_handler(request: Request, response, id: str):
 
 
 async def  middleware(request,response,nex):
-    print("Hello world")
+    #print("Hello world")
     await nex()
     return 
 class AppConfig(BaseConfig):
@@ -76,7 +76,7 @@ app.add_middleware(LogRequestMiddleware())
 @app.on_startup
 async def connect_db():
     cwd = os.getcwd()
-    print(cwd)
+    #print(cwd)
 
     try:
        db_path = os.path.join(os.path.dirname(__file__), "db.sqlite3")
@@ -87,24 +87,24 @@ async def connect_db():
        print(traceback.format_exc())
        print(f"exceptint {e}")
        
-    print("connected")
-    # print( await User.all().filter())
+    #print("connected")
+    # #print( await User.all().filter())
 
 
 @app.on_shutdown
 async def disconnect_db():
-    print("hello")
+    #print("hello")
     try:
         await db.close_connections()
-        print("disconnecsted")
-        print("Databases connections closed successfully")
+        #print("disconnecsted")
+        #print("Databases connections closed successfully")
     except Exception as e:
         print(f"Error closing database connections: {e}")
         print(traceback.format_exc())
 
 # @app.on_shutdown
 # async def test_closing():
-#     print("restaring")
+#     #print("restaring")
 @asynccontextmanager
 async def lifespan():
     
@@ -125,16 +125,21 @@ r.add_route(Routes("/user/{user_id}/{id}",home_handler))
 app.mount_router(r)
 class SessionMiddleware(BaseMiddleware):
     async def process_request(self, request:Request, response):
-        session = SessionStore(session_key="dunamis",config=request.scope['config'])
+        session = SessionStore(session_key="G8=6-q&s_vwmq~d/q){v]\T75`ORq-'B",
+                               config=request.scope['config'])
         self.session = session
+        
         request.session = session
-        print(self.session.modified)
-        print(self.session.accessed)
+        #print(self.session.modified)
+        #print(self.session.accessed)
 
 
 
     async def process_response(self, request, response):
-        
+        print(self.session.modified_data)
+        if self.session.modified:
+            await self.session.save()
+
         print(self.session.modified)
         
 

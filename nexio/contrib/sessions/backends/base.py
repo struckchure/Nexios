@@ -10,15 +10,19 @@ class SessionBase:
     accessed = False
     modified = False
     deleted = False
-    modified_data :typing.Dict
+    modified_data = {}
     
 
     def __init__(self,
                  config = None ,
                  session_key = None ) -> None:
 
-        self._session_key = session_key
+
+        self.session_key = session_key
+        print(self.session_key)
         self.config = config
+        self.modified_data :typing.Dict = {}
+
         try:
             secret_key = config.SECRET_KEY
         except AttributeError:
@@ -26,8 +30,7 @@ class SessionBase:
                                  HINT :add SESSION_KEY to your config class
                                  """)
         self.signer = SessionEncoder(secret_key)
-
-
+  
     def __contains__(self, key :str) -> bool:
 
         return key in self._session 
@@ -44,11 +47,12 @@ class SessionBase:
     
 
     async def set_session(self, key,value) -> None:
-        
+        self.modified_data = {key : value}
         self.modified = True
         session = await self._session
-        self.modified_data = {key : value}
-        session[key] = value
+        print("session is",session)
+        print(self.modified_data)
+        
         
 
     
@@ -123,31 +127,34 @@ class SessionBase:
                 return session_key
 
     async def _get_or_create_session_key(self):
-        if self._session_key is None:
-            self._session_key = await self._get_new_session_key()
-        return self._session_key
+        if await self.exists(self.session_key):
+            self.session_key = await self._get_new_session_key()
+        if self.session_key is None:
+            self.session_key = await self._get_new_session_key()
+            
+        return self.session_key
 
     def _validate_session_key(self, key):
         """
         Key must be truthy and at least 8 characters long. 8 characters is an
         arbitrary lower bound for some minimal key security.
         """
-        return key and len(key) >= 8
+        # return key and len(key) >= 8
+        return True
 
-    def _get_session_key(self):
-        return self.__session_key
+  
 
     def _set_session_key(self, value):
         """
         Validate session key on assignment. Invalid values will set to None.
         """
+
         if self._validate_session_key(value):
             self.__session_key = value
         else:
             self.__session_key = None
 
-    session_key = property(_get_session_key)
-    _session_key = property(_get_session_key, _set_session_key)
+    
 
     async def _get_session(self, no_load=False):
         """
@@ -165,7 +172,8 @@ class SessionBase:
                 
         #         self._session_cache = self.load()
         # return self._session_cache
-        return await self.load()
+        self.modified_data.update(await self.load())
+        return self.modified_data
 
     @property
     async def _session(self):
@@ -173,30 +181,7 @@ class SessionBase:
     def get_session_cookie_age(self):
         return self.config.COOKIE_AGE
 
-    def get_expiry_age(self, **kwargs):
-        """Get the number of seconds until the session expires.
-
-        Optionally, this function accepts `modification` and `expiry` keyword
-        arguments specifying the modification and expiry of the session.
-        """
-        try:
-            modification = kwargs["modification"]
-        except KeyError:
-            modification = timezone.now()
-        
-        try:
-            expiry = kwargs["expiry"]
-        except KeyError:
-            expiry = self.get("_session_expiry")
-
-        if not expiry:  # Checks both None and 0 cases
-            return self.get_session_cookie_age()
-        if not isinstance(expiry, (datetime, str)):
-            return expiry
-        if isinstance(expiry, str):
-            expiry = datetime.fromisoformat(expiry)
-        delta = expiry - modification
-        return delta.days * 86400 + delta.seconds
+   
 
     def get_expiry_date(self, **kwargs):
         """Get session the expiry date (as a datetime object).
@@ -204,9 +189,13 @@ class SessionBase:
         Optionally, this function accepts `modification` and `expiry` keyword
         arguments specifying the modification and expiry of the session.
         """
-
         
-        return timezone.now() + timedelta(seconds=self.get_expiry_age())
+
+        try:
+            expiry = self.config.COOKIE_AGE
+        except AttributeError:
+            expiry = 86400
+        return timezone.now() + timedelta(seconds=expiry)
 
     def set_expiry(self, value):
         """
@@ -327,10 +316,13 @@ class SessionBase:
         raise NotImplementedError("This backend does not support clear_expired().")
     
     def encode(self,data):
+        print(data)
         return self.signer.encode_session(data)
     
     def decode(self, encoded_data):
-        return self.signer.decode_session(encoded_data)
+        data = self.signer.decode_session(encoded_data)
+        print(data)
+        return data
         
 
 
