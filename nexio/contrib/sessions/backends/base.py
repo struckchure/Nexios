@@ -19,7 +19,6 @@ class SessionBase:
 
 
         self.session_key = session_key
-        print(self.session_key)
         self.config = config
         self.modified_data :typing.Dict = {}
 
@@ -36,7 +35,7 @@ class SessionBase:
         return key in self._session 
 
 
-    async def get_session(self, key :str) -> typing.Any:
+    async def get_session(self, key :str) -> typing.Dict[str, any]:
         self.accessed = True
         session = await self._session
         try:
@@ -47,13 +46,18 @@ class SessionBase:
     
 
     async def set_session(self, key,value) -> None:
-        self.modified_data = {key : value}
+        session = await self._get_session()
+        if key in session.keys():
+            self.accessed = True
+        self.modified_data.update({key:value})
         self.modified = True
+    
+
+        
+    async def remove(self,key) -> None:
         session = await self._session
-        print("session is",session)
-        print(self.modified_data)
-        
-        
+        del session[key]
+        self.modified = True
 
     
     def get_salt(self) -> str:
@@ -172,7 +176,8 @@ class SessionBase:
                 
         #         self._session_cache = self.load()
         # return self._session_cache
-        self.modified_data.update(await self.load())
+        if not self.modified:
+            self.modified_data.update(await self.load())
         return self.modified_data
 
     @property
@@ -316,12 +321,10 @@ class SessionBase:
         raise NotImplementedError("This backend does not support clear_expired().")
     
     def encode(self,data):
-        print(data)
         return self.signer.encode_session(data)
     
     def decode(self, encoded_data):
         data = self.signer.decode_session(encoded_data)
-        print(data)
         return data
         
 

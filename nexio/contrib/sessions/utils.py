@@ -31,6 +31,5 @@ class SessionEncoder:
         
         # Decode the JSON data from base64
         json_data = base64.b64decode(data.encode()).decode()
-        print("json data",json_data)
         # Return the decoded JSON as a dictionary
         return json.loads(json_data)

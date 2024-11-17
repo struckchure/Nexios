@@ -7,6 +7,7 @@ import uvicorn
 from nexio.exception_handlers import ErrorHandler
 from tortoise import Tortoise as db
 from nexio.middlewares.base import BaseMiddleware
+from nexio.contrib.sessions.models import Session
 import traceback
 import os
 from tests import Aerichaq
@@ -32,21 +33,12 @@ TORTOISE_ORM = {
 @AllowedMethods(["GET","POST"])
 async def home_handler(request: Request, response :NexioResponse, **kwargs):
     
-    #print(request.scope['config'])
-    response.cookie(
-        
-        key="1",value="101"
+    response.cookie(key = "name",value="dunamis")
+    response.cookie(key = "namea",value="dunamisa")
 
-
-    )
-    # a =  await request.session.items()
-    
-    # b = await request.session.set_session("username","password")
-    #print("a is ",a)
-
-    #print(await Aerichaq.all())
-    print(await request.session.values())
-
+    await request.session.set_session("current_proce",110)
+    a =  await request.session.items()
+    print(f"username is {a}")
     return response.json({"hell":"hi"})
 
 async def about_handler(request: Request, response, **kwargs):
@@ -130,17 +122,20 @@ class SessionMiddleware(BaseMiddleware):
         self.session = session
         
         request.session = session
-        #print(self.session.modified)
-        #print(self.session.accessed)
+        #
 
 
 
-    async def process_response(self, request, response):
-        print(self.session.modified_data)
+    async def process_response(self, request, response :NexioResponse):
+        
         if self.session.modified:
-            await self.session.save()
-
-        print(self.session.modified)
+            await self.session.save() 
+            print("cookie set is ")
+            response.cookie(
+                key="session_id",
+                value=self.session.session_key
+            )
+        
         
 
 
@@ -151,6 +146,7 @@ app.add_middleware(SessionMiddleware())
 
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
+
 
 
 

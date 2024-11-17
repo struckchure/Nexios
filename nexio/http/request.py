@@ -1,10 +1,13 @@
 import json
-from typing import Any, Dict, Optional, Union, List, AsyncGenerator, Callable, Tuple
+from typing import Any, Dict, Optional, Union, List, AsyncGenerator, Callable, Tuple,Protocol
 from urllib.parse import urlparse, urlunparse
 from ..structs import URL
 from .cookies_parser import parse_cookies
 from .parsers import parse_multipart_data
-class ClientDisconnect(Exception):
+from nexio.contrib.sessions.backends.base import SessionBase
+class RequestExtraType(Protocol):
+    session: SessionBase
+class ClientDisconnect(Exception, RequestExtraType):
     """Custom exception to indicate client disconnection."""
     pass
 
@@ -177,4 +180,5 @@ class Request(HTTPConnection):
 
     
 
-
+    
+    

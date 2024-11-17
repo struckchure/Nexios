@@ -8,11 +8,7 @@ from .http.response import NexioResponse
 
 async def ErrorHandler(request: Request, response :NexioResponse, call_next: typing.Callable):
     try:
-        # Await call_next and assign the response from the next handler
-        response.cookie(
-            key = "name",
-            value="dunami"
-        )
+        
         response = await call_next()
         return response 
     

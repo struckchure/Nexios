@@ -5,6 +5,8 @@ from tortoise import transactions,router
 from tortoise.exceptions import IntegrityError,DoesNotExist
 from .exceptions import SuspiciousOperation,CreateError,DatabaseError,UpdateError
 import asyncio
+
+#TODO : updating of cookies
 class SessionStore(SessionBase):
 
     def __init__(self,config ,session_key=None):
@@ -34,7 +36,6 @@ class SessionStore(SessionBase):
             if isinstance(e, SuspiciousOperation):
                pass
             self._session_key = None
-            print("not found",str(e))
 
     async def load(self):
         s = await self._get_session_from_db()
@@ -63,12 +64,21 @@ class SessionStore(SessionBase):
         current session state. Intended to be used for saving the session data
         to the database.
         """
-        return await self.model(
-            session_key= await self._get_or_create_session_key(),
-            session_data=self.encode(data),
-            expire_date=self.get_expiry_date(),
+        session_object =  self.model.filter(session_key = self.session_key)
+        self.check = session_object.exists()
+        if not self.check:
+
+            return await self.model(
+                session_key= await self._get_or_create_session_key(),
+                session_data=self.encode(data),
+                expire_date=self.get_expiry_date(),
+            )
+        
+        return await session_object.first().update(
+            session_data=self.encode(data)
+
         )
-    async def save(self, must_create=False):
+    async def save(self, must_create=False): #XXX:Few issues here
         """
         Save the current session data to the database. If 'must_create' is
         True, raise a database error if the saving operation doesn't create a
@@ -80,7 +90,10 @@ class SessionStore(SessionBase):
         obj = await self.create_model_instance(data)
         try:
             async with transactions.in_transaction():
-                await obj.save()
+                if not self.check:
+                    await obj.save()
+                else:
+                    pass
         except IntegrityError:
             if must_create:
                 raise CreateError
