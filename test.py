@@ -33,8 +33,9 @@ TORTOISE_ORM = {
 @AllowedMethods(["GET","POST"])
 async def home_handler(request: Request, response :NexioResponse, **kwargs):
     
-    response.cookie(key = "name",value="dunamis")
-    response.cookie(key = "namea",value="dunamisa")
+    response.set_cookie(key = "session",value="dunamis")
+    response.set_cookie(key = "session2",value="dunamis101")
+
 
     await request.session.set_session("current_proce",110)
     a =  await request.session.items()
@@ -131,10 +132,10 @@ class SessionMiddleware(BaseMiddleware):
         if self.session.modified:
             await self.session.save() 
             print("cookie set is ")
-            response.cookie(
-                key="session_id",
-                value=self.session.session_key
-            )
+            # response.cookie(
+            #     key="session_id",
+            #     value=self.session.session_key
+            # )
         
         
 

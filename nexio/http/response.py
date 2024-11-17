@@ -1,4 +1,3 @@
-
 from datetime import datetime, timedelta
 from email.utils import formatdate
 from typing import Any, Dict, List, Optional, Tuple, Union, BinaryIO
@@ -66,7 +65,11 @@ class Response:
         """Get all headers including cookies."""
         headers = self._headers.copy()
         if self._cookies:
-            headers['set-cookie'] = self._serialize_cookies()
+            # Return multiple Set-Cookie headers as a list
+            headers['set-cookie'] = [
+                self._serialize_cookie(key, value, options)
+                for key, value, options in self._cookies
+            ]
         return headers
 
     @headers.setter
@@ -151,13 +154,22 @@ class Response:
 
     async def __call__(self, scope: dict, receive: typing.Callable, send: typing.Callable) -> None:
         """Make the response callable as an ASGI application."""
+        headers = []
+        for k, v in self.headers.items():
+            if k == 'set-cookie':
+                # Handle multiple Set-Cookie headers
+                if isinstance(v, list):
+                    for cookie in v:
+                        headers.append([b'set-cookie', cookie.encode('utf-8')])
+                else:
+                    headers.append([b'set-cookie', v.encode('utf-8')])
+            else:
+                headers.append([k.encode('utf-8'), v.encode('utf-8')])
+        
         await send({
             'type': 'http.response.start',
             'status': self.status_code,
-            'headers': [
-                [k.encode('utf-8'), v.encode('utf-8')]
-                for k, v in self.headers.items()
-            ],
+            'headers': headers,
         })
         
         await send({
@@ -165,19 +177,16 @@ class Response:
             'body': self._body,
         })
 
-    def _serialize_cookies(self) -> str:
-        """Serialize cookies into a string for the Set-Cookie header."""
-        cookies = []
-        for key, value, options in self._cookies:
-            cookie = f"{key}={value}"
-            for opt_key, opt_value in options.items():
-                if isinstance(opt_value, bool):
-                    if opt_value:
-                        cookie += f"; {opt_key}"
-                else:
-                    cookie += f"; {opt_key}={opt_value}"
-            cookies.append(cookie)
-        return "; ".join(cookies)
+    def _serialize_cookie(self, key: str, value: str, options: dict) -> str:
+        """Serialize a single cookie into a Set-Cookie header value."""
+        cookie = f"{key}={value}"
+        for opt_key, opt_value in options.items():
+            if isinstance(opt_value, bool):
+                if opt_value:
+                    cookie += f"; {opt_key}"
+            else:
+                cookie += f"; {opt_key}={opt_value}"
+        return cookie
 
     def _generate_etag(self) -> str:
         """Generate an ETag for the response content."""
@@ -278,13 +287,21 @@ class FileResponse(Response):
 
     async def __call__(self, scope: dict, receive: typing.Callable, send: typing.Callable) -> None:
         """Stream the file in chunks."""
+        headers = []
+        for k, v in self.headers.items():
+            if k == 'set-cookie':
+                if isinstance(v, list):
+                    for cookie in v:
+                        headers.append([b'set-cookie', cookie.encode('utf-8')])
+                else:
+                    headers.append([b'set-cookie', v.encode('utf-8')])
+            else:
+                headers.append([k.encode('utf-8'), v.encode('utf-8')])
+
         await send({
             'type': 'http.response.start',
             'status': self.status_code,
-            'headers': [
-                [k.encode('utf-8'), v.encode('utf-8')]
-                for k, v in self.headers.items()
-            ],
+            'headers': headers,
         })
 
         with open(self.path, 'rb') as file:
@@ -325,13 +342,21 @@ class StreamingResponse(Response):
 
     async def __call__(self, scope: dict, receive: typing.Callable, send: typing.Callable) -> None:
         """Stream the content."""
+        headers = []
+        for k, v in self.headers.items():
+            if k == 'set-cookie':
+                if isinstance(v, list):
+                    for cookie in v:
+                        headers.append([b'set-cookie', cookie.encode('utf-8')])
+                else:
+                    headers.append([b'set-cookie', v.encode('utf-8')])
+            else:
+                headers.append([k.encode('utf-8'), v.encode('utf-8')])
+
         await send({
             'type': 'http.response.start',
             'status': self.status_code,
-            'headers': [
-                [k.encode('utf-8'), v.encode('utf-8')]
-                for k, v in self.headers.items()
-            ],
+            'headers': headers,
         })
 
         for chunk in self.content_iterator:
@@ -371,7 +396,6 @@ class RedirectResponse(Response):
             status_code=status_code,
             headers=headers
         )
-
 
 
 class NexioResponse:
@@ -447,7 +471,7 @@ class NexioResponse:
         self._headers[key.lower()] = str(value)
         return self
 
-    def cookie(
+    def set_cookie(
         self,
         key: str,
         value: str,
