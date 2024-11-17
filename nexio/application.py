@@ -23,7 +23,6 @@ class NexioHTTPApp:
         self.shutdown_handlers: List[Callable] = []
         self.logger = logging.getLogger("nexio")
         self._db_initialized = False
-        print(config.SECRET_KEY)
         
 
     def on_startup(self, handler: Callable) -> Callable:
