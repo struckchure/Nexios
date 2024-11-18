@@ -1,7 +1,8 @@
-from typing import Tuple,Dict
+from typing import Tuple,Dict,Any
 import re
 from dataclasses import dataclass
 from io import BytesIO
+from urllib.parse import quote_plus,unquote_plus
 
 @dataclass
 class UploadedFile:
@@ -33,13 +34,39 @@ async def parse_multipart_data(self) -> Tuple[Dict[str, str], Dict[str, any]]:
                 return {}, {}
             
             boundary = match.group(1)
-            body = await self.body()
+            body = await self.body
             
             parser = MultipartParser(boundary)
             self._form_data, self._files = await parser.parse(body)
         
         return {**self._form_data, **self._files}
 
+def parse_form_urlencoded(body: str) -> Dict[str, Any]:
+    """
+    Parse application/x-www-form-urlencoded data into a dictionary.
+    Handles multiple values for the same key by returning them in a list.
+    """
+    parsed_data = {}
+    if not body:
+        return parsed_data
+        
+    pairs = body.split('&')
+    for pair in pairs:
+        if '=' not in pair:
+            continue
+        key, value = pair.split('=', 1)
+        key = unquote_plus(key)
+        value = unquote_plus(value)
+        
+        if key in parsed_data:
+            if isinstance(parsed_data[key], list):
+                parsed_data[key].append(value)
+            else:
+                parsed_data[key] = [parsed_data[key], value]
+        else:
+            parsed_data[key] = value
+            
+    return parsed_data
 
 class MultipartParser:
     """Parser for multipart/form-data content."""
@@ -115,4 +142,4 @@ class MultipartParser:
                 # This is a regular form field
                 form_data[field_name] = content.decode()
         
-        return form_data, files
+        return form_data, files 
