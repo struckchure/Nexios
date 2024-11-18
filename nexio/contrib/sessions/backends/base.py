@@ -5,6 +5,10 @@ from datetime import datetime, timedelta, timezone, tzinfo
 from nexio.config.settings import BaseConfig
 from ..utils import SessionEncoder
 from nexio.utils import timezone
+import string
+
+VALID_KEY_CHARS = string.ascii_lowercase + string.digits
+
 class SessionBase:
     __not_given = object()
     accessed = False
@@ -101,7 +105,7 @@ class SessionBase:
     async def keys(self):
         session = await self._session
 
-        return self.keys()
+        return session.keys()
 
     async def values(self):
         session = await self._session

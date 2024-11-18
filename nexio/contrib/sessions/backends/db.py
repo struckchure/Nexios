@@ -6,7 +6,6 @@ from tortoise.exceptions import IntegrityError,DoesNotExist
 from .exceptions import SuspiciousOperation,CreateError,DatabaseError,UpdateError
 import asyncio
 
-#TODO : updating of cookies
 class SessionStore(SessionBase):
 
     def __init__(self,config ,session_key=None):

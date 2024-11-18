@@ -14,7 +14,7 @@ from tests import Aerichaq
 from contextlib import asynccontextmanager
 from nexio.contrib.sessions.backends.db import SessionStore
 from nexio.config.settings import BaseConfig
-
+from nexio.contrib.sessions.middlewares import SessionMiddleware
 # from tests import User
 
 TORTOISE_ORM = {
@@ -33,13 +33,13 @@ TORTOISE_ORM = {
 @AllowedMethods(["GET","POST"])
 async def home_handler(request: Request, response :NexioResponse, **kwargs):
     
-    response.set_cookie(key = "session",value="dunamis")
-    response.set_cookie(key = "session2",value="dunamis101")
+    # response.set_cookie(key = "session",value="dunamis")
+    # response.set_cookie(key = "session2",value="dunamis101")
+    d = await request.form_data
 
-
-    await request.session.set_session("current_proce",110)
-    a =  await request.session.items()
-    print(f"username is {a}")
+    # await request.session.set_session("current_proce",110)
+    # a =  await request.session.get_session("session_data")
+    print(f"username is {d}")
     return response.json({"hell":"hi"})
 
 async def about_handler(request: Request, response, **kwargs):
@@ -116,26 +116,7 @@ app.add_route(
 r = Router()
 r.add_route(Routes("/user/{user_id}/{id}",home_handler))
 app.mount_router(r)
-class SessionMiddleware(BaseMiddleware):
-    async def process_request(self, request:Request, response):
-        session = SessionStore(session_key="G8=6-q&s_vwmq~d/q){v]\T75`ORq-'B",
-                               config=request.scope['config'])
-        self.session = session
-        
-        request.session = session
-        #
 
-
-
-    async def process_response(self, request, response :NexioResponse):
-        
-        if self.session.modified:
-            await self.session.save() 
-            print("cookie set is ")
-            # response.cookie(
-            #     key="session_id",
-            #     value=self.session.session_key
-            # )
         
         
 

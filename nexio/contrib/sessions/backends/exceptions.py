@@ -29,3 +29,12 @@ class DatabaseError(Exception):
     with the database, such as during queries, transactions, or migrations.
     """
     pass
+
+class ImproperlyConfigured(Exception):
+    
+    pass
+
+class InvalidSessionKey(Exception):
+
+    pass 
+
