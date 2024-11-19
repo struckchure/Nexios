@@ -5,7 +5,7 @@ from .cookies_parser import parse_cookies
 from .parsers import parse_multipart_data,parse_form_urlencoded
 from nexio.contrib.sessions.backends.base import SessionBase
 from ..structs import URL
-
+from .mixins import RequestValidatonMixin
 class RequestExtraType(Protocol):
     session: 'SessionBase'
 
@@ -74,7 +74,7 @@ class HTTPConnection:
         """Returns the User-Agent header if available."""
         return self.headers.get("user-agent", "")
 
-class Request(HTTPConnection):
+class Request(HTTPConnection, RequestValidatonMixin):
     """Handles HTTP request data with improved data parsing capabilities."""
     
     def __init__(self, scope: Dict[str, Any], receive: Callable[[], bytes], send: Callable) -> None:
@@ -85,6 +85,12 @@ class Request(HTTPConnection):
         self._form_data = None
         self._parsed_data = None
         self._files = None
+        self.scope = scope
+        self._receive = receive
+        self._send = send
+        self._validation_schema = None
+        self._validation_errors = {}
+        self._validated_data = None
 
     @property
     async def body(self) -> bytes:
@@ -152,6 +158,7 @@ class Request(HTTPConnection):
 
     @property
     async def data(self) -> Dict[str, Any]:
+        files = await self.files
         """
         Returns all parsed data from the request body, combining:
         - JSON data (if content-type is application/json)
@@ -167,6 +174,7 @@ class Request(HTTPConnection):
             else:
                 self._parsed_data = {}
                 
+        # return {**self._parsed_data,**files}
         return self._parsed_data
 
     @property

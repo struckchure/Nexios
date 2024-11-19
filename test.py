@@ -15,6 +15,9 @@ from contextlib import asynccontextmanager
 from nexio.contrib.sessions.backends.db import SessionStore
 from nexio.config.settings import BaseConfig
 from nexio.contrib.sessions.middlewares import SessionMiddleware
+from nexio.decorators import validate_request
+from nexio.contrib.validators.base import BaseShema
+from nexio.contrib.validators import Field
 # from tests import User
 
 TORTOISE_ORM = {
@@ -29,17 +32,31 @@ TORTOISE_ORM = {
     },
 }
 
+class UserShema(BaseShema):
 
+    name = Field(str,min=100)
+    age = Field(str)
+    hubbies = Field(list)
+
+    
+
+@validate_request(UserShema)
 @AllowedMethods(["GET","POST"])
 async def home_handler(request: Request, response :NexioResponse, **kwargs):
     
     # response.set_cookie(key = "session",value="dunamis")
     # response.set_cookie(key = "session2",value="dunamis101")
-    d = await request.form_data
+    # d = await request.files
 
-    # await request.session.set_session("current_proce",110)
-    # a =  await request.session.get_session("session_data")
-    print(f"username is {d}")
+    # # await request.session.set_session("current_proce",110)
+    # # a =  await request.session.get_session("session_data")
+    # print(f"username is {d}")
+    if not await request.validate_request():
+        return response.json(request._validation_errors)
+    print(request._validation_errors)
+    print(request.validated_data)
+
+   
     return response.json({"hell":"hi"})
 
 async def about_handler(request: Request, response, **kwargs):
@@ -76,11 +93,12 @@ async def connect_db():
        await db.init(db_url=f"sqlite:///{db_path}",
         modules={"models": ["tests","nexio.contrib.sessions.models"]})
        await db.generate_schemas()
+       print("connected")
+
     except Exception as e:
        print(traceback.format_exc())
        print(f"exceptint {e}")
        
-    #print("connected")
     # #print( await User.all().filter())
 
 
