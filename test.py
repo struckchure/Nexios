@@ -33,10 +33,12 @@ TORTOISE_ORM = {
 }
 
 class UserShema(BaseShema):
-
-    name = Field(str,min=100)
-    age = Field(str)
-    hubbies = Field(list)
+    def validate_name(value):
+        if "d" in value:
+            raise Exception("D not meant to be in value")
+    name = Field(str,min=5,required=True).validate(validate_name)
+    age = Field(int,min = 100,max = 120)
+    hubbies = Field(list,required=True,default=[])
 
     
 
@@ -51,13 +53,14 @@ async def home_handler(request: Request, response :NexioResponse, **kwargs):
     # # await request.session.set_session("current_proce",110)
     # # a =  await request.session.get_session("session_data")
     # print(f"username is {d}")
+    
+    
     if not await request.validate_request():
-        return response.json(request._validation_errors)
-    print(request._validation_errors)
-    print(request.validated_data)
+        return response.json(request.validation_errors,status_code=400)
+   
 
    
-    return response.json({"hell":"hi"})
+    return response.json(await request.validated_data)
 
 async def about_handler(request: Request, response, **kwargs):
     return response.json({"message": "This is the About Page."})
