@@ -16,8 +16,7 @@ from nexio.contrib.sessions.backends.db import SessionStore
 from nexio.config.settings import BaseConfig
 from nexio.contrib.sessions.middlewares import SessionMiddleware
 from nexio.decorators import validate_request
-from nexio.contrib.validators.base import BaseShema
-from nexio.contrib.validators import Field
+from nexio.contrib.validator import validate,Schema,fields,post_load,ValidationError
 # from tests import User
 
 TORTOISE_ORM = {
@@ -32,17 +31,65 @@ TORTOISE_ORM = {
     },
 }
 
-class UserShema(BaseShema):
-    def validate_name(value):
-        if "d" in value:
-            raise Exception("D not meant to be in value")
-    name = Field(str,min=5,required=True).validate(validate_name)
-    age = Field(int,min = 100,max = 120)
-    hubbies = Field(list,required=True,default=[])
 
-    
+class UserSchema(Schema):
+    """
+    Comprehensive user data validation schema
+    """
+    # Basic string field with validation
+    username = fields.Str(
+        required=True,  # Must be present
+        validate=[
+            validate.Length(min=3, max=30),  # Length constraints
+            validate.Regexp(r'^[a-zA-Z0-9_]+$', error='Username must be alphanumeric')
+        ]
+    )
 
-@validate_request(UserShema)
+    # Email field with built-in email validation
+    email = fields.Email(
+        required=True,
+        validate=validate.Email(error='Invalid email format')
+    )
+
+    # Age with numeric range validation
+    age = fields.Int(
+        required=True,
+        validate=[
+            validate.Range(min=18, max=120, 
+            error='Age must be between 18 and 120')
+        ]
+    )
+
+    # Nested validation for address
+    address = fields.Nested('AddressSchema')
+
+    # Enumeration validation
+    account_type = fields.Str(
+        validate=validate.OneOf(['free', 'premium', 'enterprise'])
+    )
+
+    # List with nested validation
+    skills = fields.List(
+        fields.Str(validate=validate.Length(min=2, max=50)), 
+        validate=validate.Length(max=10)  # Max 10 skills
+    )
+
+    # Optional field with default
+    is_active = fields.Bool(missing=True)
+
+    # Complex validation method
+    @post_load
+    def validate_user_data(self, data, **kwargs):
+        """
+        Additional complex validation logic
+        """
+        # Custom validation rule: premium accounts must have at least 3 skills
+        if (data.get('account_type') == 'premium' and 
+            (not data.get('skills') or len(data.get('skills', [])) < 3)):
+            raise ValidationError('Premium accounts must have at least 3 skills')
+        return data
+
+
 @AllowedMethods(["GET","POST"])
 async def home_handler(request: Request, response :NexioResponse, **kwargs):
     
@@ -53,14 +100,17 @@ async def home_handler(request: Request, response :NexioResponse, **kwargs):
     # # await request.session.set_session("current_proce",110)
     # # a =  await request.session.get_session("session_data")
     # print(f"username is {d}")
+    data = await request.data
+    schema = UserSchema()
+    try:
+        schema.load(data)
+    except ValidationError as err:
+        return response.json(err.messages)
     
     
-    if not await request.validate_request():
-        return response.json(request.validation_errors,status_code=400)
-   
 
-   
-    return response.json(await request.validated_data)
+    print(Schema)
+    return response.json()
 
 async def about_handler(request: Request, response, **kwargs):
     return response.json({"message": "This is the About Page."})
