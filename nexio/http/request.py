@@ -1,3 +1,4 @@
+#[ ] : validate request data to be sure it is json serializable and not just a string.
 from typing import Any, Dict, Optional, Union, List, AsyncGenerator, Callable, Tuple, Protocol
 import json
 from urllib.parse import unquote_plus, urlparse
@@ -6,6 +7,7 @@ from .parsers import parse_multipart_data,parse_form_urlencoded
 from nexio.contrib.sessions.backends.base import SessionBase
 from ..structs import URL
 from .mixins import RequestValidatonMixin
+
 class RequestExtraType(Protocol):
     session: 'SessionBase'
 
@@ -88,9 +90,7 @@ class Request(HTTPConnection, RequestValidatonMixin):
         self.scope = scope
         self._receive = receive
         self._send = send
-        self._validation_schema = None
-        self._validation_errors = {}
-        self._validated_data = None
+      
 
     @property
     async def body(self) -> bytes:
@@ -112,6 +112,8 @@ class Request(HTTPConnection, RequestValidatonMixin):
             try:
                 body = await self.body
                 self._json_data = json.loads(body.decode('utf-8'))
+                if not isinstance(self._json_data,dict):
+                    self._json_data = {}
             except (json.JSONDecodeError, UnicodeDecodeError):
                 self._json_data = {}
         return self._json_data

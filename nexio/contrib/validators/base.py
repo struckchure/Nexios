@@ -13,7 +13,7 @@ class Field(object):
                  max :int = None,
                  default :typing.Any = None,
                  custom_validators :typing.List[typing.Callable] = [],
-                 nullable = False,
+                 required = True,
                  *args , **kwargs
 
 
@@ -24,10 +24,20 @@ class Field(object):
        self.default = default
        self.custom_validators = custom_validators
        self.type = type
-       self.nullable = nullable
+       self.required = required
+       self._validators = []
 
 
 
 
     def __repr__(self) -> str:
         return "<Nexio Validator Field >"
+    
+
+    def validate(self, 
+                 func :typing.Callable,
+                 error_message :str = None):
+        assert callable(func), "Field validation function must be a callable"
+        self._validators.append(func)
+
+        return self
