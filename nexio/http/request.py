@@ -4,7 +4,7 @@ import json
 from urllib.parse import unquote_plus, urlparse
 from .cookies_parser import parse_cookies
 from .parsers import parse_multipart_data,parse_form_urlencoded
-from nexio.contrib.sessions.backends.base import SessionBase
+from nexio.sessions.backends.base import SessionBase
 from ..structs import URL
 from .mixins import RequestValidatonMixin
 

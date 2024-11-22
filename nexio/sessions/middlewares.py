@@ -1,5 +1,5 @@
 
-from nexio.contrib.sessions.backends.db import SessionStore as DBSessionStore
+from nexio.sessions.backends.db import SessionStore as DBSessionStore
 from nexio.http.request import Request
 from nexio.http.response import NexioResponse
 from nexio.middlewares.base import BaseMiddleware
