@@ -10,6 +10,7 @@ class SchemaMeta(type):
             if isinstance(value, FieldDescriptor):
 
                 cls._fields[key] = value
+                setattr(cls,key,value)
         return super().__new__(cls, name, bases, dct)
 
 
@@ -21,7 +22,8 @@ class BaseField:
 
 class Schema(metaclass = SchemaMeta):
     
-
+    _errors = {}
+    _data = {}
     def validate(self, 
                  attrs :typing.Dict[str,any]
                  ) -> None:
@@ -49,9 +51,12 @@ class Schema(metaclass = SchemaMeta):
                 self.is_valid = False
 
            
-
+            setattr(self,field_name,data.get(field_name)) #Expose field for external validation
         
+        await self.validate()
         return self
+    
+    #REVIEW: Review the code below
     
     async def get_errors(self):
         self.declared_fields :typing.Dict[str,typing.Type[FieldDescriptor]] = self.__class__._fields
@@ -59,7 +64,7 @@ class Schema(metaclass = SchemaMeta):
         for key, val in self.declared_fields.items():
             errors[key] = val._errors
 
-        return errors
+        return {**errors,**self._errors}
             
         
     

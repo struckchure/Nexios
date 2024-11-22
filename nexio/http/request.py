@@ -1,4 +1,3 @@
-#[ ] : validate request data to be sure it is json serializable and not just a string.
 from typing import Any, Dict, Optional, Union, List, AsyncGenerator, Callable, Tuple, Protocol
 import json
 from urllib.parse import unquote_plus, urlparse
