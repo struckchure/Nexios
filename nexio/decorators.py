@@ -3,7 +3,7 @@ from typing import List,Union
 from .http.request import Request
 from .http.response import NexioResponse
 from .http.request import Request
-
+import typing
 from functools import wraps
 from .types import HTTPMethod
 
@@ -43,7 +43,9 @@ class AllowedMethods(RouteDecorator):
         return wrapper 
     
 
-def validate_request(schema):
+def validate_request(
+        schema :typing.Dict[str,typing.List[typing.Callable]]
+        ):
 
     def decorator(handler):
 

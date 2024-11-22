@@ -15,7 +15,7 @@ class SessionStore(SessionBase):
     def get_model_class(cls):
         # Avoids a circular import and allows importing SessionStore when
         
-        from nexio.contrib.sessions.models import Session
+        from nexio.sessions.models import Session
 
 
         return Session

@@ -7,16 +7,18 @@ import uvicorn
 from nexio.exception_handlers import ErrorHandler
 from tortoise import Tortoise as db
 from nexio.middlewares.base import BaseMiddleware
-from nexio.contrib.sessions.models import Session
+from nexio.sessions.models import Session
 import traceback
 import os
 from tests import Aerichaq
 from contextlib import asynccontextmanager
-from nexio.contrib.sessions.backends.db import SessionStore
+from nexio.sessions.backends.db import SessionStore
 from nexio.config.settings import BaseConfig
-from nexio.contrib.sessions.middlewares import SessionMiddleware
+from nexio.sessions.middlewares import SessionMiddleware
 from nexio.decorators import validate_request
-from nexio.contrib.validator import validate,Schema,fields,post_load,ValidationError
+from nexio.validator.base import Schema
+from nexio.validator.descriptor import FieldDescriptor
+from nexio.validator.fields import StringField
 # from tests import User
 
 TORTOISE_ORM = {
@@ -25,92 +27,37 @@ TORTOISE_ORM = {
     },
     "apps": {
         "models": {
-            "models": ["tests", "aerich.models","nexio.contrib.sessions.models"], 
+            "models": ["tests", "aerich.models","nexio.sessions.models"], 
             "default_connection": "default",
         },
     },
 }
 
 
-class UserSchema(Schema):
-    """
-    Comprehensive user data validation schema
-    """
-    # Basic string field with validation
-    username = fields.Str(
-        required=True,  # Must be present
-        validate=[
-            validate.Length(min=3, max=30),  # Length constraints
-            validate.Regexp(r'^[a-zA-Z0-9_]+$', error='Username must be alphanumeric')
-        ]
-    )
 
-    # Email field with built-in email validation
-    email = fields.Email(
-        required=True,
-        validate=validate.Email(error='Invalid email format')
-    )
-
-    # Age with numeric range validation
-    age = fields.Int(
-        required=True,
-        validate=[
-            validate.Range(min=18, max=120, 
-            error='Age must be between 18 and 120')
-        ]
-    )
-
-    # Nested validation for address
-    address = fields.Nested('AddressSchema')
-
-    # Enumeration validation
-    account_type = fields.Str(
-        validate=validate.OneOf(['free', 'premium', 'enterprise'])
-    )
-
-    # List with nested validation
-    skills = fields.List(
-        fields.Str(validate=validate.Length(min=2, max=50)), 
-        validate=validate.Length(max=10)  # Max 10 skills
-    )
-
-    # Optional field with default
-    is_active = fields.Bool(missing=True)
-
-    # Complex validation method
-    @post_load
-    def validate_user_data(self, data, **kwargs):
-        """
-        Additional complex validation logic
-        """
-        # Custom validation rule: premium accounts must have at least 3 skills
-        if (data.get('account_type') == 'premium' and 
-            (not data.get('skills') or len(data.get('skills', [])) < 3)):
-            raise ValidationError('Premium accounts must have at least 3 skills')
-        return data
+class UserSchame(Schema):
+    a = FieldDescriptor(field=StringField(max_length = 3),required=True)
 
 
+a = UserSchame()
+@validate_request(Schema)
 @AllowedMethods(["GET","POST"])
 async def home_handler(request: Request, response :NexioResponse, **kwargs):
+    
     
     # response.set_cookie(key = "session",value="dunamis")
     # response.set_cookie(key = "session2",value="dunamis101")
     # d = await request.files
+    data = await request.data
 
-    # # await request.session.set_session("current_proce",110)
+    b = await a(data)
+    print(await b.get_errors())
+    await request.session.set_session("current_proce",110)
     # # a =  await request.session.get_session("session_data")
     # print(f"username is {d}")
-    data = await request.data
-    schema = UserSchema()
-    try:
-        schema.load(data)
-    except ValidationError as err:
-        return response.json(err.messages)
-    
     
 
-    print(Schema)
-    return response.json()
+    return response.json({})
 
 async def about_handler(request: Request, response, **kwargs):
     return response.json({"message": "This is the About Page."})
@@ -144,7 +91,7 @@ async def connect_db():
     try:
        db_path = os.path.join(os.path.dirname(__file__), "db.sqlite3")
        await db.init(db_url=f"sqlite:///{db_path}",
-        modules={"models": ["tests","nexio.contrib.sessions.models"]})
+        modules={"models": ["tests","nexio.sessions.models"]})
        await db.generate_schemas()
        print("connected")
 
