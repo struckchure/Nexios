@@ -21,6 +21,7 @@ from nexio.validator.base import Schema
 from nexio.validator.descriptor import FieldDescriptor
 from nexio.validator.fields import StringField,IntegerField,BooleanField,ChoiceField,FileField
 from nexio.http.parsers import UploadedFile
+from nexio.middlewares.logging import ErrorHandlerMiddleware
 # from tests import User
 
 TORTOISE_ORM = {
@@ -66,6 +67,7 @@ async def home_handler(request: Request, response :NexioResponse, **kwargs):
     files = await request.files
     # print("file is ",type(files['b']) == UploadedFile)
     b = await a(data, files)
+    print(request.headers['Origin'])
     if not b.is_valid():
         return response.json(b.errors)
     
@@ -154,7 +156,7 @@ app.mount_router(r)
 app.add_middleware(ErrorHandler)
 app.add_middleware(SessionMiddleware())
 app.add_middleware(CommonMiddleware())
-
+app.add_middleware(ErrorHandlerMiddleware())
 # app.add_middleware(LoggingMiddleware)
 
 
