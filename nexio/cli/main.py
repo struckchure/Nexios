@@ -1,8 +1,8 @@
 import argparse
-from .create_project import create_project_structure
+from nexio.cli.create_project import create_project_structure
 
 def main():
-    parser = argparse.ArgumentParser(prog="mypackage")
+    parser = argparse.ArgumentParser(prog="nexio")
     subparsers = parser.add_subparsers(dest="command")
     
     # 'create' subcommand
