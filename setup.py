@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
     name="nexio", 
     version="0.1.0",
-    author="Your Name",
+    author="Chidebele Dunamis",
     author_email="techwithdunamix@example.com",
     description="A brief description of your package",
     long_description_content_type="text/markdown",
