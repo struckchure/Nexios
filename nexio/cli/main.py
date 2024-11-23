@@ -1,5 +1,5 @@
 import argparse
-from mypackage.create_project import create_project_structure
+from .create_project import create_project_structure
 
 def main():
     parser = argparse.ArgumentParser(prog="mypackage")
