@@ -12,7 +12,8 @@ class SchemaMeta(type):
                 cls._fields[key] = value
                 setattr(cls,key,value)
         return super().__new__(cls, name, bases, dct)
-
+    
+    
 
 class BaseField:
 
@@ -24,6 +25,15 @@ class Schema(metaclass = SchemaMeta):
     
     _errors = {}
     _data = {}
+    _called = False
+    def __getattr__(self, name):
+        """Intercepts all method calls until __call__ is invoked."""
+        if not self._called:
+            raise AttributeError("You must call '__call__' before accessing any methods.")
+        else:
+            # Call the actual method or attribute once __call__ has been invoked
+            return super().__getattr__(name)
+
     def validate(self, 
                  attrs :typing.Dict[str,any]
                  ) -> None:
@@ -34,13 +44,15 @@ class Schema(metaclass = SchemaMeta):
     
     def is_valid(self):
         
-        if not hasattr(self,"_errors"):
+        if not hasattr(self,"errors"):
             return True
         return False
    
     
-    async def __call__(self, data :typing.Dict) -> typing.Any:
+    async def __call__(self, *_data_dicts :typing.Dict) -> typing.Any:
+        data  = {k: v for d in _data_dicts for k, v in d.items()}
         
+            
         self.declared_fields :typing.Dict[str,typing.Type[FieldDescriptor]] = self.__class__._fields
         self.cheking = True
         
@@ -48,23 +60,39 @@ class Schema(metaclass = SchemaMeta):
             try:
                 await descriptor.validate(data.get(field_name))
             except ValidationError as e:
-                self.is_valid = False
+                setattr(self,"error",True)
 
            
             setattr(self,field_name,data.get(field_name)) #Expose field for external validation
         
         await self.validate()
+        self._called = True
         return self
     
     #REVIEW: Review the code below
     
-    async def get_errors(self):
+    def get_errors(self):
         self.declared_fields :typing.Dict[str,typing.Type[FieldDescriptor]] = self.__class__._fields
         errors = {}
         for key, val in self.declared_fields.items():
             errors[key] = val._errors
 
         return {**errors,**self._errors}
+
+    @property
+    def errors(self):
+        errors = {}
+        for key,value in self.get_errors().items():
+            if isinstance(value, list) and len(value) > 0:
+                errors.setdefault(key,value)
+
+            if isinstance(value,str):
+                errors.setdefault(key,value)
+
+        return errors
+
+            
+    
             
         
     

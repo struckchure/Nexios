@@ -149,13 +149,16 @@ class Request(HTTPConnection, RequestValidatonMixin):
 
     @property
     async def files(self) -> Dict[str, Any]:
-        """Returns any files uploaded in the request."""
-        if self._files is None:
-            if self.content_type.lower() == 'multipart/form-data':
-                await self.form_data  # This will populate self._files
-            else:
-                self._files = {}
-        return self._files
+        """Always re-fetch the files from the body."""
+        if self.content_type.lower() == 'multipart/form-data':
+            multipart_data = await parse_multipart_data(self)
+            files = {}
+            for key, value in multipart_data.items():
+                if hasattr(value, 'filename'):  # It's a file
+                    files[key] = value
+            return files
+        return {}
+
 
     @property
     async def data(self) -> Dict[str, Any]:
@@ -175,9 +178,8 @@ class Request(HTTPConnection, RequestValidatonMixin):
             else:
                 self._parsed_data = {}
                 
-        # return {**self._parsed_data,**files}
         return self._parsed_data
-
+    
     @property
     def method(self) -> str:
         """Returns the HTTP method (GET, POST, etc.)."""
