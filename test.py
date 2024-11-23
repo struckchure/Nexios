@@ -18,7 +18,7 @@ from nexio.sessions.middlewares import SessionMiddleware
 from nexio.decorators import validate_request
 from nexio.validator.base import Schema
 from nexio.validator.descriptor import FieldDescriptor
-from nexio.validator.fields import StringField,IntegerField,BooleanField
+from nexio.validator.fields import StringField,IntegerField,BooleanField,ChoiceField
 from nexio.validator.exceptions import ValidationError
 # from tests import User
 
@@ -39,7 +39,9 @@ TORTOISE_ORM = {
 class UserSchame(Schema):
     a = FieldDescriptor(field=StringField(max_length = 3),required=True)
     b = FieldDescriptor(field=IntegerField(max=3),required=False)
-    c = FieldDescriptor(field=BooleanField(),required=True)
+    c = FieldDescriptor(field=ChoiceField(choices=[
+        "name","dunamis"
+    ]),required=True)
 
 
     async def validate(self):
