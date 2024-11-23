@@ -4,6 +4,7 @@ from typing import Dict
 from .base import BaseField
 import re,json,uuid
 from datetime import date,time,datetime
+from nexio.http.parsers import UploadedFile
 class StringField(BaseField):
 
     def __init__(self,max_length :int = None,
@@ -149,14 +150,15 @@ class JSONField(BaseField):
     
 
 class FileField(BaseField): 
-    def __init__(self, allowed_extensions=None): 
+    def __init__(self, allowed_extensions=None):
+        #SUGGESTION: Add more validaion eg, file max_size etc .
         self.allowed_extensions = allowed_extensions or []
 
     async def validate(self, value):
         if not value:
             return
-        if not isinstance(value, str):  # Assuming value is the file path
-            #FIXME:Still have to check for types
+        if not isinstance(value, UploadedFile): 
+            
             raise ValidationError("Invalid file format")
 
         if self.allowed_extensions:

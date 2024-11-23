@@ -406,7 +406,7 @@ class NexioResponse:
         self._status_code = 200
         self._body = None
         self._content_type = "application/json"
-        self._headers = {}
+        self.headers = {}
         self._response = None
         self._cookies = []
 
@@ -437,7 +437,7 @@ class NexioResponse:
             path=path,
             filename=filename,
             status_code=self._status_code,
-            headers=self._headers,
+            headers=self.headers,
             content_disposition_type=content_disposition_type
         )
         return self
@@ -447,7 +447,7 @@ class NexioResponse:
         self._response = StreamingResponse(
             content=iterator,
             status_code=self._status_code,
-            headers=self._headers,
+            headers=self.headers,
             content_type=content_type
         )
         return self
@@ -457,7 +457,7 @@ class NexioResponse:
         self._response = RedirectResponse(
             url=url,
             status_code=status_code,
-            headers=self._headers
+            headers=self.headers
         )
         return self
 
@@ -468,7 +468,7 @@ class NexioResponse:
 
     def header(self, key: str, value: str):
         """Set a response header."""
-        self._headers[key.lower()] = str(value)
+        self.headers[key.lower()] = str(value)
         return self
 
     def set_cookie(
@@ -522,19 +522,19 @@ class NexioResponse:
             self._response = JSONResponse(
                 content=self._body,
                 status_code=self._status_code,
-                headers=self._headers
+                headers=self.headers
             )
         elif self._content_type == "text/html; charset=utf-8":
             self._response = HTMLResponse(
                 content=self._body,
                 status_code=self._status_code,
-                headers=self._headers
+                headers=self.headers
             )
         else:
             self._response = Response(
                 body=self._body,
                 status_code=self._status_code,
-                headers=self._headers,
+                headers=self.headers,
                 content_type=self._content_type
             )
 

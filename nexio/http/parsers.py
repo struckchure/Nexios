@@ -26,7 +26,7 @@ class UploadedFile:
         return f"<Uploded file name={self.filename}"
     
     def __str__(self) -> str:
-        return f"<Uploded file name={self.filename}"
+        return f"<Uploded file name={self.filename}>"
 
 async def parse_multipart_data(self) -> Tuple[Dict[str, str], Dict[str, any]]:
         """Parse multipart form data, returning both form fields and files."""

@@ -16,7 +16,6 @@ class FieldDescriptor:
         self.vaidators = validators
         
         
-        print("field is ",field)
 
 
 
@@ -39,11 +38,9 @@ class FieldDescriptor:
     async def validate_type(self,value):
         from .base import BaseField #to avoid circular imports
         
-        print("fiel type is", self.field)
         if not isinstance(self.field,BaseField):
             return 
         
-        print("fiel type is", self.field)
 
         #TODO :CHECK IF IT IS A VALID FIELD
         await self.field.validate(value)

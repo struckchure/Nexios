@@ -15,11 +15,12 @@ from contextlib import asynccontextmanager
 from nexio.sessions.backends.db import SessionStore
 from nexio.config.settings import BaseConfig
 from nexio.sessions.middlewares import SessionMiddleware
+from nexio.middlewares.common import CommonMiddleware
 from nexio.decorators import validate_request
 from nexio.validator.base import Schema
 from nexio.validator.descriptor import FieldDescriptor
-from nexio.validator.fields import StringField,IntegerField,BooleanField,ChoiceField
-from nexio.validator.exceptions import ValidationError
+from nexio.validator.fields import StringField,IntegerField,BooleanField,ChoiceField,FileField
+from nexio.http.parsers import UploadedFile
 # from tests import User
 
 TORTOISE_ORM = {
@@ -38,7 +39,7 @@ TORTOISE_ORM = {
 
 class UserSchame(Schema):
     a = FieldDescriptor(field=StringField(max_length = 3),required=True)
-    b = FieldDescriptor(field=IntegerField(max=3),required=False)
+    b = FieldDescriptor(field=FileField(),required=True)
     c = FieldDescriptor(field=ChoiceField(choices=[
         "name","dunamis"
     ]),required=True)
@@ -62,14 +63,12 @@ async def home_handler(request: Request, response :NexioResponse, **kwargs):
     # response.set_cookie(key = "session2",value="dunamis101")
     # d = await request.files
     data = await request.data
-
-    b = await a(data)
-    print(await b.get_errors())
-    await request.session.set_session("current_proce",110)
-    # # a =  await request.session.get_session("session_data")
-    # print(f"username is {d}")
+    files = await request.files
+    # print("file is ",type(files['b']) == UploadedFile)
+    b = await a(data, files)
+    if not b.is_valid():
+        return response.json(b.errors)
     
-
     return response.json({})
 
 async def about_handler(request: Request, response, **kwargs):
@@ -154,6 +153,8 @@ app.mount_router(r)
 
 app.add_middleware(ErrorHandler)
 app.add_middleware(SessionMiddleware())
+app.add_middleware(CommonMiddleware())
+
 # app.add_middleware(LoggingMiddleware)
 
 
