@@ -118,7 +118,7 @@ class NexioApp:
             middlewares = []
             if methods:
                 middlewares.append(AllowedMethods(methods))
-            self.add_route(path, handler, middlewares)
+            self.add_route(Routes(path, handler, middlewares))
             return handler
         return decorator
 
