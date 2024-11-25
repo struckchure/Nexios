@@ -1,7 +1,7 @@
 from typing import Any, Callable, AsyncIterator, List, Union
 from .http.request import Request
 from .http.response import NexioResponse
-from starlette.responses import JSONResponse
+from .http.response import JSONResponse
 from .types import HTTPMethod
 from .decorators import AllowedMethods
 from .routers import Router, Routes
