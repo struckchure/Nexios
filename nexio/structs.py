@@ -1,3 +1,5 @@
+#EMULATED FROM STARLLETE
+
 import typing
 from collections.abc import Sequence
 from shlex import shlex

@@ -1,17 +1,15 @@
-from typing import Any, Awaitable, Callable, AsyncIterator, Sequence, List, Union, Optional
+from typing import Any, Callable, AsyncIterator, List, Union
 from .http.request import Request
 from .http.response import NexioResponse
 from starlette.responses import JSONResponse
-import re
 from .types import HTTPMethod
 from .decorators import AllowedMethods
 from .routers import Router, Routes
 from enum import Enum
 from .config.settings import BaseConfig
-from .files import LocalFileStorage
 import logging
 from contextlib import asynccontextmanager
-from .lifespan import _DefaultLifespan
+
 
 class NexioApp:
     def __init__(self, 
