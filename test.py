@@ -1,5 +1,5 @@
 from nexio.http.request import Request
-from nexio.application import NexioHTTPApp
+from nexio import get_application
 from nexio.decorators import AllowedMethods
 from nexio.routers import Routes,Router
 from nexio.http.response import NexioResponse
@@ -90,7 +90,7 @@ async def  middleware(request,response,nex):
     return 
 class AppConfig(BaseConfig):
     SECRET_KEY = "dunamis winner"
-app = NexioHTTPApp(config=AppConfig())
+app = get_application(config=AppConfig)
 
 class LogRequestMiddleware(BaseMiddleware):
     async def process_request(self, request, response):

@@ -6,10 +6,10 @@ from nexio.middlewares.base import BaseMiddleware
 class SessionMiddleware(BaseMiddleware):
     async def process_request(self, request:Request, response):
         
-        
+        #TODO:ALLOW TO USE THE SETTING TO CHANGE SESSION KEY NAME
 
         
-        session = DBSessionStore(session_key="hell",
+        session = DBSessionStore(session_key="hello", #CHANGE:get the sesion key from cookie
                                config=request.scope['config'])
         self.session = session
         
