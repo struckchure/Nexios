@@ -5,8 +5,7 @@ from collections.abc import Sequence
 from shlex import shlex
 from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit
 
-from starlette.concurrency import run_in_threadpool
-from starlette.types import Scope
+
 
 
 class Address(typing.NamedTuple):
@@ -437,59 +436,7 @@ class QueryParams(ImmutableMultiDict[str, str]):
         return f"{class_name}({query_string!r})"
 
 
-class UploadFile:
-    """
-    An uploaded file included as part of the request data.
-    """
 
-    def __init__(
-        self,
-        file: typing.BinaryIO,
-        *,
-        size: typing.Optional[int] = None,
-        filename: typing.Optional[str] = None,
-        headers: "typing.Optional[Headers]" = None,
-    ) -> None:
-        self.filename = filename
-        self.file = file
-        self.size = size
-        self.headers = headers or Headers()
-
-    @property
-    def content_type(self) -> typing.Optional[str]:
-        return self.headers.get("content-type", None)
-
-    @property
-    def _in_memory(self) -> bool:
-        # check for SpooledTemporaryFile._rolled
-        rolled_to_disk = getattr(self.file, "_rolled", True)
-        return not rolled_to_disk
-
-    async def write(self, data: bytes) -> None:
-        if self.size is not None:
-            self.size += len(data)
-
-        if self._in_memory:
-            self.file.write(data)
-        else:
-            await run_in_threadpool(self.file.write, data)
-
-    async def read(self, size: int = -1) -> bytes:
-        if self._in_memory:
-            return self.file.read(size)
-        return await run_in_threadpool(self.file.read, size)
-
-    async def seek(self, offset: int) -> None:
-        if self._in_memory:
-            self.file.seek(offset)
-        else:
-            await run_in_threadpool(self.file.seek, offset)
-
-    async def close(self) -> None:
-        if self._in_memory:
-            self.file.close()
-        else:
-            await run_in_threadpool(self.file.close)
 
 
 class FormData(ImmutableMultiDict[str, typing.Union[UploadFile, str]]):
