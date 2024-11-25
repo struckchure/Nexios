@@ -5,7 +5,7 @@ from .middlewares.common import CommonMiddleware
 from .config.settings import BaseConfig
 from .routers import Router
 from .middlewares.base import BaseMiddleware
-def get_application(config = BaseConfig):
+def get_application(config = BaseConfig) -> NexioApp:
     app = NexioApp(
         middlewares= [
             ErrorHandlerMiddleware(),

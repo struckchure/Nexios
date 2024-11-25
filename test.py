@@ -153,13 +153,6 @@ app.mount_router(r)
         
 
 
-app.add_middleware(ErrorHandler)
-app.add_middleware(SessionMiddleware())
-app.add_middleware(CommonMiddleware())
-app.add_middleware(ErrorHandlerMiddleware())
-# app.add_middleware(LoggingMiddleware)
-
-
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
 
