@@ -1,4 +1,6 @@
-#EMULATED FROM STARLLETE
+#EMULATED FROM STARLLETE 
+
+#REVIEW: still review these structs
 
 import typing
 from collections.abc import Sequence
@@ -24,7 +26,7 @@ class URL:
     def __init__(
         self,
         url: str = "",
-        scope: typing.Optional[Scope] = None,
+        scope: typing.Optional[str] = None,
         **components: typing.Any,
     ) -> None:
         if scope is not None:
@@ -439,26 +441,6 @@ class QueryParams(ImmutableMultiDict[str, str]):
 
 
 
-class FormData(ImmutableMultiDict[str, typing.Union[UploadFile, str]]):
-    """
-    An immutable multidict, containing both file uploads and text input.
-    """
-
-    def __init__(
-        self,
-        *args: typing.Union[
-            "FormData",
-            typing.Mapping[str, typing.Union[str, UploadFile]],
-            typing.List[typing.Tuple[str, typing.Union[str, UploadFile]]],
-        ],
-        **kwargs: typing.Union[str, UploadFile],
-    ) -> None:
-        super().__init__(*args, **kwargs)
-
-    async def close(self) -> None:
-        for key, value in self.multi_items():
-            if isinstance(value, UploadFile):
-                await value.close()
 
 
 class Headers(typing.Mapping[str, str]):
