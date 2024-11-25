@@ -1,3 +1,0 @@
-tortoise-orm
-uvicorn
-aerich
