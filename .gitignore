@@ -1,2 +1,6 @@
 env/
 .vscode/
+tests/
+build/
+nexio.egg-info/
+app.py

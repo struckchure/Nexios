@@ -1,6 +1,6 @@
 from typing import Any, List
 from typing import Callable, Union
-import re
+import re,warnings
 
 class BaseRouter:
 
@@ -28,27 +28,36 @@ class Router(BaseRouter):
         return self.routes 
     
     def add_route(self, route :"Routes") -> None:
-        self.routes.append(route)
+        if not self.prefix:
+            self.routes.append(route)
+            return
+    
+        if not self.prefix.startswith("/"):
+            warnings.warn("Routes path should start with '/' ")
+
+        route_ = Routes(f"{self.prefix}{route.raw_route}",
+                        route.handler,
+                        middleware=route.middleware)
+        self.routes.append(route_)
 
     def get_routes(self) ->List[tuple[str,Callable]]:
         return self.routes
 
 
     def __repr__(self):
-        return f"<Nexio Route prefix = {self.prefix} >"
+        return f"<Nexio Route prefix= {self.prefix} >"
 
     
         
-
-
-
 class Routes:
+    router_prefix = None
 
     def __init__(self, route,handler,middleware = None):
         assert callable(handler), "Route handler most be callable"
-        path_regex = re.sub(r"{(\w+)}", r"(?P<\1>[^/]+)", route)
-        
-        self.route, self.handler,self.middleware = re.compile(f"^{path_regex}$"), handler, middleware
+        self.path_regex = re.sub(r"{(\w+)}", r"(?P<\1>[^/]+)", route)
+        self.raw_route = route 
+        #To allow the router to be able to access the router prefix
+        self.route, self.handler,self.middleware = re.compile(f"^{self.path_regex}$"), handler, middleware
 
     def __call__(self) -> List[tuple[str,Callable]]:
 
