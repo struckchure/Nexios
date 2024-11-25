@@ -39,8 +39,8 @@ def create_project_structure(project_name: str):
     
     print("\nTo get started:")
     print(f"1. cd {project_name}")
-    print("2. pip install nexio tortoise-orm uvicorn")
-    print("3. python main.py")
+    
+    print("3. uvicorn main:app --reoload")
     print("\nYour app will be available at http://localhost:8000")
 
 def create_file(file_path: str, content: str):

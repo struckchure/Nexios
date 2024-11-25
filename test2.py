@@ -4,7 +4,7 @@ from nexio.routers import Routes
 app = get_application()
 
 async def home(req,res):
-    res.json({})
+    res.json({"text" :"hello welcome to nexio"})
 
 app.add_route(Routes("/",home))
 if __name__ == "__main__":

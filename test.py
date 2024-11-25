@@ -20,8 +20,6 @@ from nexio.decorators import validate_request
 from nexio.validator.base import Schema
 from nexio.validator.descriptor import FieldDescriptor
 from nexio.validator.fields import StringField,IntegerField,BooleanField,ChoiceField,FileField
-from nexio.http.parsers import UploadedFile
-from nexio.middlewares.logging import ErrorHandlerMiddleware
 # from tests import User
 
 TORTOISE_ORM = {

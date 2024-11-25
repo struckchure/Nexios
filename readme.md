@@ -12,127 +12,211 @@ Welcome to Nexio — a lightning-fast web framework built with Python and writte
 
 Ready to get started? Here's how you can set up Nexio and make your first web app in minutes:
 
+
 ### 1. Install Dependencies 📦
 
 Install Nexio and the required dependencies with pip:
 
 ```bash
-pip install uvicorn tortoise-orm nexio
+pip install git+https://github.com/TechWithDunamix/Nexio.git
 ```
 
 ### 2. Create Your First App 💻
 
-Create a new Python file (e.g., `app.py`) and start coding:
+```bash
+nexio create <app_name>
+```
+##### Outputs
+```md
+To get started
+1. cd <app_name>
+    
+2. cd <app_name>
+    
+3. Your app will be available at http://localhost:8000
+```
+# Folder structure
+
+```txt
+project_name/
+├── config/
+│   ├── __init__.py
+│   ├── database.py
+│   └── settings.py
+├── handlers/
+│   ├── __init__.py
+│   └── routes.py
+└── main.py
+```
+
+
+###  Basic Example
 
 ```python
-from nexio.http.request import Request
-from nexio.application import NexioHTTPApp
-from nexio.http.response import NexioResponse
+from nexio import get_application
 import uvicorn
-from tortoise import Tortoise as db
-from nexio.config.settings import BaseConfig
-from nexio.sessions.middlewares import SessionMiddleware
 from nexio.routers import Routes
+app = get_application()
 
-# Setup Tortoise ORM (SQLite in this case)
-TORTOISE_ORM = {
-    "connections": {"default": "sqlite://db.sqlite3"},
-    "apps": {"models": {"models": ["nexio.sessions.models"], "default_connection": "default"}}
-}
+async def home(req,res):
+    res.json({"text" :"hello welcome to nexio"})
 
-# Initialize the app
-app = NexioHTTPApp(config=BaseConfig)
-
-@app.on_startup
-async def connect_db():
-    await db.init(db_url="sqlite://db.sqlite3", modules={"models": ["nexio.sessions.models"]})
-    await db.generate_schemas()
-
-@app.on_shutdown
-async def disconnect_db():
-    await db.close_connections()
-
-# Define a simple route
-async def home_handler(request: Request, response: NexioResponse):
-    return response.json({"message": "Hello, World! 🌍"})
-
-# Add the route to the app
-app.add_route(Routes("/", home_handler))
-
+app.add_route(Routes("/",home))
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
 ```
 
-### 3. Run Your App 🏃‍♂️
 
-Run the app like a pro:
+# Nexio Project Structure Documentation
 
+
+```
+project_name/
+├── config/
+│   ├── __init__.py
+│   ├── database.py
+│   └── settings.py
+├── handlers/
+│   ├── __init__.py
+│   └── routes.py
+└── main.py
+```
+
+## File Descriptions
+
+### main.py
+The application entry point and core configuration file.
+```python
+# Key responsibilities:
+- Initializes the Nexio application
+- Sets up database connections
+- Configures startup/shutdown hooks
+- Mounts routes
+- Starts the ASGI server
+```
+
+Key features:
+- `get_application()`: Creates the main ASGI application instance
+- `connect_db()`: Database connection setup on startup
+- `disconnect_db()`: Clean database shutdown
+- Uvicorn server configuration
+
+### config/database.py
+Database configuration and connection settings.
+```python
+# Key responsibilities:
+- Defines database connection parameters
+- Configures ORM settings
+- Sets up model locations
+```
+
+Key components:
+- `TORTOISE_ORM`: ORM configuration dictionary
+  - Database URL configuration
+  - Model locations and namespacing
+  - Connection settings
+
+### config/settings.py
+Application-wide configuration and settings.
+```python
+# Key responsibilities:
+- Defines core application settings
+- Manages security configurations
+- Sets environment-specific variables
+```
+
+Key settings:
+- `AppConfig`: Application configuration class
+- `SECRET_KEY`: Security key for sessions/encryption
+- Can be extended for additional settings:
+  - Debug modes
+  - API versions
+  - Environment configurations
+
+### handlers/routes.py
+HTTP request handlers and route definitions.
+```python
+# Key responsibilities:
+- Defines endpoint handlers
+- Processes HTTP requests
+- Returns responses
+```
+
+Key components:
+- `home_handler`: Example route handler
+- Request processing logic
+- Response formatting
+- URL parameter handling
+
+## Usage Notes
+
+1. **Configuration Priority**:
+   - `settings.py` loads first
+   - `database.py` uses settings for configuration
+   - `main.py` brings everything together
+
+2. **Database Management**:
+   - Uses Tortoise ORM
+   - Automatic schema generation
+   - Connection lifecycle management
+
+3. **Request Flow**:
+```
+Request → main.py → routes.py → handler → response
+```
+
+4. **Development Workflow**:
+   1. Modify settings in `config/`
+   2. Add routes in `handlers/routes.py`
+   3. Run application from `main.py`
+
+## Common Extensions
+
+The basic structure can be extended with:
+
+1. **Additional Directories**:
+   - `models/`: Database models
+   - `middlewares/`: Custom middleware
+   - `schemas/`: Data validation
+   - `services/`: Business logic
+
+2. **Configuration Files**:
+   - `logging.py`: Logging configuration
+   - `middleware.py`: Middleware settings
+   - `constants.py`: Application constants
+
+## Best Practices
+
+1. **Configuration**:
+   - Keep sensitive data in environment variables
+   - Use different settings for development/production
+   - Document all configuration options
+
+2. **Route Handlers**:
+   - Keep handlers focused and simple
+   - Use type hints for better code clarity
+   - Return consistent response formats
+
+3. **Database**:
+   - Use migrations for schema changes
+   - Implement proper connection pooling
+   - Handle connection errors gracefully
+
+## Quick Start
 ```bash
-python app.py
+# 1. Install dependencies
+pip install git+https://github.com/TechWithDunamix/Nexio.git
+
+
+# 2. Run the application
+uvicorn main:app --reload
+
+# 3. Access the API
+curl http://localhost:8000
 ```
 
-Your app will be running at `http://127.0.0.1:8000`. Quick, right? 😎
-
-### 4. Database Setup (Tortoise ORM) 🗄️
-
-No more headaches setting up the database. With Tortoise ORM, just set up the connection, and you're good to go. It supports SQLite, PostgreSQL, MySQL, and more!
-
-```python
-# Tortoise ORM setup
-TORTOISE_ORM = {
-    "connections": {"default": "sqlite://db.sqlite3"},
-    "apps": {"models": {"models": ["nexio.sessions.models"], "default_connection": "default"}}
-}
-```
-
-### 5. Session Management 🔐
-
-Managing sessions? No sweat! Nexio handles sessions out-of-the-box:
-
-```python
-# Set session data
-await request.session.set("user", "dunamis")
-
-# Get session data
-user = await request.session.get("user")
-```
-
-### 6. Easy Routing 🚗
-
-With Nexio, routing is as simple as adding a decorator:
-
-```python
-app.add_route(Routes("/user/{user_id}", user_handler))
-```
-
-### 7. Validation Like a Boss 🧑‍⚖️
-
-Want to validate incoming data? Nexio's got you covered! Use the Schema class to define your rules:
-
-```python
-from nexio.validator.base import Schema
-from nexio.validator.fields import StringField, IntegerField
-
-class UserSchema(Schema):
-    username = FieldDescriptor(field=StringField(), required=True)
-    age = FieldDescriptor(field=IntegerField(min=18), required=True)
-```
-
-## Key Features ✨
-
-- **Ultra Fast**: You won't believe how fast this thing is. Blink, and the server's up and running! ⚡
-- **Database Integration**: Use Tortoise ORM with minimal setup, even for complex databases. 📦
-- **Built-in Session Management**: Keep track of user sessions without breaking a sweat. 🧳
-- **Flexible Routing**: Add routes quickly and easily with Nexio's intuitive syntax. 🚗
-- **Validation Made Easy**: Use schemas to validate user input like a pro! ✅
-- **Middleware Support**: Add custom middlewares for extra features like logging, error handling, etc. 🔧
-
-## Contributing 🤝
-
-If you're feeling generous and want to contribute to Nexio (or just want to make it better), feel free to create a pull request or open an issue on GitHub! I'll be more than happy to review it. 🔥
-
-## Conclusion 🎯
-
-Nexio is a fast, flexible, and fun-to-use web framework that helps you get your ideas off the ground quickly! Whether you're building an API or a full-fledged web app, Nexio is your go-to tool. Don't waste time with complex frameworks — use Nexio and make things happen. 🚀
-
-Got questions or feedback? Hit me up! 😎
+The application will be available at `http://localhost:8000` with:
+- Database auto-configuration
+- Basic route setup
+- Error handling
+- Clean shutdown support
