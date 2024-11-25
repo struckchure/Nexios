@@ -96,7 +96,9 @@ def models_code():
 '''
 
 def settings_code():
-    return '''from nexio.config.settings import BaseConfig
+    return '''
+    import os
+    from nexio.config.settings import BaseConfig
 
 migration = {
     "connections": {
