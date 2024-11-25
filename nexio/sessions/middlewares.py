@@ -8,8 +8,8 @@ class SessionMiddleware(BaseMiddleware):
         
         #TODO:ALLOW TO USE THE SETTING TO CHANGE SESSION KEY NAME
 
-        
-        session = DBSessionStore(session_key="hello", #CHANGE:get the sesion key from cookie
+        key = request.cookies.get("session_id")
+        session = DBSessionStore(session_key=key, #CHANGE:get the sesion key from cookie
                                config=request.scope['config'])
         self.session = session
         
