@@ -12,7 +12,8 @@ setup(
     install_requires=[
         "tortoise-orm", 
         "uvicorn",
-        "aerich"
+        "aerich",
+        "asgiref"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
