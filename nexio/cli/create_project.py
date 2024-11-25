@@ -85,15 +85,8 @@ async def disconnect_db():
     except Exception as e:
         print(f"Database disconnect error: {e}")
 
-@asynccontextmanager
-async def lifespan():
-    try:
-        await connect_db()
-        yield
-    finally:
-        await disconnect_db()
 
-# Add single route
+
 app.add_route(Routes("/", home_handler))
 
 if __name__ == "__main__":
