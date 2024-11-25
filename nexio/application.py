@@ -13,12 +13,14 @@ import logging
 from contextlib import asynccontextmanager
 from .lifespan import _DefaultLifespan
 
-class NexioHTTPApp:
+class NexioApp:
     def __init__(self, 
-                 config: Enum = BaseConfig):
+                 config: Enum = BaseConfig,
+                 middlewares :list = [],
+                 ):
         self.config = config
         self.routes: List[str] = []
-        self.middlewares: List = []
+        self.middlewares: List = middlewares
         self.startup_handlers: List[Callable] = []
         self.shutdown_handlers: List[Callable] = []
         self.logger = logging.getLogger("nexio")
@@ -57,11 +59,7 @@ class NexioHTTPApp:
                 try:
                     await handler()
                 except Exception as e:
-                    # self.logger.error(f"Shutdown handler error: {str(e)}")
-
-                    #funny way to skip this exception .....
-
-                    # BUG:  event loop closes early(can not run async function when loop is closed)
+                   
                     pass
             self.logger.info("Application shutdown completed")
 
@@ -98,7 +96,7 @@ class NexioHTTPApp:
             if match:
                 kwargs = match.groupdict()
                 request.url_params = kwargs
-                request.app_config = self.config
+                
                 try:
                     await self.execute_middleware_stack(request,
                                                       response,
@@ -154,11 +152,8 @@ class NexioHTTPApp:
                                 # TODO: Dig deeper and give our event loop some TLC.
 
                                 if message["type"] == "lifespan.shutdown":
-                                    try:
-                                        break
-                                    except RuntimeError:
-                                        pass
-                            await send({"type": "lifespan.shutdown.complete"})
+                                    await send({"type": "lifespan.shutdown.complete"})
+                                    break
                             return
                     except Exception as e:
                         self.logger.error(f"Lifespan error: {str(e)}")
