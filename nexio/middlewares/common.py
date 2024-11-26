@@ -4,6 +4,7 @@ from nexio.http.request import Request
 
 class CommonMiddleware(BaseMiddleware):
     async def process_request(self, request: Request, response):
+        
         pass
 
     async def process_response(self, request: Request, response: NexioResponse):

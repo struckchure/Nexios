@@ -25,10 +25,7 @@ class Schema(metaclass = SchemaMeta):
     _called = False
     _validated_data = {}
 
-    async def validate(self, 
-                 attrs :typing.Dict[str,any]
-                 ) -> None:
-        
+    async def validate(self):
         pass 
     
     def is_valid(self):
@@ -48,6 +45,12 @@ class Schema(metaclass = SchemaMeta):
         for field_name, descriptor in self.declared_fields.items():
             try:
                 value = await descriptor.validate(data.get(field_name))
+                try:
+                    defined_validator = getattr(self,f"validate_{field_name}")
+                    if callable(defined_validator):
+                        value = await defined_validator(value)
+                except AttributeError:
+                    pass
                 self._validated_data[field_name] = value
             except ValidationError as e:
                 setattr(self,"error",True)
@@ -55,7 +58,7 @@ class Schema(metaclass = SchemaMeta):
             
             setattr(self,field_name,data.get(field_name))
         
-        await self.validate(data)
+        await self.validate()
         self._called = True
         return self
     

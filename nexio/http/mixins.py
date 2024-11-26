@@ -1,5 +1,5 @@
-#TODO : implment vlidated data dict 
 
+import warnings
 class RequestValidatonMixin:
     validated = False
     _validation_schema = None
@@ -11,6 +11,9 @@ class RequestValidatonMixin:
     async def validate_request(self, data = None):
         if not data:
             data = await self.json, await self.data, await self.files
+        if not self._validation_schema:
+            warnings.warn("No schema found, use @validate_request(Shema) for nexio.decorators")
+            return None
         schema = await self._validation_schema()(*data)
 
         if schema.is_valid():
