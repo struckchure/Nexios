@@ -6,3 +6,4 @@ nexio.egg-info/
 app.py
 __pycache__/
 *.pyc
+test_single_app.py

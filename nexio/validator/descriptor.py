@@ -1,10 +1,11 @@
 import typing
 from .exceptions import ValidationError
+from .fields import BaseField
 class FieldDescriptor:
 
     def __init__(
             self,
-            field ,
+            field :BaseField,
             validators :typing.Dict[str,typing.Callable] = [],
             required :bool = True,
             default :typing.Any = None
@@ -20,27 +21,29 @@ class FieldDescriptor:
 
 
     async def validate(self,value):
-        self._errors :typing.List = []
+        self._validation_errors = []
+        
         if not self.required and not value:
-            return
-        try:
+            return value
+        
+        
 
-            await self.validate_required(value)
-            
-            await self.validate_type(value)
+        await self.validate_required(value)
+        try:
+            return await self.field.validate(value)
+        
         except ValidationError as e:
-            self._errors.append(str(e))
+            self._validation_errors.append(str(e))
+        finally:
+            if len(self._validation_errors) > 0:
+                raise ValidationError()
+            
+        
 
     async def validate_required(self, value):
         if self.required == True and not value and not self.default:
-            self._errors.append("Required Field")
-
-    async def validate_type(self,value):
-        from .base import BaseField #to avoid circular imports
-        
-        if not isinstance(self.field,BaseField):
-            return 
+            self._validation_errors.append("Required Field")
+            raise ValidationError("Required Field")
         
 
-        #TODO :CHECK IF IT IS A VALID FIELD
-        await self.field.validate(value)
+    

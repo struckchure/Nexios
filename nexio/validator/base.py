@@ -15,81 +15,60 @@ class SchemaMeta(type):
     
     
 
-class BaseField:
 
-    async def validate(self, value):
-        pass
 
 
 class Schema(metaclass = SchemaMeta):
     
-    _errors = {}
+    _validation_errors = {}
     _data = {}
     _called = False
-    def __getattr__(self, name):
-        """Intercepts all method calls until __call__ is invoked."""
-        if not self._called:
-            raise AttributeError("You must call '__call__' before accessing any methods.")
-        else:
-            # Call the actual method or attribute once __call__ has been invoked
-            return super().__getattr__(name)
+    _validated_data = {}
 
-    def validate(self, 
+    async def validate(self, 
                  attrs :typing.Dict[str,any]
                  ) -> None:
         
         pass 
-
-
     
     def is_valid(self):
-        
-        if not hasattr(self,"errors"):
+        assert self._called == True, "__call__ must be callaed before accessing other validator methoods"
+        if len(self.validation_errors.items()) == 0:
             return True
         return False
    
     
     async def __call__(self, *_data_dicts :typing.Dict) -> typing.Any:
         data  = {k: v for d in _data_dicts for k, v in d.items()}
-        
+        self._validation_errors.clear()
             
         self.declared_fields :typing.Dict[str,typing.Type[FieldDescriptor]] = self.__class__._fields
         self.cheking = True
         
         for field_name, descriptor in self.declared_fields.items():
             try:
-                await descriptor.validate(data.get(field_name))
+                value = await descriptor.validate(data.get(field_name))
+                self._validated_data[field_name] = value
             except ValidationError as e:
                 setattr(self,"error",True)
-
-           
-            setattr(self,field_name,data.get(field_name)) #Expose field for external validation
+                self._validation_errors[field_name] = descriptor._validation_errors
+            
+            setattr(self,field_name,data.get(field_name))
         
-        await self.validate()
+        await self.validate(data)
         self._called = True
         return self
     
-    #REVIEW: Review the code below
     
-    def get_errors(self):
-        self.declared_fields :typing.Dict[str,typing.Type[FieldDescriptor]] = self.__class__._fields
-        errors = {}
-        for key, val in self.declared_fields.items():
-            errors[key] = val._errors
-
-        return {**errors,**self._errors}
-
+    
     @property
-    def errors(self):
-        errors = {}
-        for key,value in self.get_errors().items():
-            if isinstance(value, list) and len(value) > 0:
-                errors.setdefault(key,value)
-
-            if isinstance(value,str):
-                errors.setdefault(key,value)
-
-        return errors
+    def validation_errors(self):
+        
+        return self._validation_errors
+    
+    @property
+    def validated_data(self):
+        return self._validated_data
 
             
     
@@ -97,26 +76,6 @@ class Schema(metaclass = SchemaMeta):
         
     
 
-
-
-
-class BaseValidator:
-
-    """
-    Base validation class which all other validators will inherit from
-    """
-    
-    def __init__(self, **kwargs):
-        pass 
-
-    
-    @abstractmethod
-    async def validate(self, value):
-        pass 
-
-    @abstractmethod
-    async def get_error_message(self):
-        pass 
 
 
 
