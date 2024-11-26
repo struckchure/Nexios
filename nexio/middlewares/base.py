@@ -3,11 +3,8 @@ class BaseMiddleware:
         pass
     async def __call__(self, request, response, next_middleware):
         """Call the middleware process and pass control to the next middleware in the stack."""
-        # First, process the request
         await self.process_request(request, response)
-        # Pass control to the next middleware or the main handler
         await next_middleware()
-        # Finally, process the response
         await self.process_response(request, response)
 
     async def process_request(self, request, response):

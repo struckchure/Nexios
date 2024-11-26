@@ -4,14 +4,18 @@ from .middlewares.logging import ErrorHandlerMiddleware
 from .middlewares.common import CommonMiddleware
 from .config.settings import BaseConfig
 from .routers import Router
-from .middlewares.base import BaseMiddleware
+from .middlewares.cors import CORSMiddleware
 def get_application(config = BaseConfig) -> NexioApp:
+    config=config()
+    
     app = NexioApp(
         middlewares= [
             ErrorHandlerMiddleware(),
-            CommonMiddleware()
+            CommonMiddleware(),
+            CORSMiddleware(allow_origins="http://127.0.0.1:5500")
+
         ],
-        config=config()
+        config=config
     )
 
     return app
