@@ -162,7 +162,6 @@ class Request(HTTPConnection, RequestValidatonMixin):
 
     @property
     async def data(self) -> Dict[str, Any]:
-        files = await self.files
         """
         Returns all parsed data from the request body, combining:
         - JSON data (if content-type is application/json)

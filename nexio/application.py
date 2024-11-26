@@ -115,10 +115,8 @@ class NexioApp:
 
     def route(self, path: str, methods: List[Union[str, HTTPMethod]] = None) -> Callable:
         def decorator(handler: Callable) -> Callable:
-            middlewares = []
-            if methods:
-                middlewares.append(AllowedMethods(methods))
-            self.add_route(Routes(path, handler, middlewares))
+            handler = AllowedMethods(methods)(handler)
+            self.add_route(Routes(path, handler))
             return handler
         return decorator
 
