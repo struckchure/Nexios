@@ -186,7 +186,6 @@ class JSONField(BaseField):
 
 class FileField(BaseField): 
     def __init__(self, allowed_extensions=None,max_size = None, min_size = None):
-        #SUGGESTION: Add more validaion eg, file max_size etc .
         self.allowed_extensions = allowed_extensions or []
         self.max_size = max_size
         self.min_size = min_size

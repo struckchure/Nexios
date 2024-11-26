@@ -1,3 +1,4 @@
+#NOTE: be careful arrounf here thise gave me a tough time abeg
 from typing import Tuple,Dict,Any
 import re
 from io import BytesIO
@@ -6,18 +7,19 @@ from nexio.utils.files import UploadedFile
 
 
 async def parse_multipart_data(self) -> Tuple[Dict[str, str], Dict[str, any]]:
-        """Parse multipart form data, returning both form fields and files."""
         if self._form_data is None or self._files is None:
             content_type = self.headers.get('content-type', '')
             if not content_type.startswith('multipart/form-data'):
                 return {}, {}
             
-            # Extract boundary from content type
-            match = re.search(r'boundary=([^;]+)', content_type)
+            match = re.search(r'boundary=((?:[^;"]+|"[^"]+"))', content_type)
             if not match:
                 return {}, {}
             
-            boundary = match.group(1)
+            boundary = match.group(1).strip('"').strip()
+            if boundary.startswith('--'):
+                boundary = boundary[2:]
+            
             body = await self.body
             
             parser = MultipartParser(boundary)
@@ -56,15 +58,23 @@ class MultipartParser:
     """Parser for multipart/form-data content."""
     def __init__(self, boundary: str):
         self.boundary = boundary.encode()
-        self.boundary_length = len(self.boundary)
+        self.prefixed_boundary = b'--' + self.boundary
+        self.possible_boundaries = [
+            b'\r\n--' + self.boundary,  # Standard boundary with CRLF
+            b'\n--' + self.boundary,    # Unix-style newline
+            b'--' + self.boundary,      # No newline prefix
+            self.boundary               # Raw boundary
+        ]
     
     def parse_headers(self, headers_raw: bytes) -> Dict[str, str]:
         """Parse the headers section of a multipart part."""
         headers = {}
         for header_line in headers_raw.split(b'\r\n'):
+            if not header_line:
+                continue
             if b':' in header_line:
                 name, value = header_line.split(b':', 1)
-                headers[name.decode().lower()] = value.decode().strip()
+                headers[name.decode().lower().strip()] = value.decode().strip()
         return headers
     
     def get_content_disposition(self, headers: Dict[str, str]) -> Dict[str, str]:
@@ -80,16 +90,38 @@ class MultipartParser:
                 params[key.strip()] = value.strip().strip('"\'')
         return params
 
+    def split_parts(self, body: bytes) -> list:
+        """Split the body into parts using any valid boundary format."""
+        # First try splitting with most common boundary format
+        parts = body.split(b'\r\n--' + self.boundary)
+        
+        # If that didn't work (only one part), try other formats
+        if len(parts) == 1:
+            for boundary in self.possible_boundaries:
+                parts = body.split(boundary)
+                if len(parts) > 1:
+                    break
+        
+        return parts
+
     async def parse(self, body: bytes) -> Tuple[Dict[str, str], Dict[str, UploadedFile]]:
         """Parse multipart form data into fields and files."""
         form_data = {}
         files = {}
         
-        parts = body.split(b'--' + self.boundary)
+        if not body:
+            return form_data, files
+
+        # Split into parts using flexible boundary matching
+        parts = self.split_parts(body)
         
-        # Skip the first empty part and the last boundary mark
-        for part in parts[1:-1]:
-            # Remove leading/trailing whitespace and CRLF
+        # Process each part
+        for part in parts:
+            # Skip empty parts and the final boundary marker
+            if not part or part.strip() in [b'', b'--']:
+                continue
+            
+            # Clean up part boundaries
             part = part.strip(b'\r\n')
             if not part:
                 continue
@@ -101,6 +133,13 @@ class MultipartParser:
                 
             headers_raw = part[:headers_end]
             content = part[headers_end + 4:]
+            
+            # Clean up any trailing boundaries
+            for boundary in self.possible_boundaries:
+                if content.endswith(boundary + b'--'):
+                    content = content[:-len(boundary + b'--')]
+                elif content.endswith(boundary):
+                    content = content[:-len(boundary)]
             
             headers = self.parse_headers(headers_raw)
             disposition = self.get_content_disposition(headers)
@@ -114,16 +153,16 @@ class MultipartParser:
                 # This is a file upload
                 filename = disposition['filename']
                 content_type = headers.get('content-type', 'application/octet-stream')
-                file_obj = BytesIO(content)
+                file_obj = BytesIO(content.strip())
                 uploaded_file = UploadedFile(
                     filename=filename,
                     content_type=content_type,
                     body=file_obj,
-                    size=len(content)
+                    size=len(content.strip())
                 )
                 files[field_name] = uploaded_file
             else:
                 # This is a regular form field
-                form_data[field_name] = content.decode()
+                form_data[field_name] = content.strip().decode()
         
-        return form_data, files 
+        return form_data, files
