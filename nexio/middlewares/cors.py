@@ -22,6 +22,22 @@ class CORSMiddleware(BaseMiddleware):
         max_age: int = 600,
     ):
         super().__init__()
+        if allow_methods is None:
+            allow_methods = ALL_METHODS
+        if allow_origins is None:
+            allow_origins = []
+        if blacklist_origins is None:
+            blacklist_origins = []
+        if allow_headers is None:
+            allow_headers = list(BASIC_HEADERS)
+        if blacklist_headers is None:
+            blacklist_headers = []
+        if allow_credentials is None:
+            allow_credentials = False
+        if expose_headers is None:
+            expose_headers = []
+        if max_age is None:
+            max_age = 600
 
         # Ensure that allow_methods includes all methods if "*" is specified
         if "*" in allow_methods:
