@@ -185,9 +185,11 @@ class JSONField(BaseField):
     
 
 class FileField(BaseField): 
-    def __init__(self, allowed_extensions=None):
+    def __init__(self, allowed_extensions=None,max_size = None, min_size = None):
         #SUGGESTION: Add more validaion eg, file max_size etc .
         self.allowed_extensions = allowed_extensions or []
+        self.max_size = max_size
+        self.min_size = min_size
 
     async def validate(self, value):
         if not value:
@@ -195,7 +197,7 @@ class FileField(BaseField):
         if not isinstance(value, UploadedFile): 
             
             raise ValidationError("Invalid file format")
-
+        await self.validate_size(value)
         if self.allowed_extensions:
             extension = value.split('.')[-1].lower()
             if extension not in self.allowed_extensions:
@@ -203,6 +205,17 @@ class FileField(BaseField):
                     f"File type not allowed. Allowed extensions: {', '.join(self.allowed_extensions)}"
                 )
         return value
+    
+    async def validate_size(self, value :UploadedFile):
+        if not value:
+            return value
+        
+        if self.min_size and value.size < self.min_size:
+            raise ValidationError("File size too small")
+        
+        if self.max_size and value.size > self.max_size:
+            raise ValidationError("File size too large")
+
 
     def __str__(self):
         return "File Field Validator"
