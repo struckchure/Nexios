@@ -10,56 +10,71 @@ from .config.settings import BaseConfig
 import logging
 from contextlib import asynccontextmanager
 
-
 class NexioApp:
     def __init__(self, 
                  config: Enum = BaseConfig,
-                 middlewares :list = [],
-                 ):
+                 middlewares: list = None):
         self.config = config
         self.routes: List[str] = []
-        self.middlewares: List = middlewares
+        self.middlewares: List = middlewares or []
         self.startup_handlers: List[Callable] = []
         self.shutdown_handlers: List[Callable] = []
         self.logger = logging.getLogger("nexio")
-        self._db_initialized = False
-        
 
     def on_startup(self, handler: Callable) -> Callable:
-        """
-        Decorator to register startup handlers
-        """
+        """Decorator to register startup handlers"""
         self.startup_handlers.append(handler)
         return handler
 
     def on_shutdown(self, handler: Callable) -> Callable:
-        """
-        Decorator to register shutdown handlers
-        """
+        """Decorator to register shutdown handlers"""
         self.shutdown_handlers.append(handler)
         return handler
 
-    @asynccontextmanager
-    async def lifespan(self) -> AsyncIterator[None]:
-        """
-        Application context manager that handles startup and shutdown events
-        by executing all registered handlers in sequence.
-        """
-        try:
-            self.logger.info("Application startup initiated")
-            for handler in self.startup_handlers:
+    async def startup(self) -> None:
+        """Execute all startup handlers sequentially"""
+        for handler in self.startup_handlers:
+            await handler()
+
+    async def shutdown(self) -> None:
+        """Execute all shutdown handlers sequentially with error handling"""
+        for handler in self.shutdown_handlers:
+            try:
                 await handler()
-            self.logger.info("Application startup completed")
-            yield
-        finally:
-            self.logger.info("Application shutdown initiated")
-            for handler in self.shutdown_handlers:
-                try:
-                    await handler()
-                except Exception as e:
-                   
-                    pass
-            self.logger.info("Application shutdown completed")
+            except Exception as e:
+                self.logger.error(f"Shutdown handler error: {str(e)}")
+
+    async def handle_lifespan(self, receive: Callable, send: Callable) -> None:
+        """Handle ASGI lifespan protocol events"""
+        try:
+            while True:
+                message = await receive()
+                
+                if message["type"] == "lifespan.startup":
+                    try:
+                        await self.startup()
+                        await send({"type": "lifespan.startup.complete"})
+                    except Exception as e:
+                        self.logger.error(f"Startup error: {str(e)}")
+                        await send({"type": "lifespan.startup.failed", "message": str(e)})
+                        return
+                
+                elif message["type"] == "lifespan.shutdown":
+                    try:
+                        await self.shutdown()
+                        await send({"type": "lifespan.shutdown.complete"})
+                        return
+                    except Exception as e:
+                        self.logger.error(f"Shutdown error: {str(e)}")
+                        await send({"type": "lifespan.shutdown.failed", "message": str(e)})
+                        return
+
+        except Exception as e:
+            self.logger.error(f"Lifespan error: {str(e)}")
+            if message["type"].startswith("lifespan.startup"):
+                await send({"type": "lifespan.startup.failed", "message": str(e)})
+            else:
+                await send({"type": "lifespan.shutdown.failed", "message": str(e)})
 
     async def execute_middleware_stack(self, 
                                      request: Request,
@@ -67,7 +82,7 @@ class NexioApp:
                                      middleware: Callable, 
                                      handler: Callable, 
                                      **kwargs) -> Any:
-        stack = self.middlewares
+        stack = self.middlewares.copy()
         if callable(middleware):
             stack.append(middleware)
         index = -1 
@@ -107,6 +122,7 @@ class NexioApp:
                         status_code=500
                     )
                     await error_response(scope, receive, send)
+                    return
                 await response(scope, receive, send)
                 return
 
@@ -114,6 +130,7 @@ class NexioApp:
         await error_response(scope, receive, send)
 
     def route(self, path: str, methods: List[Union[str, HTTPMethod]] = None) -> Callable:
+        """Decorator to register routes with optional HTTP methods"""
         def decorator(handler: Callable) -> Callable:
             handler = AllowedMethods(methods)(handler)
             self.add_route(Routes(path, handler))
@@ -121,39 +138,23 @@ class NexioApp:
         return decorator
 
     def add_route(self, route: Routes) -> None:
+        """Add a route to the application"""
         route, handler, middleware = route()
         self.routes.append((route, handler, middleware))
 
     def add_middleware(self, middleware: Callable) -> None:
+        """Add middleware to the application"""
         if callable(middleware):
             self.middlewares.append(middleware)
 
     def mount_router(self, router: Router) -> None:
+        """Mount a router and all its routes to the application"""
         for route in router.get_routes():
             self.add_route(route)
 
     async def __call__(self, scope: dict, receive: Callable, send: Callable) -> None:
+        """ASGI application callable"""
         if scope["type"] == "lifespan":
-            while True:
-                message = await receive()
-                if message["type"] == "lifespan.startup":
-                    try:
-                        async with self.lifespan():
-                            await send({"type": "lifespan.startup.complete"})
-                            # Wait for shutdown message
-                            while True:
-                                message = await receive()
-                                # Handling RuntimeError because our event loop sometimes decides to clock out early.
-                                # Skipping over it for now, but we should revisit and see if it just needs a coffee break.
-                                # TODO: Dig deeper and give our event loop some TLC.
-
-                                if message["type"] == "lifespan.shutdown":
-                                    await send({"type": "lifespan.shutdown.complete"})
-                                    break
-                            return
-                    except Exception as e:
-                        self.logger.error(f"Lifespan error: {str(e)}")
-                        await send({"type": "lifespan.startup.failed", "message": str(e)})
-                    return
+            await self.handle_lifespan(receive, send)
         elif scope["type"] == "http":    
             await self.handle_request(scope, receive, send)
