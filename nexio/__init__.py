@@ -5,6 +5,7 @@ from .middlewares.common import CommonMiddleware
 from .config.settings import BaseConfig
 from .routers import Router
 from .middlewares.cors import CORSMiddleware
+import os
 def get_application(config = BaseConfig) -> NexioApp:
     config=config()
     
@@ -28,5 +29,5 @@ def get_application(config = BaseConfig) -> NexioApp:
         ],
         config=config
     )
-
+    
     return app
