@@ -42,6 +42,7 @@ class UploadedFile:
         # Use asyncio to prevent blocking during write
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, self._sync_save, path, content)
+        return path
 
     def _sync_save(self, path: str, content: bytes) -> None:
         """Synchronous save operation to be run in executor."""
