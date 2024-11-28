@@ -1,7 +1,22 @@
-![Nexio Logo](docs/logo.svg)
-# Nexio API Framework 🚀💻
+Metadata-Version: 2.1
+Name: Nexio
+Version: 0.1.0
+Summary: Nexio is a modern, high-performance ASGI web framework for Python that emphasizes developer productivity without sacrificing speed. Built on top of industry-standard ASGI specifications, Nexio provides an elegant, batteries-included approach to web development with built-in support for sessions, file storage, and background task processing.
+Home-page: https://github.com/techwithdunamix/nexio
+Author: Chidebele Dunamis
+Author-email: Dunamis <techwithdunamix@gmail.com>
+Project-URL: Homepage, https://github.com/techwithdunamix/nexio
+Project-URL: Issues, https://github.com/techwithdunamix/nexio/ssues
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
 
-Welcome to **Nexio**, a lightning-fast web framework built with Python, designed by **TechWithDunamix** — a Nigerian developer! 🇳🇬💡 Nexio is your go-to framework for building APIs combining speed and simplicity to supercharge your projects. ⚡
+![Nexio Logo](docs/logo.svg)
+# Nexio HTTP Framework 🚀💻
+
+Welcome to **Nexio**, a lightning-fast web framework built with Python, designed by **TechWithDunamix** — a Nigerian developer! 🇳🇬💡 Nexio is your go-to framework for building APIs, web apps, and everything in between, combining speed and simplicity to supercharge your projects. ⚡
 
 ---
 

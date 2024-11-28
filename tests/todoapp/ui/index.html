@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f3f4f6;
+            color: #374151;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #6d28d9;
+            margin-bottom: 20px;
+        }
+
+        .form-container,
+        .task-list-container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-container h2,
+        .task-list-container h2 {
+            margin-bottom: 15px;
+            font-size: 1.25rem;
+            color: #1f2937;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            margin-bottom: 5px;
+            color: #6b7280;
+        }
+
+        input[type="text"],
+        textarea,
+        select,
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        textarea {
+            resize: none;
+        }
+
+        button {
+            display: inline-block;
+            width: 100%;
+            padding: 10px 15px;
+            font-size: 1rem;
+            font-weight: bold;
+            background-color: #6d28d9;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #5b21b6;
+        }
+
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+        }
+
+        .task-item h3 {
+            font-size: 1rem;
+            margin: 0;
+            color: #1f2937;
+        }
+
+        .task-item p {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin: 5px 0 0;
+        }
+
+        .badge {
+            padding: 3px 8px;
+            font-size: 0.75rem;
+            border-radius: 4px;
+            color: #ffffff;
+        }
+
+        .badge-low {
+            background-color: #10b981;
+        }
+
+        .badge-medium {
+            background-color: #fbbf24;
+        }
+
+        .badge-high {
+            background-color: #ef4444;
+        }
+
+        .delete-btn {
+            background-color: #ef4444;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+
+        .delete-btn:hover {
+            background-color: #dc2626;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <h1>Task Manager</h1>
+
+        <!-- Task Form -->
+        <div class="form-container">
+            <h2>Add New Task</h2>
+            <form id="taskForm">
+                <div class="form-group">
+                    <label for="name">Task Name</label>
+                    <input type="text" id="name" name="name" placeholder="Enter task name" required>
+                </div>
+                <div class="form-group">
+                    <label for="detail">Task Detail</label>
+                    <textarea id="detail" name="detail" placeholder="Enter task details" rows="3" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="priority">Priority</label>
+                    <select id="priority" name="priority">
+                        <option value="LOW">Low</option>
+                        <option value="MEDIUM" selected>Medium</option>
+                        <option value="HIGH">High</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="image">Image (Optional)</label>
+                    <input type="file" id="image" name="image">
+                </div>
+                <button type="submit">Add Task</button>
+            </form>
+        </div>
+
+        <!-- Task List -->
+        <div class="task-list-container">
+            <h2>Task List</h2>
+            <div id="taskList">
+                <!-- Dynamic tasks will be added here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const taskForm = document.getElementById('taskForm');
+        const taskList = document.getElementById('taskList');
+
+        let tasks = [];
+
+        function renderTasks() {
+            taskList.innerHTML = tasks.map((task, index) => `
+        <div class="task-item">
+          <div>
+            <h3>${task.name}</h3>
+            <p>${task.detail}</p>
+            <span class="badge badge-${task.priority.toLowerCase()}">${task.priority}</span>
+          </div>
+          <button class="delete-btn" onclick="deleteTask(${index})">Delete</button>
+        </div>
+      `).join('');
+        }
+
+        taskForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById('name').value.trim();
+            const detail = document.getElementById('detail').value.trim();
+            const priority = document.getElementById('priority').value;
+            const image = document.getElementById('image').files[0];
+            const newTask = { name, detail, priority, image };
+            const data = new FormData()
+            data.append("name", name)
+            data.append("detail", detail)
+            data.append("priority", priority)
+            data.append("image", image)
+
+            fetch("http://localhost:8000/api/task/create", { method: "post", body: data })
+                .then(response => (
+                    response.json()
+                ))
+                .then(data => {
+                    console.log(data)
+                })
+            // tasks.push(newTask);
+
+            // // renderTasks();
+            // // taskForm.reset();
+        });
+
+        function deleteTask(index) {
+            tasks.splice(index, 1);
+            renderTasks();
+        }
+
+        function createTask() {
+
+        }
+
+    </script>
+</body>
+
+</html>

@@ -13,7 +13,11 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
-
+    environment:
+      name: pypi
+      url: https://pypi.org/p/nexioapi
+    permissions:
+      id-token: write
     steps:
       - name: Check out code
         uses: actions/checkout@v3
