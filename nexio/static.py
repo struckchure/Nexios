@@ -1,92 +1,54 @@
 from pathlib import Path
-import mimetypes
+# Initialize app
+
+from pathlib import Path
+
 import os
-from typing import Union, Optional
-from nexio.http.response import NexioResponse
-import aiofiles
-import stat
-
-class StaticFileResponse(NexioResponse):
-    def __init__(self, 
-                 file_path: Union[str, Path], 
-                 chunk_size: int = 8192,
-                 filename: Optional[str] = None,
-                 content_type: Optional[str] = None):
-        super().__init__()
-        self.file_path = Path(file_path)
-        self.chunk_size = chunk_size
-        self.filename = filename or self.file_path.name
-        
-        # Determine content type
-        if content_type is None:
-            content_type, _ = mimetypes.guess_type(str(file_path))
-        self.content_type = content_type or 'application/octet-stream'
-        
-    async def __call__(self, scope, receive, send):
-        if not self.file_path.exists():
-            response = NexioResponse(status_code=404)
-            await response(scope, receive, send)
-            return
-
-        file_size = self.file_path.stat().st_size
-        
-        # Set headers
-        headers = [
-            (b"content-type", self.content_type.encode()),
-            (b"content-length", str(file_size).encode()),
-            (b"content-disposition", f'attachment; filename="{self.filename}"'.encode()),
-        ]
-
-        # Send initial response
-        await send({
-            "type": "http.response.start",
-            "status": 200,
-            "headers": headers
-        })
-
-        # Stream file contents
-        async with aiofiles.open(self.file_path, mode='rb') as file:
-            while chunk := await file.read(self.chunk_size):
-                await send({
-                    "type": "http.response.body",
-                    "body": chunk,
-                    "more_body": True
-                })
-
-        # Send final empty chunk
-        await send({
-            "type": "http.response.body",
-            "body": b"",
-            "more_body": False
-        })
-
+from typing import Union
+      
 class StaticFilesHandler:
     def __init__(self, directory: Union[str, Path], url_prefix: str = "/static/"):
-        self.directory = Path(directory)
+        
+        self.directory = Path(directory).resolve()
         self.url_prefix = url_prefix.strip("/") + "/"
         
         if not self.directory.exists():
-            raise ValueError(f"Directory {directory} does not exist")
+            os.makedirs(self.directory)
         
         if not self.directory.is_dir():
             raise ValueError(f"{directory} is not a directory")
 
-    async def __call__(self, request, response, **kwargs):
-        # Remove url prefix and clean path
-        path = request.url.path.replace("/" + self.url_prefix, "", 1)
-        file_path = (self.directory / path).resolve()
-        
-        # Security check - ensure file is within base directory
+    def _is_safe_path(self, path: Path) -> bool:
+        """Check if the path is safe to serve"""
         try:
-            file_path.relative_to(self.directory)
-        except ValueError:
-            
-            return  response.json("Not Found",status_code = 404)
+            # Resolve the full path to handle any '..' or '.' in the path
+            full_path = path.resolve()
+            # Check if the resolved path starts with the base directory
+            return str(full_path).startswith(str(self.directory))
+        except (ValueError, RuntimeError):
+            return False
 
-        if not file_path.exists() or not file_path.is_file():
-            return  response.json("Not Found",status_code = 404)
+    async def __call__(self, request, response, **kwargs):
+        # Get the relative path from the URL
+        path = request.url.path
+        if path.startswith("/"):
+            path = path[1:]
+        
+        # Remove the url prefix
+        if path.startswith(self.url_prefix.strip("/")):
+            path = path[len(self.url_prefix.strip("/")):]
+        
+        # Construct the full file path
+        # file_path = (self.directory / path).resolve()
+        file_path = f"{self.directory}{path}"
+        # Security check
+        if not self._is_safe_path(Path(file_path)):
+            return response.status(403)
+            
+        
+        if not os.path.exists(file_path) or not os.path.isfile(file_path):
+            return response.json("Not found",status_code = 404)
             
 
-        return await StaticFileResponse(file_path)(
-            request.scope, request.receive, request.send
-        )
+        response.file(file_path)
+  

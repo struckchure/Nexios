@@ -105,7 +105,7 @@ class Router(BaseRouter):
     
     def get_routes(self) -> List[tuple]:
         """Get all routes with their patterns, handlers, and middleware"""
-        return [(route.pattern, route.handler, route.middleware) for route in self.routes]
+        return [Routes(route.raw_path, route.handler, route.middleware) for route in self.routes]
     
     def route(self, path: str, methods: Optional[List[str]] = None) -> Callable:
         """Route decorator with method restrictions"""

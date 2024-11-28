@@ -139,6 +139,7 @@ class NexioApp:
 
     def add_route(self, route: Routes) -> None:
         """Add a route to the application"""
+        
         route, handler, middleware = route()
         self.routes.append((route, handler, middleware))
 
