@@ -1,6 +1,6 @@
 #EMULATED FROM STARLLETE 
 
-#REVIEW: still review these structs
+#REVIEW: I dont undertsnad what everything here, hope i do i in the feature .
 
 import typing
 from collections.abc import Sequence

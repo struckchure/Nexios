@@ -40,7 +40,7 @@ class UploadedFile:
         os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
         content = await self.read()
         
-        # Use asyncio to prevent blocking during write
+        
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, self._sync_save, path, content)
         return path

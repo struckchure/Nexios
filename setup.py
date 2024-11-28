@@ -13,7 +13,9 @@ setup(
         "tortoise-orm", 
         "uvicorn",
         "aerich",
-        "asgiref"
+        "asgiref",
+        "anyio",
+        "aiofiles"
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
