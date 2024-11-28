@@ -1,6 +1,6 @@
 from typing import Any, Dict, Optional, Union, List, AsyncGenerator, Callable, Tuple, Protocol
 import json
-from urllib.parse import unquote_plus, urlparse
+from urllib.parse import parse_qs
 from .cookies_parser import parse_cookies
 from .parsers import parse_multipart_data,parse_form_urlencoded
 from nexio.sessions.backends.base import SessionBase
@@ -75,6 +75,16 @@ class HTTPConnection:
         """Returns the User-Agent header if available."""
         return self.headers.get("user-agent", "")
 
+    @property
+    def query_params(self) -> Dict[str, Union[str, List[str]]]:
+        """
+        Parses and returns the query parameters from the URL as a dictionary.
+        Each key is a query parameter, and the values are either a string or a list of strings
+        (if the parameter is repeated in the query string).
+        """
+        query_string = self.scope.get("query_string", b"").decode("utf-8")
+        return {key: value[0] if len(value) == 1 else value 
+                for key, value in parse_qs(query_string).items()}
 class Request(HTTPConnection, RequestValidatonMixin):
     """Handles HTTP request data with improved data parsing capabilities."""
     

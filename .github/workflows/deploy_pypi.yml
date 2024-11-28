@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/nexioapi
+      url: https://pypi.org/project/nexioapi
     permissions:
       id-token: write
     steps:
