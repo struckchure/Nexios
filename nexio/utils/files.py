@@ -4,6 +4,7 @@ import os
 import hashlib
 from typing import AsyncGenerator
 import asyncio
+import mimetypes
 
 @dataclass
 class UploadedFile:
@@ -31,7 +32,7 @@ class UploadedFile:
         self.body.seek(0)  # Reset for future reads
         return content
     
-    async def save(self, path: str) -> None:
+    async def save(self, path: str = None) -> str:
         """
         Save the file to the specified path.
         Creates directories if they don't exist.
@@ -92,6 +93,13 @@ class UploadedFile:
             
         self.body.seek(0)
 
+    def file(self) -> BytesIO:
+        """
+        Return the file itself as a BytesIO object.
+        """
+        self.body.seek(0)
+        return self.body
+    
     def close(self) -> None:
         """Close the underlying BytesIO object."""
         self.body.close()
@@ -111,4 +119,19 @@ class UploadedFile:
     def __len__(self) -> int:
         return self.size
 
+
+
+
+def get_mime_type(filename: str) -> str:
+    """
+    Determine the MIME type of a file based on its filename.
+    
+    Args:
+        filename (str): The name of the file, including its extension.
+    
+    Returns:
+        str: The detected MIME type, or 'application/octet-stream' if unknown.
+    """
+    mime_type, _ = mimetypes.guess_type(filename)
+    return mime_type or "application/octet-stream"
 
