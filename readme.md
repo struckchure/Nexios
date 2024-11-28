@@ -1,5 +1,5 @@
 ![Nexio Logo](docs/logo.svg)
-# Nexio HTTP Framework 🚀💻
+# Nexio API Framework 🚀💻
 
 Welcome to **Nexio**, a lightning-fast web framework built with Python, designed by **TechWithDunamix** — a Nigerian developer! 🇳🇬💡 Nexio is your go-to framework for building APIs combining speed and simplicity to supercharge your projects. ⚡
 

@@ -20,7 +20,8 @@ async def get_tasks(request: Request, response: NexioResponse):
                 "name": task.name,
                 "detail": task.detail,
                 "completed": task.completed,
-                "image": task.image
+                "image": task.image,
+                "date_dreated":task.date_created
             })
         except DoesNotExist:
             return response.json({"error": "Task not found"}, status_code=404)
