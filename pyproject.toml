@@ -1,0 +1,18 @@
+[project]
+name = "Nexio"
+version = "0.1.0"
+authors = [
+  { name="Dunamis", email="techwithdunamix@gmail.com" },
+]
+description = "Nexio is a modern, high-performance ASGI web framework for Python that emphasizes developer productivity without sacrificing speed. Built on top of industry-standard ASGI specifications, Nexio provides an elegant, batteries-included approach to web development with built-in support for sessions, file storage, and background task processing."
+readme = "readme.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/techwithdunamix/nexio"
+Issues = "https://github.com/techwithdunamix/nexio/ssues"

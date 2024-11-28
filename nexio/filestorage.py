@@ -51,6 +51,11 @@ class LocalFileStorage:
             f.write(content)
 
         
+    async def delete(self, path :str) -> None:
+         if os.path.exists(path):
+            os.remove(path)
+            return 
+         raise ValueError("File Does not exists !")
 
    
     
