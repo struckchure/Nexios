@@ -1,4 +1,4 @@
-from nexio.config.settings import BaseConfig
+from nexios.config.settings import BaseConfig
 import os
 migration = {
     "connections": {

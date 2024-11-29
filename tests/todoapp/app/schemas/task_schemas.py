@@ -1,4 +1,4 @@
-from nexio.validator import Schema,fields,FieldDescriptor
+from nexios.validator import Schema,fields,FieldDescriptor
 from models.tasks import TaskPriority
 class CreateTaskSchema(Schema):
 

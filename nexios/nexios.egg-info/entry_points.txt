@@ -1,0 +1,2 @@
+[console_scripts]
+nexio = nexio.cli.main:main

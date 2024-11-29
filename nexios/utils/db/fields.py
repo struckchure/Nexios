@@ -1,10 +1,10 @@
 import os
 from typing import Optional, Union
 from tortoise.fields.base import Field
-from nexio.utils.files import UploadedFile
+from nexios.utils.files import UploadedFile
 import mimetypes,asyncio,uuid
 from io import BytesIO
-from nexio.filestorage import LocalFileStorage
+from nexios.filestorage import LocalFileStorage
 
 
 

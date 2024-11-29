@@ -1,5 +1,5 @@
 
-from nexio.utils.cuncurrency import run_in_threadpool
+from nexios.utils.cuncurrency import run_in_threadpool
 from __future__ import annotations
 import sys
 import typing

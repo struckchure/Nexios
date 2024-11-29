@@ -1,6 +1,6 @@
-from nexio.middlewares.base import BaseMiddleware
-from nexio.http.response import NexioResponse
-from nexio.http.request import Request
+from nexios.middlewares.base import BaseMiddleware
+from nexios.http.response import NexioResponse
+from nexios.http.request import Request
 
 class CommonMiddleware(BaseMiddleware):
     async def process_request(self, request: Request, response):

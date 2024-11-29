@@ -1,5 +1,5 @@
-from nexio.http.request import Request
-from nexio.http.response import NexioResponse
+from nexios.http.request import Request
+from nexios.http.response import NexioResponse
 
 async def home_handler(request: Request, response: NexioResponse, **kwargs):
     return response.json({

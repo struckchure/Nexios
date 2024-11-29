@@ -1,5 +1,5 @@
 import os
-from nexio.utils.files import UploadedFile,get_mime_type
+from nexios.utils.files import UploadedFile,get_mime_type
 from typing import Optional
 from io import BytesIO
 import asyncio

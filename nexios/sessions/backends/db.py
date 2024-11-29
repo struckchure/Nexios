@@ -1,5 +1,5 @@
 from .base import SessionBase
-from nexio.utils import timezone
+from nexios.utils import timezone
 import logging
 from tortoise import transactions,router
 from tortoise.exceptions import IntegrityError,DoesNotExist
@@ -15,7 +15,7 @@ class SessionStore(SessionBase):
     def get_model_class(cls):
         # Avoids a circular import and allows importing SessionStore when
         
-        from nexio.sessions.models import Session
+        from nexios.sessions.models import Session
 
 
         return Session

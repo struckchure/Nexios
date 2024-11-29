@@ -14,7 +14,7 @@ class Session(AbstractBaseSession):
 
     @classmethod
     def get_session_store_class(cls):
-        from nexio.sessions.backends.db import SessionStore
+        from nexios.sessions.backends.db import SessionStore
         return SessionStore
 
     class Meta:

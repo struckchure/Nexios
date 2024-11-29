@@ -1,8 +1,8 @@
 
-from nexio.sessions.backends.db import SessionStore as DBSessionStore
-from nexio.http.request import Request
-from nexio.http.response import NexioResponse
-from nexio.middlewares.base import BaseMiddleware
+from nexios.sessions.backends.db import SessionStore as DBSessionStore
+from nexios.http.request import Request
+from nexios.http.response import NexioResponse
+from nexios.middlewares.base import BaseMiddleware
 class SessionMiddleware(BaseMiddleware):
     async def process_request(self, request:Request, response):
         
