@@ -11,204 +11,228 @@ Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
 Requires-Python: >=3.8
 Description-Content-Type: text/markdown
-Requires-Dist: tortoise-orm
-Requires-Dist: uvicorn
-Requires-Dist: aerich
-Requires-Dist: asgiref
-Requires-Dist: anyio
-Requires-Dist: aiofiles
 
 ![Nexio Logo](docs/logo.svg)
-# Nexio API Framework 🚀💻
 
-Welcome to **Nexio**, a lightning-fast web framework built with Python, designed by **TechWithDunamix** — a Nigerian developer! 🇳🇬💡 Nexio is your go-to framework for building APIs combining speed and simplicity to supercharge your projects. ⚡
+# Nexio HTTP Framework 🚀💻
 
----
+Welcome to Nexio — a lightning-fast web framework built with Python and written by TechWithDunamix, a Nigerian developer! 🇳🇬💡 Whether you're building APIs, web apps, or anything in between, Nexio is here to make your life easier and faster! ⚡
 
-## Why Choose Nexio? 🤔
+## Why Nexio? 🤔
 
-- **⚡ Blazing Fast**: Experience unmatched performance for all your web applications.
-- **👨‍💻 Developer-Friendly**: Clean and minimal code that prioritizes productivity.
-- **🔌 Easy Integration**: Get started effortlessly — no steep learning curve or complex configurations.
-
----
+- **Blazing Fast**: Built with performance in mind. Don't blink or you might miss it! ⚡
+- **Simplicity**: Write less code, get more done. You'll spend less time debugging and more time building cool stuff. 👨‍💻
+- **Easy to Use**: Everything is straightforward, from routing to database setup — no complicated setups, just plug and play! 🔌🎮
 
 ## Quick Start 🚀
 
-Follow these steps to set up Nexio and create your first app in minutes!
+Ready to get started? Here's how you can set up Nexio and make your first web app in minutes:
 
----
 
-### 1. Install Nexio 📦
+### 1. Install Dependencies 📦
 
-Install the framework directly from GitHub:
+Install Nexio and the required dependencies with pip:
 
 ```bash
 pip install git+https://github.com/TechWithDunamix/Nexio.git
 ```
 
----
-
-### 2. Create Your First Application 💻
-
-Use the `nexio create` command to generate your project structure:
+### 2. Create Your First App 💻
 
 ```bash
 nexio create <app_name>
 ```
-
-#### Example Output:
-```plaintext
-To get started:
+##### Outputs
+```md
+To get started
 1. cd <app_name>
-2. Run the application with uvicorn
+    
+2. cd <app_name>
+    
 3. Your app will be available at http://localhost:8000
 ```
+# Folder structure
 
----
-
-### 3. Project Structure
-
-The generated project will have the following structure:
-
-```plaintext
+```txt
 project_name/
-├── controllers/
-│   └── home_handler.py
-├── main.py
-├── models.py
-├── settings.py
-└── README.md
+├── config/
+│   ├── __init__.py
+│   ├── database.py
+│   └── settings.py
+├── handlers/
+│   ├── __init__.py
+│   └── routes.py
+└── main.py
 ```
 
----
 
-## Code Example: Basic Nexio Application
+###  Basic Example
 
 ```python
-import uvicorn
 from nexio import get_application
+import uvicorn
 from nexio.routers import Routes
-from controllers.home_handler import home_handler
-
 app = get_application()
 
-app.add_route(Routes("/", home_handler))
+async def home(req,res):
+    res.json({"text" :"hello welcome to nexio"})
 
+app.add_route(Routes("/",home))
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
 ```
 
-Create the `home_handler.py` in the `controllers/` directory:
 
-```python
-from nexio.http.request import Request
-from nexio.http.response import NexioResponse
+# Nexio Project Structure Documentation
 
-async def home_handler(request: Request, response: NexioResponse, **kwargs):
-    return response.json({
-        "message": "Welcome to Nexio!",
-        "docs": "https://nexio.example.com/docs"
-    })
+
+```
+project_name/
+├── config/
+│   ├── __init__.py
+│   ├── database.py
+│   └── settings.py
+├── handlers/
+│   ├── __init__.py
+│   └── routes.py
+└── main.py
 ```
 
----
+## File Descriptions
 
-## Step-by-Step Development Workflow
+### main.py
+The application entry point and core configuration file.
+```python
+# Key responsibilities:
+- Initializes the Nexio application
+- Sets up database connections
+- Configures startup/shutdown hooks
+- Mounts routes
+- Starts the ASGI server
+```
 
-1. **Install Dependencies**:
-   ```bash
-   pip install git+https://github.com/TechWithDunamix/Nexio.git
-   ```
+Key features:
+- `get_application()`: Creates the main ASGI application instance
+- `connect_db()`: Database connection setup on startup
+- `disconnect_db()`: Clean database shutdown
+- Uvicorn server configuration
 
-2. **Run Your Application**:
-   ```bash
-   uvicorn main:app --reload
-   ```
+### config/database.py
+Database configuration and connection settings.
+```python
+# Key responsibilities:
+- Defines database connection parameters
+- Configures ORM settings
+- Sets up model locations
+```
 
-3. **Access Your App**:
-   Visit [http://localhost:8000](http://localhost:8000) to see your application in action.
+Key components:
+- `TORTOISE_ORM`: ORM configuration dictionary
+  - Database URL configuration
+  - Model locations and namespacing
+  - Connection settings
 
-4. **Migrate Database** (if applicable):
-   ```bash
-   aerich init -t settings.migration
-   aerich migrate
-   aerich upgrade
-   ```
+### config/settings.py
+Application-wide configuration and settings.
+```python
+# Key responsibilities:
+- Defines core application settings
+- Manages security configurations
+- Sets environment-specific variables
+```
 
----
+Key settings:
+- `AppConfig`: Application configuration class
+- `SECRET_KEY`: Security key for sessions/encryption
+- Can be extended for additional settings:
+  - Debug modes
+  - API versions
+  - Environment configurations
 
-## Project Components
+### handlers/routes.py
+HTTP request handlers and route definitions.
+```python
+# Key responsibilities:
+- Defines endpoint handlers
+- Processes HTTP requests
+- Returns responses
+```
 
-### **1. main.py**
+Key components:
+- `home_handler`: Example route handler
+- Request processing logic
+- Response formatting
+- URL parameter handling
 
-The entry point for your application.
+## Usage Notes
 
-Responsibilities:
-- Initialize the Nexio app
-- Setup startup/shutdown hooks
-- Configure routes
-- Start the ASGI server with Uvicorn
+1. **Configuration Priority**:
+   - `settings.py` loads first
+   - `database.py` uses settings for configuration
+   - `main.py` brings everything together
 
-### **2. controllers/home_handler.py**
+2. **Database Management**:
+   - Uses Tortoise ORM
+   - Automatic schema generation
+   - Connection lifecycle management
 
-Handles the routing logic for your application.
+3. **Request Flow**:
+```
+Request → main.py → routes.py → handler → response
+```
 
-Responsibilities:
-- Define HTTP endpoints
-- Process incoming requests
-- Format and return responses
+4. **Development Workflow**:
+   1. Modify settings in `config/`
+   2. Add routes in `handlers/routes.py`
+   3. Run application from `main.py`
 
-### **3. settings.py**
+## Common Extensions
 
-Centralized configuration for your application.
+The basic structure can be extended with:
 
-Responsibilities:
-- Manage application settings (e.g., `SECRET_KEY`)
-- Configure ORM and environment variables
-- Provide settings for different environments (development/production)
+1. **Additional Directories**:
+   - `models/`: Database models
+   - `middlewares/`: Custom middleware
+   - `schemas/`: Data validation
+   - `services/`: Business logic
 
-### **4. models.py**
-
-Defines database models and handles ORM integration.
-
-Responsibilities:
-- Map Python classes to database tables
-- Provide schema validation
-- Integrate with Tortoise ORM for migrations
-
----
-
-## Extending the Framework
-
-1. **Add New Directories**:
-   - `middlewares/`: Add custom middleware.
-   - `schemas/`: Define validation schemas for requests and responses.
-   - `services/`: Encapsulate business logic.
-
-2. **Extend Configuration**:
-   - Add logging configurations.
-   - Separate settings for environments (e.g., `settings_dev.py`).
-
-3. **Enhance Database Management**:
-   - Use Aerich for database migrations.
-   - Configure additional connections in `settings.py`.
-
----
+2. **Configuration Files**:
+   - `logging.py`: Logging configuration
+   - `middleware.py`: Middleware settings
+   - `constants.py`: Application constants
 
 ## Best Practices
 
-1. **Secure Configuration**:
-   - Store sensitive data (e.g., `SECRET_KEY`) in environment variables.
-   - Use separate settings for development and production.
+1. **Configuration**:
+   - Keep sensitive data in environment variables
+   - Use different settings for development/production
+   - Document all configuration options
 
-2. **Keep Code Modular**:
-   - Define handlers in `controllers/`.
-   - Separate business logic into dedicated services.
+2. **Route Handlers**:
+   - Keep handlers focused and simple
+   - Use type hints for better code clarity
+   - Return consistent response formats
 
-3. **Consistent Responses**:
-   - Ensure all endpoints return structured and documented responses.
+3. **Database**:
+   - Use migrations for schema changes
+   - Implement proper connection pooling
+   - Handle connection errors gracefully
 
----
+## Quick Start
+```bash
+# 1. Install dependencies
+pip install git+https://github.com/TechWithDunamix/Nexio.git
 
-### Nexio — Powering Simplicity and Speed in Web Development ⚡
+
+# 2. Run the application
+uvicorn main:app --reload
+
+# 3. Access the API
+curl http://localhost:8000
+```
+
+The application will be available at `http://localhost:8000` with:
+- Database auto-configuration
+- Basic route setup
+- Error handling
+- Clean shutdown support

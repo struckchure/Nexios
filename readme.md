@@ -191,4 +191,4 @@ Responsibilities:
 
 ---
 
-### Nexio — Powering Simplicity and Speed in Web Development ⚡
+### Nexio — Powering Simplicity and Speed in Web Development 

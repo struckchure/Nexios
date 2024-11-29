@@ -1,41 +1,38 @@
-name: Publish Python Package
+name: Deploy to PyPI
 
 on:
   push:
-    tags:
-      - 'v*'
-
-permissions:
-  contents: read
-  packages: write
-  id-token: write
-
+    branches:
+      - main  
 jobs:
-  publish:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: pypi
-      url: https://pypi.org/p/nexioapi
-    permissions:
-      id-token: write
+
     steps:
-      - name: Check out code
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v2
         with:
-          python-version: 3.10
+          python-version: '3.8'  
+
+      - name: Install Poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "Poetry installed"
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install build twine
+          poetry install --no-dev  
 
-      - name: Build the package
-        run: python -m build
+      - name: Build package
+        run: |
+          poetry build  # This will build your source distribution and wheel
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://upload.pypi.org/legacy/
+        env:
+          PYPI_TOKEN: ${{ secrets.PYPISECRET }}  
+        run: |
+          poetry config pypi-token.pypi $PYPI_TOKEN  
+          poetry publish --build --repository pypi  

@@ -27,7 +27,7 @@ setup(
     python_requires=">=3.8",
     entry_points={
         'console_scripts': [
-            'nexio=nexio.cli.main:main',
+            'nexios=nexios.cli.main:main',
         ],
     },
 )
