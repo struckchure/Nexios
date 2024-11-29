@@ -1,15 +1,15 @@
 import uvicorn
-from nexio import get_application
-from nexio.routers import Routes
+from nexios import get_application
+from nexios.routers import Routes
 from tortoise import Tortoise as db
 from contextlib import asynccontextmanager
 import traceback
 import os,asyncio
 from controllers.tasks_controllers import task_routes
-from nexio.routers import    Routes
+from nexios.routers import    Routes
 from settings import AppConfig
 from controllers.home_handler import home_handler
-from nexio.static import StaticFilesHandler
+from nexios.static import StaticFilesHandler
 from pathlib import Path    
 
 app = get_application(config=AppConfig)

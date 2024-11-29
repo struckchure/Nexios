@@ -1,10 +1,10 @@
 import typing
-from nexio.utils import crypto
-from nexio.utils import timezone
+from nexios.utils import crypto
+from nexios.utils import timezone
 from datetime import datetime, timedelta, timezone, tzinfo
-from nexio.config.settings import BaseConfig
+from nexios.config.settings import BaseConfig
 from ..utils import SessionEncoder
-from nexio.utils import timezone
+from nexios.utils import timezone
 import string
 
 VALID_KEY_CHARS = string.ascii_lowercase + string.digits

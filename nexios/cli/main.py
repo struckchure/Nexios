@@ -1,5 +1,5 @@
 import argparse
-from nexio.cli.create_project import create_project_structure
+from nexios.cli.create_project import create_project_structure
 
 def main():
     parser = argparse.ArgumentParser(prog="nexio")

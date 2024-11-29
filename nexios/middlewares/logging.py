@@ -1,8 +1,8 @@
 import traceback
 import logging
 import typing
-from nexio.http.request import Request
-from nexio.http.response import NexioResponse
+from nexios.http.request import Request
+from nexios.http.response import NexioResponse
 from .base import BaseMiddleware
 # Setting up a logger for middleware
 logger = logging.getLogger(__name__)

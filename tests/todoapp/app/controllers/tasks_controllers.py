@@ -1,12 +1,12 @@
-from nexio.http.response import NexioResponse
-from nexio.http.request import Request
-from nexio.routers import Router, Routes
-from nexio.decorators import AllowedMethods, validate_request
+from nexios.http.response import NexioResponse
+from nexios.http.request import Request
+from nexios.routers import Router, Routes
+from nexios.decorators import AllowedMethods, validate_request
 from models.tasks import TaskModel
 from schemas.task_schemas import CreateTaskSchema, UpdateTaskSchema
 from tortoise import Tortoise as db
 from models.utils import LocalFileStorage
-from nexio.utils.files import UploadedFile
+from nexios.utils.files import UploadedFile
 from tortoise.exceptions import DoesNotExist
 
 task_routes = Router(prefix="/api")

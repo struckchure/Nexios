@@ -3,7 +3,7 @@ import json
 from urllib.parse import parse_qs
 from .cookies_parser import parse_cookies
 from .parsers import parse_multipart_data,parse_form_urlencoded
-from nexio.sessions.backends.base import SessionBase
+from nexios.sessions.backends.base import SessionBase
 from ..structs import URL
 from .mixins import RequestValidatonMixin
 

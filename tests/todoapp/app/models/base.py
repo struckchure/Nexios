@@ -1,7 +1,7 @@
 from typing import Coroutine, Iterable
 from tortoise import  Model,transactions
 from tortoise import fields
-from nexio.utils import timezone
+from nexios.utils import timezone
 import uuid
 class BaseModel(Model):
     id = fields.UUIDField(default = uuid.uuid4,primary_key = True)

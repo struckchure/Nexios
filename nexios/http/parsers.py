@@ -3,7 +3,7 @@ from typing import Tuple,Dict,Any
 import re
 from io import BytesIO
 from urllib.parse import unquote_plus
-from nexio.utils.files import UploadedFile
+from nexios.utils.files import UploadedFile
 
 
 async def parse_multipart_data(self) -> Tuple[Dict[str, str], Dict[str, any]]:
