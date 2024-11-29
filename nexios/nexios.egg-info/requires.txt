@@ -1,6 +1,6 @@
+aerich
+aiofiles
+anyio
+asgiref
 tortoise-orm
 uvicorn
-aerich
-asgiref
-anyio
-aiofiles

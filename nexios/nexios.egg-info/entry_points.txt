@@ -1,2 +1,2 @@
 [console_scripts]
-nexio = nexio.cli.main:main
+nexios = nexios.cli.main:main
