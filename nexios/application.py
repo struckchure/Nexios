@@ -12,9 +12,6 @@ import logging
 from contextlib import asynccontextmanager
 from .structs import RouteParam
 
-
-
-
 class NexioApp:
     def __init__(self, 
                  config: Enum = BaseConfig,
@@ -136,7 +133,7 @@ class NexioApp:
         error_response = JSONResponse({"error": "Not found"}, status_code=404)
         await error_response(scope, receive, send)
 
-    def route(self, path: str, methods: List[Union[str, HTTPMethod]] = None) -> Callable:
+    def route(self, path: str, methods: List[Union[str, HTTPMethod]] = allowed_methods_default) -> Callable:
         """Decorator to register routes with optional HTTP methods"""
         def decorator(handler: Callable) -> Callable:
             handler = AllowedMethods(methods)(handler)
