@@ -8,8 +8,8 @@ version = "0.1.0"
 description = "Nexio is a modern, high-performance ASGI web framework for Python."
 authors = ["Chidebele Dunamis <techwithdunamix@example.com>"]
 license = "MIT"
-homepage = "https://github.com/techwithdunamix/nexio"
-repository = "https://github.com/techwithdunamix/nexio"
+homepage = "https://github.com/techwithdunamix/nexios"
+repository = "https://github.com/techwithdunamix/nexios"
 readme = "readme.md"
 
 [tool.poetry.dependencies]
