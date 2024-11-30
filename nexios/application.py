@@ -1,4 +1,4 @@
-from typing import Any, Callable, AsyncIterator, List, Union
+from typing import Any, Callable, List, Union
 from .http.request import Request
 from .http.response import NexioResponse
 from .http.response import JSONResponse
@@ -8,7 +8,7 @@ from .routers import Router, Routes
 from enum import Enum
 from .config.settings import BaseConfig
 import logging
-from contextlib import asynccontextmanager
+
 
 class NexioApp:
     def __init__(self, 
@@ -107,14 +107,14 @@ class NexioApp:
         for path_pattern, handler, middleware in self.routes:
             match = path_pattern.match(request.url.path)
             if match:
-                kwargs = match.groupdict()
-                request.url_params = kwargs
+                url_kwargs = match.groupdict()
+                request.url_params = url_kwargs
                 
                 try:
                     await self.execute_middleware_stack(request,
                                                       response,
                                                       middleware,
-                                                      handler)
+                                                      handler,**url_kwargs)
                 except Exception as e:
                     self.logger.error(f"Request handler error: {str(e)}")
                     error_response = JSONResponse(

@@ -6,7 +6,7 @@ class BaseConfig:
 
     debug :bool  = False
 
-    middleware :list = [] 
+    middlewares :list = [] 
 
     COOKIE_AGE = 259200
 
