@@ -1,11 +1,11 @@
-![Nexio Logo](docs/logo.svg)
-# Nexio API Framework 🚀💻
+![nexios Logo](docs/logo.svg)
+# nexios API Framework 🚀💻
 
-Welcome to **Nexio**, a lightning-fast web framework built with Python, designed by **TechWithDunamix** — a Nigerian developer! 🇳🇬💡 Nexio is your go-to framework for building APIs combining speed and simplicity to supercharge your projects. ⚡
+Welcome to **nexios**, a lightning-fast web framework built with Python, designed by **TechWithDunamix** — a Nigerian developer! 🇳🇬💡 nexios is your go-to framework for building APIs combining speed and simplicity to supercharge your projects. ⚡
 
 ---
 
-## Why Choose Nexio? 🤔
+## Why Choose nexios? 🤔
 
 - **⚡ Blazing Fast**: Experience unmatched performance for all your web applications.
 - **👨‍💻 Developer-Friendly**: Clean and minimal code that prioritizes productivity.
@@ -15,26 +15,26 @@ Welcome to **Nexio**, a lightning-fast web framework built with Python, designed
 
 ## Quick Start 🚀
 
-Follow these steps to set up Nexio and create your first app in minutes!
+Follow these steps to set up nexios and create your first app in minutes!
 
 ---
 
-### 1. Install Nexio 📦
+### 1. Install nexios 📦
 
 Install the framework directly from GitHub:
 
 ```bash
-pip install git+https://github.com/TechWithDunamix/Nexio.git
+pip install git+https://github.com/TechWithDunamix/nexios.git
 ```
 
 ---
 
 ### 2. Create Your First Application 💻
 
-Use the `nexio create` command to generate your project structure:
+Use the `nexios create` command to generate your project structure:
 
 ```bash
-nexio create <app_name>
+nexios create <app_name>
 ```
 
 #### Example Output:
@@ -63,12 +63,12 @@ project_name/
 
 ---
 
-## Code Example: Basic Nexio Application
+## Code Example: Basic nexios Application
 
 ```python
 import uvicorn
-from nexio import get_application
-from nexio.routers import Routes
+from nexios import get_application
+from nexios.routers import Routes
 from controllers.home_handler import home_handler
 
 app = get_application()
@@ -82,13 +82,13 @@ if __name__ == "__main__":
 Create the `home_handler.py` in the `controllers/` directory:
 
 ```python
-from nexio.http.request import Request
-from nexio.http.response import NexioResponse
+from nexios.http.request import Request
+from nexios.http.response import nexiosResponse
 
-async def home_handler(request: Request, response: NexioResponse, **kwargs):
+async def home_handler(request: Request, response: nexiosResponse, **kwargs):
     return response.json({
-        "message": "Welcome to Nexio!",
-        "docs": "https://nexio.example.com/docs"
+        "message": "Welcome to nexios!",
+        "docs": "https://nexios.example.com/docs"
     })
 ```
 
@@ -98,7 +98,7 @@ async def home_handler(request: Request, response: NexioResponse, **kwargs):
 
 1. **Install Dependencies**:
    ```bash
-   pip install git+https://github.com/TechWithDunamix/Nexio.git
+   pip install git+https://github.com/TechWithDunamix/nexios.git
    ```
 
 2. **Run Your Application**:
@@ -125,7 +125,7 @@ async def home_handler(request: Request, response: NexioResponse, **kwargs):
 The entry point for your application.
 
 Responsibilities:
-- Initialize the Nexio app
+- Initialize the nexios app
 - Setup startup/shutdown hooks
 - Configure routes
 - Start the ASGI server with Uvicorn
@@ -191,4 +191,4 @@ Responsibilities:
 
 ---
 
-### Nexio — Powering Simplicity and Speed in Web Development 
+### nexios — Powering Simplicity and Speed in Web Development 

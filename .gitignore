@@ -8,3 +8,6 @@ __pycache__/
 test_single_app.py
 dist/
 .env
+a.db
+a.db-shm
+a.db-wal

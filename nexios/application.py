@@ -9,6 +9,11 @@ from enum import Enum
 from .config.settings import BaseConfig
 import logging
 
+from contextlib import asynccontextmanager
+from .structs import RouteParam
+
+
+
 
 class NexioApp:
     def __init__(self, 
@@ -107,8 +112,10 @@ class NexioApp:
         for path_pattern, handler, middleware in self.routes:
             match = path_pattern.match(request.url.path)
             if match:
-                url_kwargs = match.groupdict()
-                request.url_params = url_kwargs
+
+                kwargs = match.groupdict()
+                setattr(request,"route_params",RouteParam(kwargs))
+
                 
                 try:
                     await self.execute_middleware_stack(request,
