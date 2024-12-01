@@ -18,7 +18,7 @@ class NexioApp:
                  middlewares: list = None):
         self.config = config
         self.routes: List[str] = []
-        self.middlewares: List = middlewares or []
+        self.http_middlewares: List = middlewares or []
         self.startup_handlers: List[Callable] = []
         self.shutdown_handlers: List[Callable] = []
         self.logger = logging.getLogger("nexio")
@@ -84,7 +84,7 @@ class NexioApp:
                                      middleware: Callable, 
                                      handler: Callable, 
                                      **kwargs) -> Any:
-        stack = self.middlewares.copy()
+        stack = self.http_middlewares.copy()
         if callable(middleware):
             stack.append(middleware)
         index = -1 
@@ -101,7 +101,7 @@ class NexioApp:
             
         return await next_middleware()
 
-    async def handle_request(self, scope: dict, receive: Callable, send: Callable) -> None:
+    async def handle_http_request(self, scope: dict, receive: Callable, send: Callable) -> None:
         request = Request(scope, receive, send)
         response = NexioResponse()
         request.scope['config'] = self.config
@@ -150,16 +150,21 @@ class NexioApp:
     def add_middleware(self, middleware: Callable) -> None:
         """Add middleware to the application"""
         if callable(middleware):
-            self.middlewares.append(middleware)
+            self.http_middlewares.append(middleware)
 
     def mount_router(self, router: Router) -> None:
         """Mount a router and all its routes to the application"""
         for route in router.get_routes():
             self.add_route(route)
-
+    async def handler_websocker(self, scope,receive,send):
+        pass
     async def __call__(self, scope: dict, receive: Callable, send: Callable) -> None:
         """ASGI application callable"""
         if scope["type"] == "lifespan":
             await self.handle_lifespan(receive, send)
         elif scope["type"] == "http":    
-            await self.handle_request(scope, receive, send)
+            await self.handle_http_request(scope, receive, send)
+
+        else:
+            await send("Success")
+            print("ws")
