@@ -17,7 +17,7 @@ class NexioApp:
                  config: Enum = BaseConfig,
                  middlewares: list = None):
         self.config = config
-        self.routes: List[str] = []
+        self.routes: List[Routes] = []
         self.http_middlewares: List = middlewares or []
         self.startup_handlers: List[Callable] = []
         self.shutdown_handlers: List[Callable] = []
@@ -106,8 +106,8 @@ class NexioApp:
         response = NexioResponse()
         request.scope['config'] = self.config
 
-        for path_pattern, handler, middleware in self.routes:
-            match = path_pattern.match(request.url.path)
+        for route in self.routes:
+            match = route.pattern.match(request.url.path)
             if match:
 
                 kwargs = match.groupdict()
@@ -117,8 +117,8 @@ class NexioApp:
                 try:
                     await self.execute_middleware_stack(request,
                                                       response,
-                                                      middleware,
-                                                      handler)
+                                                      route.middleware,
+                                                      route.handler)
                 except Exception as e:
                     self.logger.error(f"Request handler error: {str(e)}")
                     error_response = JSONResponse(
@@ -144,8 +144,8 @@ class NexioApp:
     def add_route(self, route: Routes) -> None:
         """Add a route to the application"""
         
-        route, handler, middleware = route()
-        self.routes.append((route, handler, middleware))
+        
+        self.routes.append(route)
 
     def add_middleware(self, middleware: Callable) -> None:
         """Add middleware to the application"""
@@ -154,6 +154,7 @@ class NexioApp:
 
     def mount_router(self, router: Router) -> None:
         """Mount a router and all its routes to the application"""
+        self.add_middleware(router.middlewares)
         for route in router.get_routes():
             self.add_route(route)
     async def handler_websocker(self, scope,receive,send):
