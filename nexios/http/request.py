@@ -4,7 +4,7 @@ from urllib.parse import parse_qs
 from .cookies_parser import parse_cookies
 from .parsers import parse_multipart_data,parse_form_urlencoded
 from nexios.sessions.backends.base import SessionBase
-from ..structs import URL
+from ..structs import URL,State
 from .mixins import RequestValidatonMixin
 
 class RequestExtraType(Protocol):
@@ -85,6 +85,29 @@ class HTTPConnection:
         query_string = self.scope.get("query_string", b"").decode("utf-8")
         return {key: value[0] if len(value) == 1 else value 
                 for key, value in parse_qs(query_string).items()}
+    @property
+    def base_url(self) -> URL:
+        if not hasattr(self, "_base_url"):
+            base_url_scope = dict(self.scope)
+            
+            app_root_path = base_url_scope.get("app_root_path", base_url_scope.get("root_path", ""))
+            path = app_root_path
+            if not path.endswith("/"):
+                path += "/"
+            base_url_scope["path"] = path
+            base_url_scope["query_string"] = b""
+            base_url_scope["root_path"] = app_root_path
+            self._base_url = URL(scope=base_url_scope)
+        return self._base_url
+    @property
+    def state(self) -> State:
+        if not hasattr(self, "_state"):
+            # Ensure 'state' has an empty dict if it's not already populated.
+            self.scope.setdefault("state", {})
+            # Create a state instance with a reference to the dict in which it should
+            # store info
+            self._state = State(self.scope["state"])
+        return self._state
 class Request(HTTPConnection, RequestValidatonMixin):
     """Handles HTTP request data with improved data parsing capabilities."""
     

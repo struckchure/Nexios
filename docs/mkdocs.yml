@@ -1,0 +1,6 @@
+site_name: Nexios
+theme:
+  name: readthedocs
+  palette:
+    primary: 'indigo'
+    accent: 'pink'

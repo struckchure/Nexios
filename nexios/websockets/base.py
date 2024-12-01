@@ -8,7 +8,7 @@ Message = typing.MutableMapping[str, typing.Any]
 
 Receive = typing.Callable[[], typing.Awaitable[Message]]
 Send = typing.Callable[[Message], typing.Awaitable[None]]
-
+from nexios.http.request import HTTPConnection
 
 class WebSocketState(enum.Enum):
     CONNECTING = 0
@@ -23,8 +23,9 @@ class WebSocketDisconnect(Exception):
         self.reason = reason or ""
 
 
-class WebSocket:
+class WebSocket(HTTPConnection):
     def __init__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        super().__init__(scope)
         assert scope["type"] == "websocket"
         self._receive = receive
         self._send = send
