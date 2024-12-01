@@ -7,10 +7,9 @@ from .decorators import AllowedMethods
 from .routers import Router, Routes
 from enum import Enum
 from .config.settings import BaseConfig
-import logging
-
-from contextlib import asynccontextmanager
+import logging,traceback
 from .structs import RouteParam
+from .websockets import get_websocket_session
 allowed_methods_default = ['get','post','delete','put','patch','options']
 class NexioApp:
     def __init__(self, 
@@ -140,7 +139,12 @@ class NexioApp:
             self.add_route(Routes(path, handler))
             return handler
         return decorator
-
+    def ws_route(self, path: str) -> Callable:
+        """Decorator to register routes with optional HTTP methods"""
+        def decorator(handler: Callable) -> Callable:
+            self.add_route(Routes(path, handler))
+            return handler
+        return decorator
     def add_route(self, route: Routes) -> None:
         """Add a route to the application"""
         
@@ -157,8 +161,29 @@ class NexioApp:
         self.add_middleware(router.middlewares)
         for route in router.get_routes():
             self.add_route(route)
-    async def handler_websocker(self, scope,receive,send):
-        pass
+    async def handler_websocket(self, scope,receive,send):
+        ws = await get_websocket_session(scope,receive,send)
+
+        for route in self.routes:
+            match = route.pattern.match(ws.url.path)
+            
+            if match:
+
+                kwargs = match.groupdict()
+                setattr(ws,"route_params",RouteParam(kwargs))
+
+                
+                try:
+                    print(route.handler)
+                    await route.handler(ws)
+                except Exception as e:
+                    error = traceback.format_exc()
+                    print(error)
+                    return
+                return
+        print("Not Found")
+        error_response = JSONResponse({"error": "Not found"}, status_code=404)
+        await error_response(scope, receive, send)
     async def __call__(self, scope: dict, receive: Callable, send: Callable) -> None:
         """ASGI application callable"""
         if scope["type"] == "lifespan":
@@ -167,5 +192,4 @@ class NexioApp:
             await self.handle_http_request(scope, receive, send)
 
         else:
-            await send("Success")
-            print("ws")
+            await self.handler_websocket(scope, receive, send)

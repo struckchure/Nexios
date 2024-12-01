@@ -139,6 +139,7 @@ class WebSocket(HTTPConnection):
             text = message["text"]
         else:
             text = message["bytes"].decode("utf-8")
+        
         return json.loads(text)
 
     async def iter_text(self) -> AsyncIterator[str]:

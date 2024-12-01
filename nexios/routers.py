@@ -131,8 +131,6 @@ class Routes:
         self.handler = handler
         self.middleware = middleware
         self.methods = methods or ["GET"]
-        
-        # Process the route pattern
         route_info = RouteBuilder.create_pattern(path)
         self.pattern = route_info.pattern
         self.param_names = route_info.param_names
