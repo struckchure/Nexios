@@ -105,7 +105,19 @@ class Router(BaseRouter):
     
     def get_routes(self) -> List[tuple]:
         """Get all routes with their patterns, handlers, and middleware"""
-        return [Routes(route.raw_path, route.handler, route.middleware) for route in self.routes]
+        routes = []
+        for route in self.routes:
+            route_ = Routes(
+                path=route.raw_path, 
+                handler=route.handler, 
+                middleware=route.middleware,
+                methods=route.methods)
+            setattr(route_,"router_middleware",self.middlewares)
+            
+            routes.append(route_)
+        return routes
+
+            
     
     def route(self, path: str, methods: Optional[List[str]] = None) -> Callable:
         """Route decorator with method restrictions"""
@@ -118,6 +130,7 @@ class Router(BaseRouter):
     def __repr__(self) -> str:
         return f"<Router prefix='{self.prefix}' routes={len(self.routes)}>"
 
+
 class Routes:
     def __init__(
         self,
@@ -126,11 +139,46 @@ class Routes:
         methods: Optional[List[str]] = None,
         middleware: Optional[Callable] = None
     ):
+        
         assert callable(handler), "Route handler must be callable"
         self.raw_path = path
         self.handler = handler
         self.middleware = middleware
-        self.methods = methods or ["GET"]
+        self.methods = methods or [] 
+        route_info = RouteBuilder.create_pattern(path)
+        self.pattern = route_info.pattern
+        self.param_names = route_info.param_names
+        self.route_type = route_info.route_type
+        self.router_middleware = None
+    
+    def match(self, path: str) -> Optional[dict]:
+        """
+        Match a path against this route's pattern and return captured parameters
+        """
+        match = self.pattern.match(path)
+        if match:
+            return match.groupdict()
+        return None
+    
+    def __call__(self) -> tuple:
+        """Return the route components for registration"""
+        return self.pattern, self.handler, self.middleware
+    
+    def __repr__(self) -> str:
+        return f"<Route {self.raw_path} methods={self.methods}>"
+    
+
+class WebsocketRoutes:
+    def __init__(
+        self,
+        path: str,
+        handler: Callable,
+        middleware: Optional[Callable] = None
+    ):
+        assert callable(handler), "Route handler must be callable"
+        self.raw_path = path
+        self.handler = handler
+        self.middleware = middleware
         route_info = RouteBuilder.create_pattern(path)
         self.pattern = route_info.pattern
         self.param_names = route_info.param_names
