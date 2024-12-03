@@ -409,6 +409,7 @@ class NexioResponse:
         self.headers = {}
         self._response = None
         self._cookies = []
+        self._delete_cookies = []
 
     def send(self, content, status_code=200):
         """Send plain text or HTML content."""
@@ -496,6 +497,32 @@ class NexioResponse:
             'samesite': samesite
         })
         return self
+    
+    def delete_cookie(
+        self,
+        key: str,
+        value: str,
+        max_age: Optional[int] = None,
+        expires: Optional[Union[str, datetime]] = None,
+        path: str = "/",
+        domain: Optional[str] = None,
+        secure: bool = False,
+        httponly: bool = False,
+        samesite: Optional[str] = None
+    ):
+        """Set a response cookie."""
+        self._delete_cookies.append({
+            'key': key,
+            'value': value,
+            'max_age': max_age,
+            'expires': expires,
+            'path': path,
+            'domain': domain,
+            'secure': secure,
+            'httponly': httponly,
+            'samesite': samesite
+        })
+        return self
 
     def cache(self, max_age: int = 3600, private: bool = True):
         """Enable response caching."""
@@ -541,6 +568,10 @@ class NexioResponse:
         # Apply cookies if any
         for cookie in self._cookies:
             self._response.set_cookie(**cookie)
+
+        if len(self._delete_cookies) > 0:
+            for cookie in self._delete_cookies:
+                self._response.delete_cookie(cookie)
 
         return self._response
 

@@ -22,10 +22,39 @@ class SessionMiddleware(BaseMiddleware):
 
 
     async def process_response(self, request, response :NexioResponse):
-        
+        try:
+            accessed = request.session.accessed
+            modified = request.session.modified
+            empty = await request.session.is_empty()
+        except AttributeError:
+            return response
+        if self.session.deleted:
+
+            response.delete_cookie(
+                
+                self.session.get_cookie_name(),
+                self.session.session_key,
+                expires=self.session.get_expiry_date(),
+                httponly=self.session.get_cookie_httponly(),
+                domain=self.session.get_cookie_domain(),
+                path=self.session.get_cookie_path(),
+                secure=self.session.get_cookie_secure(),
+                partitioned=self.session.get_cookie_partitioned(),
+                samesite=self.session.get_cookie_path(),
+            )
+            return 
         if self.session.modified:
             await self.session.save() 
             response.set_cookie(
-                key="session_id",
-                value=self.session.session_key
+
+                self.session.get_cookie_name(),
+                self.session.session_key,
+                expires=self.session.get_expiry_date(),
+                httponly=self.session.get_cookie_httponly(),
+                domain=self.session.get_cookie_domain(),
+                path=self.session.get_cookie_path(),
+                secure=self.session.get_cookie_secure(),
+                partitioned=self.session.get_cookie_partitioned(),
+                samesite=self.session.get_cookie_path(),
             )
+            return

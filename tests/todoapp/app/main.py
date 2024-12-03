@@ -30,7 +30,7 @@ async def connect_db():
         db_path = os.path.join(os.path.dirname(__file__), "database.db")
         await db.init(
             db_url=f"sqlite:///{db_path}",
-            modules={"models": ["models"]},
+            modules={"models": ["models","nexios.sessions.models"]},
               # Use models.py directly
         )
         await db.generate_schemas()

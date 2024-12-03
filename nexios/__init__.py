@@ -12,7 +12,9 @@ def get_application(config = BaseConfig) -> NexioApp:
     
     app = NexioApp(
         middlewares= [
+            
             ErrorHandlerMiddleware(),
+            
             CommonMiddleware(),
             CORSMiddleware(
                 allow_origins=config.CORS_ALLOWED_ORIGINS,
@@ -24,7 +26,8 @@ def get_application(config = BaseConfig) -> NexioApp:
                 allow_origin_regex=config.ALLOW_ORIGIN_REGEX
                 
                 
-                )
+                ),
+            SessionMiddleware()
 
         ],
         config=config

@@ -5,15 +5,15 @@ Welcome to **nexios**, a lightning-fast web framework built with Python, designe
 
 ---
 
-## Why Choose nexios? 🤔
+## Why Choose nexios?
 
-- **⚡ Blazing Fast**: Experience unmatched performance for all your web applications.
-- **👨‍💻 Developer-Friendly**: Clean and minimal code that prioritizes productivity.
-- **🔌 Easy Integration**: Get started effortlessly — no steep learning curve or complex configurations.
+- **Blazing Fast**: Experience unmatched performance for all your web applications.
+- **Developer-Friendly**: Clean and minimal code that prioritizes productivity.
+- **Easy Integration**: Get started effortlessly — no steep learning curve or complex configurations.
 
 ---
 
-## Quick Start 🚀
+## Quick Start 
 
 Follow these steps to set up nexios and create your first app in minutes!
 
@@ -28,6 +28,13 @@ pip install git+https://github.com/TechWithDunamix/nexios.git
 ```
 
 ---
+
+**or** \n
+Install the framework from pypi:
+
+```
+pip install nexio
+```
 
 ### 2. Create Your First Application 💻
 

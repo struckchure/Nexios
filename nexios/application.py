@@ -111,7 +111,7 @@ class NexioApp:
         request.scope['config'] = self.config
 
         for route in self.routes:
-            print(route)
+            
             route.handler = AllowedMethods(route.methods)(route.handler)
             
             if route.router_middleware:
@@ -146,10 +146,11 @@ class NexioApp:
         await error_response(scope, receive, send)
 
     def route(self, path: str, methods: List[Union[str, HTTPMethod]] = allowed_methods_default) -> Callable:
+        
         """Decorator to register routes with optional HTTP methods"""
         def decorator(handler: Callable) -> Callable:
             handler = AllowedMethods(methods)(handler)
-            self.add_route(Routes(path, handler))
+            self.add_route(Routes(path, handler,methods=methods))
             return handler
         return decorator
     def ws_route(self, path: str) -> Callable:

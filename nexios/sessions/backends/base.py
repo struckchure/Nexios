@@ -18,7 +18,7 @@ class SessionBase:
     
 
     def __init__(self,
-                 config = None ,
+                 config :BaseConfig = None ,
                  session_key = None ) -> None:
 
 
@@ -124,7 +124,7 @@ class SessionBase:
     async def is_empty(self):
 
         try:
-            return not self._session_key and not self._session_cache
+            return not self._session_key and not await self.get_session(self.session_key)
         except AttributeError:
             return True
 
@@ -187,6 +187,7 @@ class SessionBase:
     @property
     async def _session(self):
         return await self._get_session()
+    
     def get_session_cookie_age(self):
         return self.config.COOKIE_AGE
 
@@ -200,10 +201,9 @@ class SessionBase:
         """
         
 
-        try:
-            expiry = self.config.COOKIE_AGE
-        except AttributeError:
-            expiry = 86400
+       
+        expiry = self.config.COOKIE_AGE or 86400
+       
         return timezone.now() + timedelta(seconds=expiry)
 
     def set_expiry(self, value):
@@ -333,6 +333,42 @@ class SessionBase:
         
 
 
+    def get_cookie_name(self) -> str:
+        """The name of the session cookie. Uses`config.SESSION_COOKIE_NAME`."""
+        return self.config.SESSION_COOKIE_NAME or "session_id"
+
+    def get_cookie_domain(self) -> str | None:
+       
+        return self.config.SESSION_COOKIE_DOMAIN 
+
+    def get_cookie_path(self) -> str:
+       
+        return self.config.SESSION_COOKIE_PATH
+
+    def get_cookie_httponly(self) -> bool:
+        
+        return self.config.SESSION_COOKIE_HTTPONLY
+
+    def get_cookie_secure(self) -> bool:
+        """Returns True if the cookie should be secure.  This currently
+        just returns the value of the ``SESSION_COOKIE_SECURE`` setting.
+        """
+        return self.config.SESSION_COOKIE_SECURE
+
+    def get_cookie_samesite(self) -> str | None:
+        """Return ``'Strict'`` or ``'Lax'`` if the cookie should use the
+        ``SameSite`` attribute. This currently just returns the value of
+        the :data:`SESSION_COOKIE_SAMESITE` setting.
+        """
+        return self.config.SESSION_COOKIE_SAMESITE
+
+    def get_cookie_partitioned(self) -> bool:
+        """Returns True if the cookie should be partitioned. By default, uses
+        the value of :data:`SESSION_COOKIE_PARTITIONED`.
+
+        .. versionadded:: 3.1
+        """
+        return self.config.SESSION_COOKIE_PARTITIONED
 
 
     
