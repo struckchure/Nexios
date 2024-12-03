@@ -1,4 +1,7 @@
 
+#TODO : deletation of sessions
+
+
 from nexios.sessions.backends.db import SessionStore as DBSessionStore
 from nexios.http.request import Request
 from nexios.http.response import NexioResponse
@@ -9,7 +12,7 @@ class SessionMiddleware(BaseMiddleware):
         #TODO:ALLOW TO USE THE SETTING TO CHANGE SESSION KEY NAME
 
         key = request.cookies.get("session_id")
-        session = DBSessionStore(session_key=key, #CHANGE:get the sesion key from cookie
+        session = DBSessionStore(session_key=key, 
                                config=request.scope['config'])
         self.session = session
         

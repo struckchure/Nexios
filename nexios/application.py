@@ -18,6 +18,8 @@ class NexioApp:
         self.config = config
         self.routes: List[Routes] = []
         self.http_middlewares: List = middlewares or []
+        self.ws_middlewares: List =  []
+
         self.startup_handlers: List[Callable] = []
         self.shutdown_handlers: List[Callable] = []
         self.logger = logging.getLogger("nexio")
@@ -83,6 +85,8 @@ class NexioApp:
                                      middleware: Callable, 
                                      handler: Callable, 
                                      **kwargs) -> Any:
+        
+        
         stack = self.http_middlewares.copy()
         if callable(middleware):
             stack.append(middleware)
@@ -101,11 +105,20 @@ class NexioApp:
         return await next_middleware()
 
     async def handle_http_request(self, scope: dict, receive: Callable, send: Callable) -> None:
+        
         request = Request(scope, receive, send)
         response = NexioResponse()
         request.scope['config'] = self.config
 
         for route in self.routes:
+            print(route)
+            route.handler = AllowedMethods(route.methods)(route.handler)
+            
+            if route.router_middleware:
+            
+                self.http_middlewares+=route.router_middleware 
+                route.router_middleware = [] #HACK: clear the router middleware stack to avoid running it the second time
+                
             match = route.pattern.match(request.url.path)
             if match:
 
@@ -148,7 +161,7 @@ class NexioApp:
     def add_route(self, route: Routes) -> None:
         """Add a route to the application"""
         
-        
+       
         self.routes.append(route)
 
     def add_middleware(self, middleware: Callable) -> None:
@@ -158,7 +171,6 @@ class NexioApp:
 
     def mount_router(self, router: Router) -> None:
         """Mount a router and all its routes to the application"""
-        self.add_middleware(router.middlewares)
         for route in router.get_routes():
             self.add_route(route)
     async def handler_websocket(self, scope,receive,send):
@@ -174,7 +186,7 @@ class NexioApp:
 
                 
                 try:
-                    print(route.handler)
+                    
                     await route.handler(ws)
                 except Exception as e:
                     error = traceback.format_exc()

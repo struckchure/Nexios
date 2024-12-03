@@ -22,6 +22,7 @@ class CORSMiddleware(BaseMiddleware):
         max_age: int = 600,
     ):
         super().__init__()
+        
         if allow_methods is None:
             allow_methods = ALL_METHODS
         if allow_origins is None:
@@ -76,6 +77,7 @@ class CORSMiddleware(BaseMiddleware):
             self.preflight_headers["Access-Control-Allow-Credentials"] = "true"
 
     async def process_request(self, request: Request, response):
+        
         method = request.scope["method"]
         origin = request.headers.get("origin")
 
