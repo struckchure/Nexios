@@ -3,14 +3,11 @@ import json
 from urllib.parse import parse_qs
 from .cookies_parser import parse_cookies
 from .parsers import parse_multipart_data,parse_form_urlencoded
-from nexios.sessions.backends.base import SessionBase
 from ..structs import URL,State
 from .mixins import RequestValidatonMixin
 
-class RequestExtraType(Protocol):
-    session: 'SessionBase'
 
-class ClientDisconnect(Exception, RequestExtraType):
+class ClientDisconnect(Exception):
     """Custom exception to indicate client disconnection."""
     pass
 

@@ -17,7 +17,9 @@ setup(
         "aerich",
         "asgiref",
         "anyio",
-        "aiofiles"
+        "aiofiles",
+        "itsdangerous"
+
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

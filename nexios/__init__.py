@@ -1,5 +1,5 @@
 from .application import NexioApp 
-from .sessions.middlewares import SessionMiddleware
+from .sessions.middleware import SessionMiddleware
 from .middlewares.logging import ErrorHandlerMiddleware
 from .middlewares.common import CommonMiddleware
 from .config.settings import BaseConfig
