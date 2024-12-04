@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import re
 import warnings
 from enum import Enum
-
+allowed_methods = ['get','post','put','delete','patch','delete','options']
 class RouteType(Enum):
     REGEX = "regex"
     PATH = "path"
@@ -92,7 +92,8 @@ class Router(BaseRouter):
             prefixed_route = Routes(
                 f"{self.prefix}{route.raw_path}",
                 route.handler,
-                middleware=route.middleware
+                middleware=route.middleware,
+                methods=route.methods
             )
             self.routes.append(prefixed_route)
         else:
@@ -144,7 +145,7 @@ class Routes:
         self.raw_path = path
         self.handler = handler
         self.middleware = middleware
-        self.methods = methods or [] 
+        self.methods = methods or  allowed_methods
         route_info = RouteBuilder.create_pattern(path)
         self.pattern = route_info.pattern
         self.param_names = route_info.param_names

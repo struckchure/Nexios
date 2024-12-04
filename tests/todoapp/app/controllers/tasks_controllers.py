@@ -12,7 +12,8 @@ from tortoise.exceptions import DoesNotExist
 task_routes = Router(prefix="/api")
 @AllowedMethods(["get"])
 async def get_tasks(request: Request, response: NexioResponse):
-    if request.url_params.get("id"):
+    await request.session.set_session("user","dunamis")
+    if request.route_params.id:
         try:
             task = await TaskModel.get(id=request.url_params.get("id"))
             return response.json({
@@ -76,7 +77,7 @@ async def update_task(request: Request, response: NexioResponse):
 
 @AllowedMethods(["delete"])
 async def delete_task(request: Request, response: NexioResponse):
-    task_id = request.url_params.get("id")
+    task_id = request.route_params.id
     if not task_id:
         return response.json({"error": "Task ID is required"}, status_code=400)
 
@@ -90,8 +91,8 @@ async def delete_task(request: Request, response: NexioResponse):
 
 
 # Add Routes
-task_routes.add_route(Routes("/task/create", create_task))
-task_routes.add_route(Routes("/task/all", get_tasks))
+task_routes.add_route(Routes("/task/create", create_task,methods=['get']))
+task_routes.add_route(Routes("/task/all", get_tasks,methods=['get']))
 task_routes.add_route(Routes("/task/{id}", get_tasks))
 task_routes.add_route(Routes("/task/{id}/update", update_task))
 task_routes.add_route(Routes("/task/{id}/delete", delete_task))
