@@ -1,6 +1,7 @@
 from nexios.middlewares.base import BaseMiddleware
 from .signed_cookies import SignedSessionManager
 from .file import FileSessionManager
+from .db import DBSessionManager
 from nexios.http.request import Request
 from nexios.http.response import NexioResponse
 class SessionMiddleware(BaseMiddleware):
@@ -8,9 +9,9 @@ class SessionMiddleware(BaseMiddleware):
     async def process_request(self, request :Request, response):
         self.config = request.scope['config']
         session_cookie_name = self.config.SESSION_COOKIE_NAME or "session_id"
-        print(request.cookies)
+        
         #TODO:ALLOW USE TO SET THE SESSION MANAGER
-        session = FileSessionManager(
+        session = DBSessionManager(
             config=self.config,
             session_key=request.cookies.get(session_cookie_name)
 
