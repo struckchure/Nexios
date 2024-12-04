@@ -174,29 +174,58 @@ class NexioApp:
         """Mount a router and all its routes to the application"""
         for route in router.get_routes():
             self.add_route(route)
-    async def handler_websocket(self, scope,receive,send):
-        ws = await get_websocket_session(scope,receive,send)
+    async def execute_ws_middleware_stack(
+        self, ws, middleware: Callable, handler: Callable, **kwargs
+    ) -> Any:
+        """
+        Executes WebSocket middleware stack with a handler.
+        """
+        stack = self.ws_middlewares.copy()
+        if callable(middleware):
+            stack.append(middleware)
+        index = -1
+
+        async def next_middleware():
+            nonlocal index
+            index += 1
+            if index < len(stack):
+                middleware = stack[index]
+                return await middleware(ws, next_middleware, **kwargs)
+            else:
+                return await handler(ws, **kwargs)
+
+        return await next_middleware()
+
+    async def handler_websocket(self, scope, receive, send):
+        ws = await get_websocket_session(scope, receive, send)
 
         for route in self.routes:
             match = route.pattern.match(ws.url.path)
-            
             if match:
-
                 kwargs = match.groupdict()
-                setattr(ws,"route_params",RouteParam(kwargs))
+                setattr(ws, "route_params", RouteParam(kwargs))
 
-                
                 try:
-                    
-                    await route.handler(ws)
+                    await self.execute_ws_middleware_stack(
+                        ws,
+                        route.middleware,
+                        route.handler,
+                        **kwargs
+                    )
                 except Exception as e:
                     error = traceback.format_exc()
-                    print(error)
+                    self.logger.error(f"WebSocket handler error: {error}")
                     return
                 return
-        
-        error_response = JSONResponse({"error": "Not found"}, status_code=404)
-        await error_response(scope, receive, send)
+
+        await ws.close(reason="Not found")
+
+    def add_ws_middleware(self, middleware: Callable) -> None:
+        """
+        Add a WebSocket middleware to the application.
+        """
+        if callable(middleware):
+            self.ws_middlewares.append(middleware)
     async def __call__(self, scope: dict, receive: Callable, send: Callable) -> None:
         """ASGI application callable"""
         if scope["type"] == "lifespan":
