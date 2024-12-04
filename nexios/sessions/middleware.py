@@ -9,8 +9,13 @@ class SessionMiddleware(BaseMiddleware):
     async def process_request(self, request :Request, response):
         self.config = request.scope['config']
         session_cookie_name = self.config.SESSION_COOKIE_NAME or "session_id"
-        
-        #TODO:ALLOW USE TO SET THE SESSION MANAGER
+        managers = {
+            "file":FileSessionManager,
+            "db":DBSessionManager,
+            "cookies":SessionMiddleware
+        }    
+        manager_config = self.config.SESSION_MANAGER 
+        manager = managers.get(manager_config,SignedSessionManager)
         session = DBSessionManager(
             config=self.config,
             session_key=request.cookies.get(session_cookie_name)
