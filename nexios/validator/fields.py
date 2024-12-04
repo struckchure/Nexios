@@ -39,7 +39,7 @@ class StringField(BaseField):
     def validate_min(self,value):
         if not value or not self.min_length:
             return 
-        if len(value) < self.max_length:
+        if len(value) < self.min_length:
             raise ValidationError(f"Value length must not be below {self.min_length}") 
         
     def check_type(self, value):
