@@ -1,6 +1,72 @@
 site_name: Nexios
+site_description: A modern backend framework for building scalable and efficient web applications.
+site_author: Dunamis
+site_url: https://nexios.example.com
+
+# Theme Configuration
 theme:
-  name: readthedocs
+  name: united
   palette:
     primary: 'indigo'
     accent: 'pink'
+  syntax:
+    highlight: true  # Enable PrismJS for syntax highlighting
+
+# Navigation Structure
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Introduction: introduction.md
+      - Installation: installation.md
+      - Project Setup: setup.md
+  - Core Features:
+      - Request Object: core-features/request-object.md
+      - Response Object: core-features/response-object.md
+      - Middleware: core-features/middleware.md
+      - Router: core-features/router.md
+      - Routing: core-features/routing.md
+      - WebSocket Support: core-features/websocket.md
+      - Session Management: core-features/session-manager.md
+      - Validators: core-features/validators.md
+  - Integrations:
+      - Tortoise ORM: integrations/tortoise-orm.md
+      - Redis: integrations/redis.md
+      - Celery: integrations/celery.md
+  - Tutorials:
+      - Basic Application: tutorials/basic-app.md
+      - Real-Time Chat with WebSockets: tutorials/realtime-chat.md
+      - REST API with ORM: tutorials/rest-api.md
+      - Authentication System: tutorials/authentication.md
+  - API Reference:
+      - Nexios API: api-reference/nexios.md
+      - Middleware API: api-reference/middleware.md
+      - Router API: api-reference/router.md
+      - Validators API: api-reference/validators.md
+  - Advanced Guides:
+      - Custom Middleware: advanced/custom-middleware.md
+      - Extending the Router: advanced/extending-router.md
+      - Writing Custom Validators: advanced/custom-validators.md
+
+# Plugins
+plugins:
+  - search
+  - git-revision-date-localized:
+      enable: true
+
+# Markdown Extensions
+markdown_extensions:
+  - admonition
+  - codehilite:
+      guess_lang: false
+  - toc
+  - tables
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+
+# Extra Configuration
+extra_css:
+  - styles/custom.css  # Add custom styles for branding
+extra_javascript:
+  - https://cdnjs.cloudflare.com/ajax/libs/prism/1.25.0/prism.min.js

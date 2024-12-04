@@ -10,6 +10,7 @@ import os
 from time import time
 import typing
 
+
 class Response:
     """
     Base ASGI-compatible Response class with support for cookies, caching, and custom headers.
