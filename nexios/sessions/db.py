@@ -35,7 +35,7 @@ class DBSessionManager(BaseSessionInterface):
         self.modified = True
         self._session_cache[key] = value
         # Save immediately after modifying session data
-        self._save_session_data()
+        await self._save_session_data()
 
     async def get_session(self, key: str) -> Optional[str]:
         """Get a session value."""
