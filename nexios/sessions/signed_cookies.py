@@ -71,6 +71,10 @@ class SignedSessionManager(BaseSessionInterface):
         else:
             self._session_cache = {}
 
+    def clear(self):
+        self._session_cache.clear()
+
+    
     def get_session_key(self):
         return self.session_key
 
