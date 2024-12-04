@@ -1,89 +1,70 @@
-
-
+###Installing
 ---
+Assuming Python is already installed on your system, create a directory to hold your application and set it as your working directory.
 
-# Installation Guide for Nexios
+__Nexios__ require Python 3.6 or higher.
 
-To get started with **Nexios**, follow these simple steps to install the framework and set up your environment.
+```bash
+mkdir your_project_name
+cd  your_project_name
+```
 
----
+Use Python's venv module to create a virtual environment. This isolates your project's dependencies, ensuring they don't interfere with system-wide packages or other projects. Run the following command to initialize the virtual environment:
 
-## Step 1: Install Nexios
+```bash
+python -m venv venv
 
-Use `pip` to install **Nexios**. Open your terminal and run:
+```
+
+- The name venv is conventional, but you can choose any name for your virtual environment folder.
+
+- This virtual environment will store all the libraries and dependencies your project requires.
+
+Activate the Virtual Environment
+
+Depending on your operating system, activate the virtual environment using one of the following commands:
+
+- Windows
+
+```bash
+    venv\Scripts\activate
+```
+
+- Linux/Mac
+
+```bash
+    source venv/bin/activate
+```
+
+After activation, your terminal will display the virtual environment's name as a prefix (e.g., (venv)), indicating that it is active.
+
+Once activated, you can install project-specific dependencies, and they will be stored within the virtual environment. When you're done working on the project, deactivate the environment with the deactivate command
+
+Run the follow command to install nexios
 
 ```bash
 pip install nexios
 ```
 
-This will install **Nexios** along with all necessary dependencies automatically.
-
----
-
-## Step 2: Install Optional Dependencies (if needed)
-
-If you want to use optional features like **Tortoise ORM** or **Redis** for session management, you can install them separately. However, the required libraries will be automatically installed along with **Nexios**.
-
-To install **Tortoise ORM**:
+Confirm the installation by running :
 
 ```bash
-pip install tortoise-orm
+python -m nexios
 ```
 
-To install **Redis**:
+You should see an output like this :
 
-```bash
-pip install redis
+```text
+      _   _                 _               
+ | \ | |               (_)              
+ |  \| |   ___  __  __  _    ___    ___ 
+ | . ` |  / _ \ \ \/ / | |  / _ \  / __|
+ | |\  | |  __/  >  <  | | | (_) | \__ \
+ |_| \_|  \___| /_/\_\ |_|  \___/  |___/
+                                               
+    🚀 Welcome to Nexios 🚀
+      The sleek ASGI Backend Framework
+      Version: X.X.X
 ```
 
----
-
-## Step 3: Create a New Project
-
-Create a directory for your Nexios project:
-
-```bash
-mkdir my_nexios_project
-cd my_nexios_project
-```
-
-Then, create a file called `main.py` and add the following content to start a basic Nexios app:
-
-```python
-from nexios import get_application
-from nexios.http import request, response
-
-app = get_application()
-
-@app.route("/")
-async def hello_world(req: request.Request, res: response.NexioResponse):
-    return res.json({"message": "Hello, Nexios!"})
-
-
-```
-
----
-
-## Step 4: Run Your Application
-
-To run the Nexios application, use the following command:
-
-```bash
-uvicorn main:app --reload
-```
-
-Your application should now be running at `http://127.0.0.1:8000`.
-
----
-
-## Conclusion
-
-You’ve successfully installed **Nexios** and set up your first project! Now you’re ready to build web applications with **Nexios**. Enjoy building!
-
---- 
-
-[Back to top](#top)
-
---- 
-
-This setup ensures users are guided only through the installation process, with no extra details beyond what's necessary to get started.
+__Congrat you have installed nexios__

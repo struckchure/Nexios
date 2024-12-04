@@ -18,7 +18,8 @@ nav:
   - Getting Started:
       - Introduction: introduction.md
       - Installation: installation.md
-      - Project Setup: setup.md
+      - Hello World : hello_world.md
+      - Routing : basic_routing.md
   - Core Features:
       - Request Object: core-features/request-object.md
       - Response Object: core-features/response-object.md

@@ -43,7 +43,7 @@
   <text x="75" y="55" 
         font-family="Arial, sans-serif" 
         font-size="8" 
-        fill="#6B7280">
+        fill="red">
     ASGI Framework
   </text>
   
