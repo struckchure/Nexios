@@ -3,27 +3,33 @@ import typing
 from .descriptor import FieldDescriptor
 from .exceptions import ValidationError
 class SchemaMeta(type):
+    
     def __new__(cls, name, bases, dct):
-        cls._fields = {}
+        new_class = super().__new__(cls, name, bases, dct)
+        new_class._fields = {}
         
         for key,value in dct.items():
             if isinstance(value, FieldDescriptor):
 
-                cls._fields[key] = value
+                new_class._fields[key] = value
                 setattr(cls,key,value)
-        return super().__new__(cls, name, bases, dct)
+        return new_class
     
     
 
 
-
-
-class Schema(metaclass = SchemaMeta):
+class BaseSchema(metaclass = SchemaMeta):
+     def __init__(self):
+        
+        self._validation_errors = {}
+        self._data = {}
+        self._called = False
+        self._validated_data = {}
+class Schema(BaseSchema):
     
-    _validation_errors = {}
-    _data = {}
-    _called = False
-    _validated_data = {}
+    def __init__(self):
+
+        super().__init__()
 
     async def validate(self):
         pass 
