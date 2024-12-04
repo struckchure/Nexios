@@ -501,7 +501,7 @@ class NexioResponse:
     def delete_cookie(
         self,
         key: str,
-        value: str,
+        value: str = None,
         max_age: Optional[int] = None,
         expires: Optional[Union[str, datetime]] = None,
         path: str = "/",

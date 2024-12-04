@@ -194,7 +194,7 @@ class NexioApp:
                     print(error)
                     return
                 return
-        print("Not Found")
+        
         error_response = JSONResponse({"error": "Not found"}, status_code=404)
         await error_response(scope, receive, send)
     async def __call__(self, scope: dict, receive: Callable, send: Callable) -> None:

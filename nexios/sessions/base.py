@@ -20,6 +20,7 @@ class BaseSessionInterface:
 
         self.session_key = session_key 
         assert config.SECRET_KEY != None, "Secret key is required to use session"
+        self.config = config
 
 
 
@@ -81,9 +82,10 @@ class BaseSessionInterface:
     def get_expiration_time(self) -> datetime | None:
         """Returns the expiration time for the session. Uses `config.SESSION_EXPIRATION_TIME`."""
         if self.config.SESSION_PERMANENT:
-            return timezone.now() + self.config.SESSION_EXPIRATION_TIME
+            return timezone.now() + self.config.SESSION_EXPIRATION_TIME or 86400
         return None
 
+    @property
     def should_set_cookie(self) -> bool:
         """Determines if the cookie should be set. Depends on `config.SESSION_REFRESH_EACH_REQUEST`."""
         return self.modified or (
