@@ -27,14 +27,18 @@ class BaseSessionInterface:
 
     def set_session(self,key :str,value :str):
         self.modified = True
+        self.accessed = True
+
         self._session_cache[key] = value
     
     def get_session(self, key):
+        self.accessed = True
         
         return self._session_cache.get(key, None)
         
 
     def get_all(self):
+        self.accessed = True
         return self._session_cache.items()
     
     def keys(self):

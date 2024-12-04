@@ -16,7 +16,7 @@ class SessionMiddleware(BaseMiddleware):
         }    
         manager_config = self.config.SESSION_MANAGER 
         manager = managers.get(manager_config,SignedSessionManager)
-        session = DBSessionManager(
+        session = manager(
             config=self.config,
             session_key=request.cookies.get(session_cookie_name)
 
@@ -26,8 +26,12 @@ class SessionMiddleware(BaseMiddleware):
         request.session = session
 
     async def process_response(self, request :Request , response :NexioResponse):
-        if request.session.is_empty():
-            response.delete_cookie(key=self.config.SESSION_COOKIE_NAME or "session_id") #CHECK IS THE SESSIO IS EMPTY AND DELETE
+        print("save")
+        if request.session.is_empty() and request.session.accessed:
+            response.delete_cookie(
+                key=self.config.SESSION_COOKIE_NAME or "session_id",
+                
+                )
             return 
         if request.session.should_set_cookie:
             await request.session.save()
