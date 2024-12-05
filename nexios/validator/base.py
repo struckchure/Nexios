@@ -1,7 +1,7 @@
-from abc import ABC,abstractmethod
 import typing
 from .descriptor import FieldDescriptor
 from .exceptions import ValidationError
+
 class SchemaMeta(type):
     
     def __new__(cls, name, bases, dct):

@@ -26,7 +26,7 @@ class SessionMiddleware(BaseMiddleware):
         request.session = session
 
     async def process_response(self, request :Request , response :NexioResponse):
-        print("save")
+        
         if request.session.is_empty() and request.session.accessed:
             response.delete_cookie(
                 key=self.config.SESSION_COOKIE_NAME or "session_id",
