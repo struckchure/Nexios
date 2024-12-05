@@ -45,8 +45,8 @@ class SessionMiddleware(BaseMiddleware):
                 path=request.session.get_cookie_path(),
                 httponly=request.session.get_cookie_httponly(),
                 secure=request.session.get_cookie_secure(),
-                samesite=request.session.get_cookie_samesite,
-                expires=request.session.get_expiration_time
+                samesite=request.session.get_cookie_samesite(),
+                expires=request.session.get_expiration_time()
                 
             )
 
