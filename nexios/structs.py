@@ -647,27 +647,46 @@ class State:
 
 
     
+
+    
+
 class RouteParam:
 
-    def __init__(self ,_dict :dict) -> None:
-        self._dict = _dict
+    def __init__(self ,data :dict) -> None:
+        self.data = data
+        self.__data__ = data
 
-   
-    def __getattribute__(self, name: str) -> typing.Any:
-        if name == "_dict":  # Prevent recursion for the _dict attribute
-            return object.__getattribute__(self, name)
-        return self._dict.get(name, None)
+
+    def __iter__(self):
+        
+        return iter(self.data)
+    
+
     def __getitem__(self, name):
-        return self._dict.get(name,None)
+        return self.data.get(name,None)
     
     def get_lists(self):
-        return self._dict.items()
+        return self.data.items()
     
     def keys(self):
-        self._dict.keys()
+        return self.data.keys()
 
     def values(self):
-        return self._dict.items()
+        return self.data.values()
 
+    def items(self):
+        return self.data.items()
+    
     def __repr__(self) -> str:
         return f"<RouteParams {self._dict.items()}>"
+    
+    def __len__(self) -> int:
+        return len(self.data)
+    
+    
+    
+    
+    
+    
+
+    

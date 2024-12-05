@@ -119,6 +119,7 @@ class Request(HTTPConnection, RequestValidatonMixin):
         self.scope = scope
         self._receive = receive
         self._send = send
+        self.user = None
       
 
     @property
