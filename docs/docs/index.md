@@ -1,201 +1,133 @@
-![nexios Logo](logo.svg)
-# nexios API Framework 🚀💻
-
-Welcome to **nexios**, a lightning-fast web framework built with Python, designed by **TechWithDunamix** — a Nigerian developer! 🇳🇬💡 nexios is your go-to framework for building APIs combining speed and simplicity to supercharge your projects. ⚡
+Here's an introductory markdown documentation for Nexios based on your questions and answers:
 
 ---
 
-## Why Choose nexios?
 
-- **Blazing Fast**: Experience unmatched performance for all your web applications.
-- **Developer-Friendly**: Clean and minimal code that prioritizes productivity.
-- **Easy Integration**: Get started effortlessly — no steep learning curve or complex configurations.
+# Nexios Documentation
+[![GitHub stars](https://img.shields.io/github/stars/techwithdunamix/nexios.svg?style=social)](https://github.com/techwithdunamix/nexios)
+[![GitHub forks](https://img.shields.io/github/forks/techwithdunamix/nexios.svg?style=social)](https://github.com/techwithdunamix/nexios)
+[![GitHub issues](https://img.shields.io/github/issues/techwithdunamix/nexios.svg)](https://github.com/techwithdunamix/nexios/issues)
+## Introduction
+Nexios is a Python-based ASGI backend framework designed to provide flexibility, speed, and utility for building asynchronous web applications. It mimics the structure of Express.js, making it easy for developers familiar with JavaScript and Node.js to transition to Python. Nexios is designed with both Object-Oriented Programming (OOP) and Functional Programming (FP) principles, giving developers the choice to approach their code in the way that suits them best.
 
----
+Nexios provides built-in utilities like middleware support, routing, session management, WebSocket handling, and asynchronous operations, making it a perfect fit for modern, fast-paced backend development. It also comes with automatic support for Tortoise ORM, making it easier to interact with databases in a non-blocking way.
 
-## Quick Start 
+## Features
 
-Follow these steps to set up nexios and create your first app in minutes!
+### 1. **Installation**
+To get started with Nexios, follow these steps:
 
----
+1. **Create a new project directory**:
+   ```bash
+   mkdir your_project_name
+   cd your_project_name
+   ```
 
-### 1. Install nexios 📦
+2. **Set up a virtual environment**:
+   ```bash
+   python -m venv venv
+   ```
 
-Install the framework directly from GitHub:
+3. **Activate the virtual environment**:
+   - On Windows:
+     ```bash
+     venv\Scripts\activate
+     ```
+   - On Linux/Mac:
+     ```bash
+     source venv/bin/activate
+     ```
 
-```bash
-pip install git+https://github.com/TechWithDunamix/nexios.git
+4. **Install Nexios**:
+   ```bash
+   pip install nexios
+   ```
+
+5. **Verify the installation**:
+   ```bash
+   python -m nexios
+   ```
+
+You should see the following output, confirming the installation:
+```
+    🚀 Welcome to Nexios 🚀
+      The sleek ASGI Backend Framework
+      Version: X.X.X
 ```
 
----
+### 2. **Hello World Example**
 
-**or** \n
-Install the framework from pypi:
-
-```
-pip install nexio
-```
-
-### 2. Create Your First Application 💻
-
-Use the `nexios create` command to generate your project structure:
-
-```bash
-nexios create <app_name>
-```
-
-#### Example Output:
-```plaintext
-To get started:
-1. cd <app_name>
-2. Run the application with uvicorn
-3. Your app will be available at http://localhost:8000
-```
-
----
-
-### 3. Project Structure
-
-The generated project will have the following structure:
-
-```plaintext
-project_name/
-├── controllers/
-│   └── home_handler.py
-├── main.py
-├── models.py
-├── settings.py
-└── README.md
-```
-
----
-
-## Code Example: Basic nexios Application
+Create a simple "Hello World" application using Nexios:
 
 ```python
-import uvicorn
-from nexios import get_application
-from nexios.routers import Routes
-from controllers.home_handler import home_handler
+from nexios import NexioApp
 
-app = get_application()
+app = NexioApp()
 
-app.add_route(Routes("/", home_handler))
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+@app.route("/api/endpoint", methods=["GET"])
+async def endpoint_handler(request, response):
+    return response.json({"text": "Welcome to Nexios"})
 ```
 
-Create the `home_handler.py` in the `controllers/` directory:
+Run the application with the command:
+```bash
+uvicorn main:app --reload
+```
 
+### 3. **Routing**
+Nexios supports routing in both decorator and router styles.
+
+#### Using Decorators:
 ```python
-from nexios.http.request import Request
-from nexios.http.response import nexiosResponse
-
-async def home_handler(request: Request, response: nexiosResponse, **kwargs):
-    return response.json({
-        "message": "Welcome to nexios!",
-        "docs": "https://nexios.example.com/docs"
-    })
+@app.route("/api/endpoint", methods=["GET"])
+async def endpoint_handler(request, response):
+    return response.send("Hello World")
 ```
 
----
+#### Using Routers:
+```python
+from nexios import Router
 
-## Step-by-Step Development Workflow
+r = Router(prefix="/api")
+r.add_route("/endpoint", handler=endpoint_handler)
+```
 
-1. **Install Dependencies**:
-   ```bash
-   pip install git+https://github.com/TechWithDunamix/nexios.git
-   ```
+Routes can be defined with different HTTP methods like `GET`, `POST`, `PUT`, `DELETE`, etc. The handler functions will respond accordingly based on the request method.
 
-2. **Run Your Application**:
-   ```bash
-   uvicorn main:app --reload
-   ```
+### 4. **Middleware**
+Nexios allows you to define middleware that runs before or after a request is processed.
 
-3. **Access Your App**:
-   Visit [http://localhost:8000](http://localhost:8000) to see your application in action.
+Example of an authentication middleware:
+```python
+class AuthMiddleware(BaseMiddleware):
+    async def before_request(self, req, res):
+        token = req.headers.get("Authorization")
+        if not token:
+            return res.json({"error": "Unauthorized"}, status=401)
+        
+        user = await verify_token(token)
+        req.state.user = user
+        await super().before_request(req, res)
+```
 
-4. **Migrate Database** (if applicable):
-   ```bash
-   aerich init -t settings.migration
-   aerich migrate
-   aerich upgrade
-   ```
+This middleware checks for a token in the request header and verifies it before proceeding to the handler.
 
----
+### 5. **Asynchronous Support**
+Nexios is built on top of ASGI, which means it's fully asynchronous and capable of handling multiple concurrent requests without blocking. This is especially useful for I/O-bound operations such as database queries, file handling, and API calls, allowing for more efficient performance compared to traditional synchronous frameworks.
 
-## Project Components
+By using `async` and `await` keywords, you can make non-blocking calls to databases (like Tortoise ORM) and external APIs while handling incoming HTTP requests.
 
-### **1. main.py**
+### 6. **WebSocket Support**
+Nexios comes with built-in WebSocket support, allowing you to handle real-time communication in your application easily. This feature can be useful for building chat applications, live notifications, or other real-time features.
 
-The entry point for your application.
+### 7. **Session Management**
+Nexios supports both file-based and signed cookie sessions. It also has a built-in session manager that helps with storing and retrieving session data securely. This is useful for maintaining user states, especially in authentication systems.
 
-Responsibilities:
-- Initialize the nexios app
-- Setup startup/shutdown hooks
-- Configure routes
-- Start the ASGI server with Uvicorn
+## Conclusion
+Nexios is a powerful and flexible framework that allows developers to build modern web applications efficiently. It leverages the power of ASGI for asynchronous operations, offers easy-to-use routing and middleware systems, and comes with built-in utilities like WebSocket and session management to help you develop faster and smarter. Whether you prefer Object-Oriented or Functional Programming, Nexios has you covered, making it a versatile choice for backend development.
 
-### **2. controllers/home_handler.py**
+For more detailed information, refer to the complete [Nexios documentation](#).
 
-Handles the routing logic for your application.
+--- 
 
-Responsibilities:
-- Define HTTP endpoints
-- Process incoming requests
-- Format and return responses
-
-### **3. settings.py**
-
-Centralized configuration for your application.
-
-Responsibilities:
-- Manage application settings (e.g., `SECRET_KEY`)
-- Configure ORM and environment variables
-- Provide settings for different environments (development/production)
-
-### **4. models.py**
-
-Defines database models and handles ORM integration.
-
-Responsibilities:
-- Map Python classes to database tables
-- Provide schema validation
-- Integrate with Tortoise ORM for migrations
-
----
-
-## Extending the Framework
-
-1. **Add New Directories**:
-   - `middlewares/`: Add custom middleware.
-   - `schemas/`: Define validation schemas for requests and responses.
-   - `services/`: Encapsulate business logic.
-
-2. **Extend Configuration**:
-   - Add logging configurations.
-   - Separate settings for environments (e.g., `settings_dev.py`).
-
-3. **Enhance Database Management**:
-   - Use Aerich for database migrations.
-   - Configure additional connections in `settings.py`.
-
----
-
-## Best Practices
-
-1. **Secure Configuration**:
-   - Store sensitive data (e.g., `SECRET_KEY`) in environment variables.
-   - Use separate settings for development and production.
-
-2. **Keep Code Modular**:
-   - Define handlers in `controllers/`.
-   - Separate business logic into dedicated services.
-
-3. **Consistent Responses**:
-   - Ensure all endpoints return structured and documented responses.
-
----
-
-### nexios — Powering Simplicity and Speed in Web Development 
+This markdown provides an introduction to Nexios, covering installation, basic routing, middleware, asynchronous support, and other key features of the framework. Let me know if you want to add more details or need further customization!

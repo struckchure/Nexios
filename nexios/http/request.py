@@ -3,7 +3,7 @@ import json
 from urllib.parse import parse_qs
 from .cookies_parser import parse_cookies
 from .parsers import parse_multipart_data,parse_form_urlencoded
-from ..structs import URL,State
+from ..structs import URL,State,Headers
 from .mixins import RequestValidatonMixin
 
 
@@ -30,7 +30,7 @@ class HTTPConnection:
 
     @property
     def headers(self) -> Dict[str, str]:
-        return {name.decode(): value.decode() for name, value in self.scope.get("headers", [])}
+        return Headers({name.decode(): value.decode() for name, value in self.scope.get("headers", [])})
 
     @property
     def cookies(self) -> Dict[str, str]:
