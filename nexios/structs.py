@@ -485,6 +485,7 @@ class Headers(typing.Mapping[str, str]):
             (key.decode("latin-1"), value.decode("latin-1"))
             for key, value in self._list
         ]
+   
 
     def getlist(self, key: str) -> typing.List[str]:
         get_header_key = key.lower().encode("latin-1")
@@ -502,7 +503,7 @@ class Headers(typing.Mapping[str, str]):
         for header_key, header_value in self._list:
             if header_key == get_header_key:
                 return header_value.decode("latin-1")
-        raise KeyError(key)
+        return None
 
     def __contains__(self, key: typing.Any) -> bool:
         get_header_key = key.lower().encode("latin-1")
@@ -528,6 +529,7 @@ class Headers(typing.Mapping[str, str]):
         if len(as_dict) == len(self):
             return f"{class_name}({as_dict!r})"
         return f"{class_name}(raw={self.raw!r})"
+   
 
 
 class MutableHeaders(Headers):
@@ -638,8 +640,7 @@ class State:
         try:
             return self._state[key]
         except KeyError:
-            message = "'{}' object has no attribute '{}'"
-            raise AttributeError(message.format(self.__class__.__name__, key))
+           return None
 
     def __delattr__(self, key: typing.Any) -> None:
         del self._state[key]
@@ -654,7 +655,7 @@ class RouteParam:
 
     def __init__(self ,data :dict) -> None:
         self.data = data
-        self.__data__ = data
+        
 
 
     def __iter__(self):
@@ -665,6 +666,14 @@ class RouteParam:
     def __getitem__(self, name):
         return self.data.get(name,None)
     
+
+    def __getattribute__(self, name: str) -> typing.Any:
+        # Use object.__getattribute__ to avoid infinite recursion
+        data = object.__getattribute__(self, "data")
+        if name in data:
+            return data[name]
+        # Fallback to default attribute access
+        return object.__getattribute__(self, name)
     def get_lists(self):
         return self.data.items()
     
@@ -678,7 +687,7 @@ class RouteParam:
         return self.data.items()
     
     def __repr__(self) -> str:
-        return f"<RouteParams {self._dict.items()}>"
+        return f"<RouteParams {self.data.items()}>"
     
     def __len__(self) -> int:
         return len(self.data)

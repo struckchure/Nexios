@@ -47,6 +47,16 @@ class RouteBuilder:
         # Process path parameters
         processed_path = path
         
+
+        # If the path starts with ^ or ends with $, treat it as a regex
+        if path.startswith("^") or path.endswith("$"):
+            return RoutePattern(
+                pattern=re.compile(path),
+                raw_path=path,
+                param_names=re.findall(r'\?P<(\w+)>', path),
+                route_type=RouteType.REGEX
+            )
+        
         # Handle URL parameters like {param}
         param_matches = re.finditer(r"{(\w+)(?::([^}]+))?}", path)
         for match in param_matches:

@@ -1,3 +1,4 @@
+from nexios.http.response import NexioResponse
 class BaseMiddleware:
     def __init__(self,*kwargs) -> None:
         pass
@@ -6,6 +7,8 @@ class BaseMiddleware:
         await self.process_request(request, response)
         await next_middleware()
         await self.process_response(request, response)
+        
+
 
     async def process_request(self, request, response):
         """Override this method in child classes to process the request before passing it along."""

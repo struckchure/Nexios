@@ -419,9 +419,9 @@ class NexioResponse:
         self._content_type = "text/plain"
         return self
 
-    def json(self, data, status_code=200):
+    def json(self, data, status_code=None):
         """Send JSON response."""
-        self._status_code = status_code
+        self._status_code = status_code or self._status_code or 200
         self._body = data
         self._content_type = "application/json"
         return self

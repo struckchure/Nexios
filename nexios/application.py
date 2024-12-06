@@ -84,10 +84,14 @@ class NexioApp:
                                      response: NexioResponse, 
                                      middleware: Callable, 
                                      handler: Callable, 
+                                     router_middleware, 
                                      **kwargs) -> Any:
         
         
         stack = self.http_middlewares.copy()
+
+        if router_middleware:
+            stack.extend(router_middleware)
         if callable(middleware):
             stack.append(middleware)
         index = -1 
@@ -114,10 +118,6 @@ class NexioApp:
             
             route.handler = AllowedMethods(route.methods)(route.handler)
             
-            if route.router_middleware:
-            
-                self.http_middlewares+=route.router_middleware 
-                route.router_middleware = [] #HACK: clear the router middleware stack to avoid running it the second time
                 
             match = route.pattern.match(request.url.path)
             if match:
@@ -130,7 +130,8 @@ class NexioApp:
                     await self.execute_middleware_stack(request,
                                                       response,
                                                       route.middleware,
-                                                      route.handler)
+                                                      route.handler,
+                                                      route.router_middleware)
                 except Exception as e:
                     self.logger.error(f"Request handler error: {str(e)}")
                     error_response = JSONResponse(
