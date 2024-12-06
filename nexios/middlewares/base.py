@@ -12,7 +12,7 @@ class BaseMiddleware:
 
     async def process_request(self, request, response):
         """Override this method in child classes to process the request before passing it along."""
-        return response.status(404)
+        pass
 
     async def process_response(self, request, response):
         """Override this method in child classes to process the response before returning it."""

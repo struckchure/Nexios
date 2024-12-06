@@ -10,6 +10,9 @@ def parse_cookies(cookie_string: str) -> typing.Dict[str, str]:
 
     Adapted from Django 3.1.0, but avoids using outdated `SimpleCookie.load`.
     """
+
+    if cookie_string is None:
+        return {}
     cookie_dict: typing.Dict[str, str] = {}
 
     for chunk in cookie_string.split(";"):

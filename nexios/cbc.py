@@ -21,7 +21,7 @@ class APIHandler:
             return response.json("Method not allowed",status_code=405)
         
         handler = getattr(self, method, None)
-        validator = getattr(self,f"validate_{method}")
+        validator = getattr(self,f"validate_{method}",None)
         if  validator  and issubclass(validator,Schema):
             request._validation_schema = validator
             request._validation_errors = {}
