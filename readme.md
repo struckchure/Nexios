@@ -1,4 +1,4 @@
-![nexios Logo](docs/logo.svg)
+![nexios Logo](docs/logo.png)
 # nexios API Framework 🚀💻
 
 Welcome to **nexios**, a lightning-fast web framework built with Python, designed by **TechWithDunamix** — a Nigerian developer! 🇳🇬💡 nexios is your go-to framework for building APIs combining speed and simplicity to supercharge your projects. ⚡

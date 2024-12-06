@@ -8,8 +8,8 @@ repo_url: https://github.com/techwithdunamix/nexios
 theme:
   # name: united
   name: material
-  favicon: logo.svg
-  logo: logo.svg
+  favicon: logo.png
+  logo: logo.png
   palette:
     - scheme: light
       primary: deep-orange
