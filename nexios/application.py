@@ -236,3 +236,27 @@ class NexioApp:
 
         else:
             await self.handler_websocket(scope, receive, send)
+
+    def get(self, path: str) -> Callable:
+        """Decorator to register a GET route."""
+        return self.route(path, methods=["GET"])
+
+    def post(self, path: str) -> Callable:
+        """Decorator to register a POST route."""
+        return self.route(path, methods=["POST"])
+
+    def delete(self, path: str) -> Callable:
+        """Decorator to register a DELETE route."""
+        return self.route(path, methods=["DELETE"])
+
+    def put(self, path: str) -> Callable:
+        """Decorator to register a PUT route."""
+        return self.route(path, methods=["PUT"])
+
+    def patch(self, path: str) -> Callable:
+        """Decorator to register a PATCH route."""
+        return self.route(path, methods=["PATCH"])
+
+    def options(self, path: str) -> Callable:
+        """Decorator to register an OPTIONS route."""
+        return self.route(path, methods=["OPTIONS"])

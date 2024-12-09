@@ -1,1 +1,11 @@
-peotry
+mkdocs
+mkdocs-material
+mkdocs-blogging-plugin
+mkdocs-git-revision-date-localized-plugin
+mkdocs-multirepo-plugin
+mkdocs-rss-plugin
+pymdown-extensions
+poetry
+aerich
+tortoise-orm
+nexios
