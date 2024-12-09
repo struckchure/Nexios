@@ -36,6 +36,8 @@ from .warnings import RemovedInNValidator4Warning
 if typing.TYPE_CHECKING:
     from .schema import SchemaMeta
 
+from nexios.utils.files import UploadedFile
+from io import BytesIO
 
 __all__ = [
     "Field",
@@ -2112,7 +2114,61 @@ class Inferred(Field):
         return field._serialize(value, attr, obj, **kwargs)
 
 
-# Aliases
+
+
+
+class FileField(Field):
+    def __init__(self, allowed_extensions=None, max_size=None, min_size=None, **kwargs):
+        """
+        Initialize the FileField with validation parameters.
+        :param allowed_extensions: List of allowed file extensions (e.g., ['jpg', 'png']).
+        :param max_size: Maximum allowed file size in bytes.
+        :param min_size: Minimum allowed file size in bytes.
+        """
+        super().__init__(**kwargs)
+        self.allowed_extensions = allowed_extensions or []
+        self.max_size = max_size
+        self.min_size = min_size
+
+    def _deserialize(self, value, attr, data, **kwargs):
+        """
+        Deserialize and validate the file.
+        :param value: The file to validate (assumes `value` is a file-like object with `filename` and `size` attributes).
+        """
+        if not value:
+            raise ValidationError("No file provided.")
+
+        if not isinstance(value,(UploadedFile,BytesIO)):
+            raise ValidationError("Invalid File Provided")
+
+
+        # Validate extension
+        if self.allowed_extensions:
+            extension = value.filename.split('.')[-1].lower()
+            if extension not in self.allowed_extensions:
+                raise ValidationError(
+                    f"File type '{extension}' not allowed. Allowed types: {', '.join(self.allowed_extensions)}"
+                )
+
+        # Validate size
+        self._validate_size(value)
+
+        return value
+
+    def _validate_size(self, value):
+        """
+        Validate the size of the file.
+        :param value: The file object to validate.
+        """
+        if self.min_size and value.size < self.min_size:
+            raise ValidationError(f"File size too small. Minimum size is {self.min_size} bytes.")
+
+        if self.max_size and value.size > self.max_size:
+            raise ValidationError(f"File size too large. Maximum size is {self.max_size} bytes.")
+
+    def __str__(self):
+        return "File Field Validator"
+
 URL = Url
 Str = String
 Bool = Boolean
