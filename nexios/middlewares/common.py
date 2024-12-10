@@ -16,7 +16,9 @@ class CommonMiddleware(BaseMiddleware):
         response.headers['Cache-Control'] = 'no-store'  
         
         if request.user_agent:
-            response.headers['X-User-Agent'] = request.user_agent 
+            response.headers['X-User-Agent'] = request.user_agent
+
+       
 
 
         return response

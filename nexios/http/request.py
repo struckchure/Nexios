@@ -105,6 +105,10 @@ class HTTPConnection:
             # store info
             self._state = State(self.scope["state"])
         return self._state
+    @property
+    def origin(self):
+        
+        return self.headers.get("origin",None)
 class Request(HTTPConnection, RequestValidatonMixin):
     """Handles HTTP request data with improved data parsing capabilities."""
     

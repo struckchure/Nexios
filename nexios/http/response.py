@@ -585,3 +585,6 @@ class NexioResponse:
         """Make the response ASGI-compatible."""
         response = self._get_base_response()
         await response(scope, receive, send)
+
+
+

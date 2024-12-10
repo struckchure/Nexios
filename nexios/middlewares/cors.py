@@ -64,7 +64,7 @@ class CORSMiddleware(BaseMiddleware):
         self.allow_origin_regex = re.compile(allow_origin_regex) if allow_origin_regex else None
         self.expose_headers = expose_headers
         self.max_age = max_age
-
+        
         # Prepare the simple headers
         self.simple_headers = {}
         
@@ -83,18 +83,20 @@ class CORSMiddleware(BaseMiddleware):
 
     async def process_request(self, request: Request, response):
         method = request.scope["method"]
-        origin = request.headers.get("origin")
-
+        origin = request.origin
+        print(origin)
         if method == "OPTIONS" and "access-control-request-method" in request.headers:
+            
             return await self.preflight_response(request, response)
         
         if origin:
             request.scope['cors_origin'] = origin
 
     async def process_response(self, request: Request, response: NexioResponse):
-        origin = request.scope.get('cors_origin')
-
+        origin = request.origin
+        
         if origin and self.is_allowed_origin(origin):
+            
             response.headers["Access-Control-Allow-Origin"] = origin
 
             if self.allow_credentials:
@@ -103,8 +105,7 @@ class CORSMiddleware(BaseMiddleware):
         if self.expose_headers:
             response.headers["Access-Control-Expose-Headers"] = ", ".join(self.expose_headers)
         
-        return response
-
+        
     def is_allowed_origin(self, origin: str) -> bool:
         if origin in self.blacklist_origins:
             
@@ -150,5 +151,5 @@ class CORSMiddleware(BaseMiddleware):
                         return response.json("Disallowed CORS Headers", status_code=400, headers=headers)
                 
                 headers["Access-Control-Allow-Headers"] = requested_headers
-
-        return response.json("OK", status_code=200, headers=headers)
+        print("COrs passed")
+        return response.send("OK", status_code=200, headers=headers)

@@ -80,22 +80,7 @@ class NexioApp:
             else:
                 await send({"type": "lifespan.shutdown.failed", "message": str(e)})
 
-    async def execute_http_pre_route_middleware(self,
-                                    request: Request,
-                                     response: NexioResponse,):
-        index = -1
-        stack = self.pre_routing_http_middlewares.copy()
-        async def next_middleware():
-            nonlocal index
-            index += 1
-            
-            if index < len(stack):
-                middleware = stack[index]
-                return await middleware(request, response, next_middleware)
-            else:
-                return
-            
-        return await next_middleware()
+   
     async def execute_middleware_stack(self, 
                                      request: Request,
                                      response: NexioResponse, 
@@ -128,10 +113,11 @@ class NexioApp:
     async def handle_http_request(self, scope: dict, receive: Callable, send: Callable) -> None:
         
         request = Request(scope, receive, send)
+        
         response = NexioResponse()
         request.scope['config'] = self.config
         
-        await self.execute_http_pre_route_middleware(request,response)
+        
         
         for route in self.routes:
             
@@ -158,11 +144,22 @@ class NexioApp:
                         status_code=500
                     )
                     await error_response(scope, receive, send)
-                    return
+                    raise 
                 await response(scope, receive, send)
                 return
-        print(response.headers)
-        error_response = JSONResponse({"error": "Not found"}, status_code=404,headers=response.headers)
+        
+        status_code= 200 if request.method.lower() == "options" else 404
+        not_found_header = {
+            "Access-Control-Allow-Origin": request.origin or "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "content-type",
+        }
+    
+        error_response = JSONResponse({"error": "Not found"},
+                                      status_code=status_code,
+                                      headers=not_found_header)
+        
+        print(error_response.headers)
         await error_response(scope, receive, send)
 
     def route(self, path: str, methods: List[Union[str, HTTPMethod]] = allowed_methods_default) -> Callable:

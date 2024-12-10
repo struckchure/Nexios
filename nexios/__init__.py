@@ -18,21 +18,22 @@ def get_application(config = BaseConfig) -> NexioApp:
             
             CommonMiddleware(),
            
-            SessionMiddleware()
+            SessionMiddleware(),
+            CORSMiddleware(
+                allow_origins=config.CORS_ALLOWED_ORIGINS,
+                blacklist_origins=config.CORS_BLACKLISTED_ORIGINS,
+                allow_methods=config.CORS_ALLOWED_METHODS,
+                allow_credentials=config.CORS_ALLOW_CREDENTIALS,
+                allow_headers=config.CORS_ALLOW_CREDENTIALS,
+                expose_headers = config.EXPOSE_HEADERS,
+                allow_origin_regex=config.ALLOW_ORIGIN_REGEX
+                
+                
+                )
 
         ],
         config=config
     )
     
-    app.add_middleware( CORSMiddleware(
-                allow_origins=config.CORS_ALLOWED_ORIGINS,
-                blacklist_origins=config.CORS_BLACKLISTED_ORIGINS,
-                allow_methods=config.CORS_ALLOWED_METHODS,
-                allow_credentials=config.CORS_ALLOW_CREDENTIALS,
-                allow_headers=["Authorization"],
-                expose_headers = config.EXPOSE_HEADERS,
-                allow_origin_regex=config.ALLOW_ORIGIN_REGEX
-                
-                
-                ),pre_routing=True)
+    
     return app
