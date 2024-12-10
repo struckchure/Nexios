@@ -412,23 +412,28 @@ class NexioResponse:
         self._cookies = []
         self._delete_cookies = []
 
-    def send(self, content, status_code=200):
+    def send(self, content, status_code=None, headers = {}):
         """Send plain text or HTML content."""
-        self._status_code = status_code
+        self._status_code = status_code or self._status_code or 200
+        self.headers.update(headers)
         self._body = content
         self._content_type = "text/plain"
         return self
 
-    def json(self, data, status_code=None):
+    def json(self, data, status_code=None,headers = {}):
         """Send JSON response."""
         self._status_code = status_code or self._status_code or 200
+        self.headers.update(headers)
+
         self._body = data
         self._content_type = "application/json"
         return self
 
-    def html(self, content, status_code=200):
+    def html(self, content, status_code=None,headers = {}):
         """Send HTML response."""
-        self._status_code = status_code
+        self._status_code = status_code or self._status_code or 200
+        self.headers.update(headers)
+        
         self._body = content
         self._content_type = "text/html; charset=utf-8"
         return self

@@ -16,13 +16,13 @@ class CORSMiddleware(BaseMiddleware):
         allow_methods: Sequence[str] = ALL_METHODS,
         allow_headers: Sequence[str] = (),
         blacklist_headers: Sequence[str] = (),
-        allow_credentials: bool = False,
+        allow_credentials: bool = True,
         allow_origin_regex: str | None = None,
         expose_headers: Sequence[str] = (),
         max_age: int = 600,
     ):
-        super().__init__()
         
+        super().__init__()
         if allow_methods is None:
             allow_methods = ALL_METHODS
         if allow_origins is None:
@@ -30,7 +30,7 @@ class CORSMiddleware(BaseMiddleware):
         if blacklist_origins is None:
             blacklist_origins = []
         if allow_headers is None:
-            allow_headers = list(BASIC_HEADERS)
+            allow_headers = "*"
         if blacklist_headers is None:
             blacklist_headers = []
         if allow_credentials is None:
@@ -49,7 +49,7 @@ class CORSMiddleware(BaseMiddleware):
         self.allow_methods = allow_methods
 
         # Allow all basic headers by default unless specific headers are provided
-        self.allow_headers = [h.lower() for h in allow_headers] or list(BASIC_HEADERS)
+        self.allow_headers = list(SAFELISTED_HEADERS)
         
         # Add the blacklisted headers to the list of allowed headers
         self.blacklist_headers = [h.lower() for h in blacklist_headers]
@@ -82,8 +82,9 @@ class CORSMiddleware(BaseMiddleware):
         origin = request.headers.get("origin")
 
         if method == "OPTIONS" and "access-control-request-method" in request.headers:
+            
             return await self.preflight_response(request, response)
-
+        
         if origin:
             request.scope['cors_origin'] = origin
 
@@ -121,17 +122,26 @@ class CORSMiddleware(BaseMiddleware):
         headers = self.preflight_headers.copy()
 
         if self.is_allowed_origin(origin):
+            
             headers["Access-Control-Allow-Origin"] = origin
         else:
-            return NexioResponse("Disallowed CORS Origin", status_code=400, headers=headers)
+            return response.send("Disallowed CORS Origin", status_code=400, headers=headers)
 
         if requested_method not in self.allow_methods:
             return response.json("Disallowed CORS Method", status_code=400, headers=headers)
 
         if requested_headers:
+            print(requested_headers)
+            safelisted_headers = [x.lower() for x in SAFELISTED_HEADERS]
             allowed_headers = [h.strip().lower() for h in requested_headers.split(",")]
-            if not all(h in self.allow_headers or h in SAFELISTED_HEADERS for h in allowed_headers):
-                if any(h in self.blacklist_headers for h in allowed_headers):
-                    return response.json("Disallowed CORS Headers", status_code=400, headers=headers)
+            
+            print(safelisted_headers)
+            for h in allowed_headers:
+                if h in  safelisted_headers:
+                    print("Hello world")
+                    headers["Access-Control-Allow-Headers"] = ", ".join(SAFELISTED_HEADERS)
+                    
+
+            
 
         return response.json("OK", status_code=200, headers=headers)

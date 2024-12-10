@@ -19,6 +19,7 @@ class NexioApp:
         self.routes: List[Routes] = []
         self.http_middlewares: List = middlewares or []
         self.ws_middlewares: List =  []
+        self.pre_routing_http_middlewares: List[Callable] = []
 
         self.startup_handlers: List[Callable] = []
         self.shutdown_handlers: List[Callable] = []
@@ -79,6 +80,22 @@ class NexioApp:
             else:
                 await send({"type": "lifespan.shutdown.failed", "message": str(e)})
 
+    async def execute_http_pre_route_middleware(self,
+                                    request: Request,
+                                     response: NexioResponse,):
+        index = -1
+        stack = self.pre_routing_http_middlewares.copy()
+        async def next_middleware():
+            nonlocal index
+            index += 1
+            
+            if index < len(stack):
+                middleware = stack[index]
+                return await middleware(request, response, next_middleware)
+            else:
+                return
+            
+        return await next_middleware()
     async def execute_middleware_stack(self, 
                                      request: Request,
                                      response: NexioResponse, 
@@ -113,7 +130,9 @@ class NexioApp:
         request = Request(scope, receive, send)
         response = NexioResponse()
         request.scope['config'] = self.config
-
+        
+        await self.execute_http_pre_route_middleware(request,response)
+        
         for route in self.routes:
             
             route.handler = AllowedMethods(route.methods)(route.handler)
@@ -142,8 +161,8 @@ class NexioApp:
                     return
                 await response(scope, receive, send)
                 return
-
-        error_response = JSONResponse({"error": "Not found"}, status_code=404)
+        print(response.headers)
+        error_response = JSONResponse({"error": "Not found"}, status_code=404,headers=response.headers)
         await error_response(scope, receive, send)
 
     def route(self, path: str, methods: List[Union[str, HTTPMethod]] = allowed_methods_default) -> Callable:
@@ -166,10 +185,12 @@ class NexioApp:
        
         self.routes.append(route)
 
-    def add_middleware(self, middleware: Callable) -> None:
+    def add_middleware(self, middleware: Callable,pre_routing = False) -> None:
         """Add middleware to the application"""
-        if callable(middleware):
+        if callable(middleware) and not pre_routing:
             self.http_middlewares.append(middleware)
+        else:
+            self.pre_routing_http_middlewares.append(middleware)
 
     def mount_router(self, router: Router) -> None:
         """Mount a router and all its routes to the application"""
