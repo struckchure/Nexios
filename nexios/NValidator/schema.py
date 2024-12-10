@@ -174,7 +174,7 @@ class SchemaMeta(ABCMeta):
                 continue
 
             try:
-                hook_config = attr.__NValidator_hook__  # type: dict[str, list[tuple[bool, dict]]]
+                hook_config = attr.__nvalidator_hook__  # type: dict[str, list[tuple[bool, dict]]]
             except AttributeError:
                 pass
             else:
