@@ -90,6 +90,7 @@ class NexioApp:
                                      **kwargs) -> Any:
         
         
+            
         stack = self.http_middlewares.copy()
 
         if router_middleware:

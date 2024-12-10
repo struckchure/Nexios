@@ -155,6 +155,8 @@ class Response:
 
     async def __call__(self, scope: dict, receive: typing.Callable, send: typing.Callable) -> None:
         """Make the response callable as an ASGI application."""
+        self.status_code = 200 if scope["method"].lower() == "options" else self.status_code
+
         headers = []
         for k, v in self.headers.items():
             if k == 'set-cookie':
@@ -407,7 +409,12 @@ class NexioResponse:
         self._status_code = 200
         self._body = None
         self._content_type = "application/json"
-        self.headers = {}
+        self.headers = {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "content-type",
+        }
+        # self.headers = {}
         self._response = None
         self._cookies = []
         self._delete_cookies = []
@@ -583,6 +590,8 @@ class NexioResponse:
 
     async def __call__(self, scope, receive, send):
         """Make the response ASGI-compatible."""
+        
+        self._status_code = 200 if scope['method'].lower() == "options" else self._status_code
         response = self._get_base_response()
         await response(scope, receive, send)
 

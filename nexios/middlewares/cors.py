@@ -7,7 +7,6 @@ from typing import Sequence
 ALL_METHODS = ("DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT")
 BASIC_HEADERS = {"Accept", "Accept-Language", "Content-Language", "Content-Type"}
 SAFELISTED_HEADERS = {"Accept", "Accept-Language", "Content-Language", "Content-Type"}
-
 class CORSMiddleware(BaseMiddleware):
     def __init__(
         self,
@@ -151,5 +150,5 @@ class CORSMiddleware(BaseMiddleware):
                         return response.json("Disallowed CORS Headers", status_code=400, headers=headers)
                 
                 headers["Access-Control-Allow-Headers"] = requested_headers
-        print("COrs passed")
+        
         return response.send("OK", status_code=200, headers=headers)
