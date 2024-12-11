@@ -493,7 +493,7 @@ class NexioResponse:
         expires: Optional[Union[str, datetime]] = None,
         path: str = "/",
         domain: Optional[str] = None,
-        secure: bool = False,
+        secure: bool = True,
         httponly: bool = False,
         samesite: Optional[str] = None
     ):

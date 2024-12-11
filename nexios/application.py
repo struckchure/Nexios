@@ -160,7 +160,7 @@ class NexioApp:
                                       status_code=status_code,
                                       headers=not_found_header)
         
-        print(error_response.headers)
+        
         await error_response(scope, receive, send)
 
     def route(self, path: str, methods: List[Union[str, HTTPMethod]] = allowed_methods_default) -> Callable:

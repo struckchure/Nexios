@@ -32,8 +32,7 @@ class CORSMiddleware(BaseMiddleware):
             allow_headers = []
         if blacklist_headers is None:
             blacklist_headers = []
-        if allow_credentials is None:
-            allow_credentials = False
+        
         if expose_headers is None:
             expose_headers = []
         if max_age is None:
@@ -59,7 +58,8 @@ class CORSMiddleware(BaseMiddleware):
         # Store blacklisted headers in lowercase
         self.blacklist_headers = set(h.lower() for h in blacklist_headers)
 
-        self.allow_credentials = allow_credentials
+        self.allow_credentials = allow_credentials or True
+        
         self.allow_origin_regex = re.compile(allow_origin_regex) if allow_origin_regex else None
         self.expose_headers = expose_headers
         self.max_age = max_age
@@ -78,12 +78,13 @@ class CORSMiddleware(BaseMiddleware):
             "Access-Control-Max-Age": str(max_age),
         }
         if allow_credentials:
+        
             self.preflight_headers["Access-Control-Allow-Credentials"] = "true"
 
     async def process_request(self, request: Request, response):
         method = request.scope["method"]
         origin = request.origin
-        print(origin)
+        
         if method == "OPTIONS" and "access-control-request-method" in request.headers:
             
             return await self.preflight_response(request, response)
@@ -99,6 +100,7 @@ class CORSMiddleware(BaseMiddleware):
             response.headers["Access-Control-Allow-Origin"] = origin
 
             if self.allow_credentials:
+                
                 response.headers["Access-Control-Allow-Credentials"] = "true"
 
         if self.expose_headers:
