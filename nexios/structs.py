@@ -1,14 +1,9 @@
-#HACK >>> EMULATED FROM STARLLETE 
-
-
-
+from __future__ import annotations
 import typing
 from collections.abc import Sequence
 from shlex import shlex
 from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit
-
-
-
+from nexios.utils.cuncurrency import run_in_threadpool
 
 class Address(typing.NamedTuple):
     host: str
@@ -693,9 +688,83 @@ class RouteParam:
         return len(self.data)
     
     
+class UploadedFile:
     
-    
-    
-    
+    """
+    An uploaded file included as part of the request data.
+    """
 
+    def __init__(
+        self,
+        file: typing.BinaryIO,
+        *,
+        size: int | None = None,
+        filename: str | None = None,
+        headers: Headers | None = None,
+    ) -> None:
+        self.filename = filename
+        self.file = file
+        self.size = size
+        self.headers = headers or Headers()
+
+    @property
+    def content_type(self) -> str | None:
+        return self.headers.get("content-type", None)
+
+    @property
+    def _in_memory(self) -> bool:
+        # check for SpooledTemporaryFile._rolled
+        rolled_to_disk = getattr(self.file, "_rolled", True)
+        return not rolled_to_disk
+
+    async def write(self, data: bytes) -> None:
+        if self.size is not None:
+            self.size += len(data)
+
+        if self._in_memory:
+            self.file.write(data)
+        else:
+            await run_in_threadpool(self.file.write, data)
+
+    async def read(self, size: int = -1) -> bytes:
+        if self._in_memory:
+            return self.file.read(size)
+        return await run_in_threadpool(self.file.read, size)
+
+    async def seek(self, offset: int) -> None:
+        if self._in_memory:
+            self.file.seek(offset)
+        else:
+            await run_in_threadpool(self.file.seek, offset)
+
+    async def close(self) -> None:
+        if self._in_memory:
+            self.file.close()
+        else:
+            await run_in_threadpool(self.file.close)
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}("
+            f"filename={self.filename!r}, "
+            f"size={self.size!r}, "
+            f"headers={self.headers!r})"
+        )
+
+
+class FormData(ImmutableMultiDict[str, typing.Union[UploadedFile, str]]):
     
+    def __init__(
+        self,
+        *args: FormData | typing.Mapping[str, str | UploadedFile] | list[tuple[str, str | UploadedFile]],
+        **kwargs: str | UploadedFile,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+
+    async def close(self) -> None:
+        for key, value in self.multi_items():
+            if isinstance(value, UploadedFile):
+                await value.close()
+
+
+

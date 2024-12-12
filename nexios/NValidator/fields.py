@@ -36,7 +36,7 @@ from .warnings import RemovedInNValidator4Warning
 if typing.TYPE_CHECKING:
     from .schema import SchemaMeta
 
-from nexios.utils.files import UploadedFile
+from nexios.structs import UploadedFile
 from io import BytesIO
 
 __all__ = [

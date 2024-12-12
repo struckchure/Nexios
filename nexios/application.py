@@ -17,6 +17,7 @@ class NexioApp:
                  middlewares: list = None):
         self.config = config
         self.routes: List[Routes] = []
+        self.ws_route :List[Routes] = []
         self.http_middlewares: List = middlewares or []
         self.ws_middlewares: List =  []
         self.pre_routing_http_middlewares: List[Callable] = []
@@ -128,9 +129,8 @@ class NexioApp:
             match = route.pattern.match(request.url.path)
             if match:
 
-                kwargs = match.groupdict()
-                setattr(request,"route_params",RouteParam(kwargs))
-
+                route_kwargs = match.groupdict()
+                scope['route_params'] = RouteParam(route_kwargs)
                 
                 try:
                     await self.execute_middleware_stack(request,
@@ -177,6 +177,12 @@ class NexioApp:
             self.add_route(Routes(path, handler))
             return handler
         return decorator
+    
+    def add_ws_route(self, route: Routes) -> None:
+        """Add a route to the application"""
+        
+        self.ws_route.append(route)
+
     def add_route(self, route: Routes) -> None:
         """Add a route to the application"""
         
@@ -219,21 +225,24 @@ class NexioApp:
     async def handler_websocket(self, scope, receive, send):
         ws = await get_websocket_session(scope, receive, send)
 
-        for route in self.routes:
+        for route in self.ws_route:
+            
             match = route.pattern.match(ws.url.path)
             if match:
-                kwargs = match.groupdict()
-                setattr(ws, "route_params", RouteParam(kwargs))
+                route_kwargs = match.groupdict()
+                scope['route_params']  =    RouteParam(route_kwargs)
+                
 
                 try:
                     await self.execute_ws_middleware_stack(
                         ws,
                         route.middleware,
                         route.handler,
-                        **kwargs
+                        **route_kwargs
                     )
                 except Exception as e:
                     error = traceback.format_exc()
+                    
                     self.logger.error(f"WebSocket handler error: {error}")
                     return
                 return

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from nexios.config.settings import BaseConfig
 from .base import BaseSessionInterface
-from nexios.utils import timezone
+
 
 class FileSessionManager(BaseSessionInterface):
     def __init__(self, session_key: str, config: BaseConfig = BaseConfig):
@@ -73,7 +73,7 @@ class FileSessionManager(BaseSessionInterface):
     def has_expired(self) -> bool:
         """Returns True if the session has expired."""
         expiration_time = self.get_expiration_time()
-        if expiration_time and timezone.now() > expiration_time:
+        if expiration_time and datetime.utcnow() > expiration_time:
             return True
         return False
 

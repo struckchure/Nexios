@@ -1,6 +1,5 @@
 import typing
 from nexios.config.settings import BaseConfig
-from nexios.utils import timezone
 from datetime import datetime
 class BaseSessionInterface:
 
@@ -86,7 +85,7 @@ class BaseSessionInterface:
     def get_expiration_time(self) -> datetime | None:
         """Returns the expiration time for the session. Uses `config.SESSION_EXPIRATION_TIME`."""
         if self.config.SESSION_PERMANENT:
-            return timezone.now() + self.config.SESSION_EXPIRATION_TIME or 86400
+            return datetime.utcnow() + self.config.SESSION_EXPIRATION_TIME or 86400
         return None
 
     @property
@@ -99,6 +98,6 @@ class BaseSessionInterface:
     def has_expired(self) -> bool:
         """Returns True if the session has expired."""
         expiration_time = self.get_expiration_time()
-        if expiration_time and timezone.now() > expiration_time:
+        if expiration_time and datetime.utcnow() > expiration_time:
             return True
         return False

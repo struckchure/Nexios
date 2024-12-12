@@ -4,10 +4,6 @@ from datetime import datetime, timedelta
 from .db_models import Session
 from nexios.config.settings import BaseConfig
 from .base import BaseSessionInterface
-from nexios.utils import timezone
-
-
-
 
 
 class DBSessionManager(BaseSessionInterface):
@@ -71,7 +67,7 @@ class DBSessionManager(BaseSessionInterface):
     def has_expired(self) -> bool:
         """Returns True if the session has expired."""
         expiration_time = self.get_expiration_time()
-        if expiration_time and timezone.now() > expiration_time:
+        if expiration_time and datetime.utcnow() > expiration_time:
             return True
         return False
 

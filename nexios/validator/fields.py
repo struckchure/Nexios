@@ -2,7 +2,7 @@ from .exceptions import ValidationError
 from typing import Dict
 import re,json,uuid
 from datetime import date,time,datetime
-from nexios.http.parsers import UploadedFile
+from nexios.structs import UploadedFile
 class BaseField:
     validated = False
     
