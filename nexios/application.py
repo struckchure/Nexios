@@ -120,7 +120,6 @@ class NexioApp:
         request.scope['config'] = self.config
         
         
-        
         for route in self.routes:
             
             route.handler = AllowedMethods(route.methods)(route.handler)
@@ -154,8 +153,10 @@ class NexioApp:
             "Access-Control-Allow-Origin": request.origin or "*",
             "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
             "Access-Control-Allow-Headers": "content-type",
+            "Access-Control-Allow-Credentials" : "true"
         }
-    
+        
+
         error_response = JSONResponse({"error": "Not found"},
                                       status_code=status_code,
                                       headers=not_found_header)

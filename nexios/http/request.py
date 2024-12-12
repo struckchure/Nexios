@@ -240,6 +240,7 @@ class Request(HTTPConnection):
     async def json(self) -> typing.Any:
         if not hasattr(self, "_json"):  # pragma: no branch
             body = await self.body()
+            print("8"*12,body)
             self._json = json.loads(body)
         return self._json
 

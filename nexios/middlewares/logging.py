@@ -46,8 +46,13 @@ class ErrorHandlerMiddleware(BaseMiddleware):
             # Capture and log the exception details
             self._log_error(traceback.format_exc())
 
-            # Modify the response object to reflect an error
-            return  response.send("Server error",status_code=500)
+           
+            return  response.send("Server error",status_code=500,headers= {
+            "Access-Control-Allow-Origin": request.origin or "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "content-type",
+            "Access-Control-Allow-Credentials":"true"
+        })
             
 
         return response

@@ -15,13 +15,12 @@ class CORSMiddleware(BaseMiddleware):
         allow_methods: Sequence[str] = ALL_METHODS,
         allow_headers: Sequence[str] = (),
         blacklist_headers: Sequence[str] = (),
-        allow_credentials: bool = True,
+        allow_credentials: bool = "true",
         allow_origin_regex: str | None = None,
         expose_headers: Sequence[str] = (),
         max_age: int = 600,
     ):
         super().__init__()
-        
         if allow_methods is None:
             allow_methods = ALL_METHODS
         if allow_origins is None:
@@ -77,20 +76,19 @@ class CORSMiddleware(BaseMiddleware):
             "Access-Control-Allow-Methods": ", ".join(allow_methods),
             "Access-Control-Max-Age": str(max_age),
         }
-        if allow_credentials:
-        
-            self.preflight_headers["Access-Control-Allow-Credentials"] = "true"
+        # if allow_credentials:
+        #     print("Here")
+        self.preflight_headers["Access-Control-Allow-Credentials"] = "true"
 
     async def process_request(self, request: Request, response):
-        method = request.scope["method"]
         origin = request.origin
+        method = request.scope["method"]
         
+        print("Cors middleware entered")
         if method == "OPTIONS" and "access-control-request-method" in request.headers:
             
             return await self.preflight_response(request, response)
-        
-        if origin:
-            request.scope['cors_origin'] = origin
+      
 
     async def process_response(self, request: Request, response: NexioResponse):
         origin = request.origin
@@ -123,6 +121,7 @@ class CORSMiddleware(BaseMiddleware):
         return origin in self.allow_origins
 
     async def preflight_response(self, request: Request, response: NexioResponse) -> NexioResponse:
+        
         origin = request.headers.get("origin")
         requested_method = request.headers.get("access-control-request-method")
         requested_headers = request.headers.get("access-control-request-headers")
