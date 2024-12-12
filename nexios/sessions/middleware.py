@@ -23,7 +23,7 @@ class SessionMiddleware(BaseMiddleware):
         )
 
         await session.load()
-        request.session = session
+        request.scope['session'] = session
 
     async def process_response(self, request :Request , response :NexioResponse):
         

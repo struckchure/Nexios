@@ -299,3 +299,9 @@ class Request(HTTPConnection):
                 for value in self.headers.getlist(name):
                     raw_headers.append((name.encode("latin-1"), value.encode("latin-1")))
             await self._send({"type": "http.response.push", "path": path, "headers": raw_headers})
+
+    
+    @property
+    def session(self):
+        assert "session" in self.scope, "Session middleware not installed"
+        return self.scope['session']
