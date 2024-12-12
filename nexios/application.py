@@ -108,7 +108,10 @@ class NexioApp:
                 middleware = stack[index]
                 return await middleware(request, response, next_middleware, **kwargs)
             else:
-                return await handler(request, response, **kwargs)
+                #REFACTOR : Enhance this 
+                if request.method.lower() != "options":
+
+                    return await handler(request, response, **kwargs)
             
         return await next_middleware()
 

@@ -238,10 +238,12 @@ class Request(HTTPConnection):
 
     @property
     async def json(self) -> typing.Any:
-        if not hasattr(self, "_json"):  # pragma: no branch
+        if not hasattr(self, "_json"):  
             body = await self.body()
-            print("8"*12,body)
-            self._json = json.loads(body)
+            try:
+                self._json = json.loads(body.decode())
+            except json.JSONDecodeError:
+                self._json = {}
         return self._json
 
     async def _get_form(self, *, max_files: int | float = 1000, max_fields: int | float = 1000) -> FormData:

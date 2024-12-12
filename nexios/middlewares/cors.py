@@ -76,17 +76,16 @@ class CORSMiddleware(BaseMiddleware):
             "Access-Control-Allow-Methods": ", ".join(allow_methods),
             "Access-Control-Max-Age": str(max_age),
         }
-        # if allow_credentials:
-        #     print("Here")
+        
         self.preflight_headers["Access-Control-Allow-Credentials"] = "true"
 
     async def process_request(self, request: Request, response):
         origin = request.origin
         method = request.scope["method"]
         
-        print("Cors middleware entered")
+        
         if method == "OPTIONS" and "access-control-request-method" in request.headers:
-            
+
             return await self.preflight_response(request, response)
       
 
@@ -121,7 +120,7 @@ class CORSMiddleware(BaseMiddleware):
         return origin in self.allow_origins
 
     async def preflight_response(self, request: Request, response: NexioResponse) -> NexioResponse:
-        
+        print("Prefiles")
         origin = request.headers.get("origin")
         requested_method = request.headers.get("access-control-request-method")
         requested_headers = request.headers.get("access-control-request-headers")
@@ -151,5 +150,4 @@ class CORSMiddleware(BaseMiddleware):
                         return response.json("Disallowed CORS Headers", status_code=400, headers=headers)
                 
                 headers["Access-Control-Allow-Headers"] = requested_headers
-        
         return response.send("OK", status_code=200, headers=headers)
