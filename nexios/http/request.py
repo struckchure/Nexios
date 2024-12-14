@@ -152,10 +152,8 @@ class HTTPConnection(typing.Mapping[str, typing.Any]):
         assert "auth" in self.scope, "AuthenticationMiddleware must be installed to access request.auth"
         return self.scope["auth"]
 
-    @property
-    def user(self) -> typing.Any:
-        assert "user" in self.scope, "AuthenticationMiddleware must be installed to access request.user"
-        return self.scope["user"]
+   
+   #TODO : ADD USER PROPERTY 
 
     @property
     def state(self) -> State:

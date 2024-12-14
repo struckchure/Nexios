@@ -20,7 +20,7 @@ class CORSMiddleware(BaseMiddleware):
         expose_headers: Sequence[str] = (),
         max_age: int = 600,
     ):
-        super().__init__()
+        # super().__init__()
         if allow_methods is None:
             allow_methods = ALL_METHODS
         if allow_origins is None:
@@ -80,15 +80,14 @@ class CORSMiddleware(BaseMiddleware):
         self.preflight_headers["Access-Control-Allow-Credentials"] = "true"
 
     async def process_request(self, request: Request, response):
+        # return response.json({})
         origin = request.origin
         method = request.scope["method"]
-        
-        
-        if method == "OPTIONS" and "access-control-request-method" in request.headers:
+        if method.lower() == "options" and "access-control-request-method" in request.headers:
 
             return await self.preflight_response(request, response)
       
-
+        return response
     async def process_response(self, request: Request, response: NexioResponse):
         origin = request.origin
         
@@ -120,7 +119,7 @@ class CORSMiddleware(BaseMiddleware):
         return origin in self.allow_origins
 
     async def preflight_response(self, request: Request, response: NexioResponse) -> NexioResponse:
-        print("Prefiles")
+        
         origin = request.headers.get("origin")
         requested_method = request.headers.get("access-control-request-method")
         requested_headers = request.headers.get("access-control-request-headers")

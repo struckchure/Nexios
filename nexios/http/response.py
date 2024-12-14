@@ -159,6 +159,7 @@ class Response:
 
         headers = []
         for k, v in self.headers.items():
+            
             if k == 'set-cookie':
                 # Handle multiple Set-Cookie headers
                 if isinstance(v, list):
