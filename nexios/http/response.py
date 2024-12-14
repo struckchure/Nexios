@@ -410,12 +410,7 @@ class NexioResponse:
         self._status_code = 200
         self._body = None
         self._content_type = "application/json"
-        self.headers = {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "content-type",
-        }
-        # self.headers = {}
+        self.headers = {}
         self._response = None
         self._cookies = []
         self._delete_cookies = []

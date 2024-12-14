@@ -1,3 +1,5 @@
+#TODO : Add, route, application level middleware, and router level middleware
+
 from typing import Any, Callable, List, Union
 from .http.request import Request
 from .http.response import NexioResponse
@@ -149,6 +151,7 @@ class NexioApp:
                 return
         
         status_code= 200 if request.method.lower() == "options" else 404
+        print(response.headers)
         not_found_header = {
             "Access-Control-Allow-Origin": request.origin or "*",
             "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -157,9 +160,8 @@ class NexioApp:
         }
         
 
-        error_response = JSONResponse({"error": "Not found"},
-                                      status_code=status_code,
-                                      headers=not_found_header)
+        error_response = response.json({"error": "Not found"},
+                                      status_code=status_code,headers=not_found_header)
         
         
         await error_response(scope, receive, send)

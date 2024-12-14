@@ -80,14 +80,15 @@ class CORSMiddleware(BaseMiddleware):
         self.preflight_headers["Access-Control-Allow-Credentials"] = "true"
 
     async def process_request(self, request: Request, response):
-        # return response.json({})
+        
         origin = request.origin
+        print(origin)
         method = request.scope["method"]
         if method.lower() == "options" and "access-control-request-method" in request.headers:
-
+            print("Hello worl;d")
             return await self.preflight_response(request, response)
       
-        return response
+        return re
     async def process_response(self, request: Request, response: NexioResponse):
         origin = request.origin
         
