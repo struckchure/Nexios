@@ -85,10 +85,10 @@ class CORSMiddleware(BaseMiddleware):
         print(origin)
         method = request.scope["method"]
         if method.lower() == "options" and "access-control-request-method" in request.headers:
-            print("Hello worl;d")
+            
             return await self.preflight_response(request, response)
       
-        return re
+        return response
     async def process_response(self, request: Request, response: NexioResponse):
         origin = request.origin
         

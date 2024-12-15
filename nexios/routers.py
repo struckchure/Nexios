@@ -128,6 +128,7 @@ class Router(BaseRouter):
             routes.append(route_)
         return routes
 
+    def handle(self):pass
     def get(self, path: str) -> Callable:
         """Decorator to register a GET route."""
         return self.route(path, methods=["GET"])

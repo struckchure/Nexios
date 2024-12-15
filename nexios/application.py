@@ -151,7 +151,7 @@ class NexioApp:
                 return
         
         status_code= 200 if request.method.lower() == "options" else 404
-        print(response.headers)
+
         not_found_header = {
             "Access-Control-Allow-Origin": request.origin or "*",
             "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
