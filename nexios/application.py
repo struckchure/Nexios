@@ -91,10 +91,7 @@ class NexioApp:
             
         stack = self.http_middlewares.copy()
 
-        # if router_middleware:
-        #     stack.extend(router_middleware)
-        # if callable(middleware):
-        #     stack.append(middleware)
+       
         index = -1 
         async def next_middleware():
             nonlocal index
@@ -102,7 +99,10 @@ class NexioApp:
             
             if index < len(stack):
                 middleware = stack[index]
-                await middleware(request, response, next_middleware)
+                if not response._body:
+                    await middleware(request, response, next_middleware)
+
+                return
            
             
         await next_middleware()
@@ -135,7 +135,8 @@ class NexioApp:
 
                 route_kwargs = match.groupdict()
                 scope['route_params'] = RouteParam(route_kwargs)
-                if not response:
+                await route.execute_middleware_stack(request, response)
+                if not response._body:
                     await route.handler(request,response)
                 await response(scope, receive, send)
                 return
