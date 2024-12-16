@@ -7,6 +7,7 @@ from nexios.http.response import NexioResponse
 class SessionMiddleware(BaseMiddleware):
 
     async def process_request(self, request :Request, response):
+    
         self.config = request.scope['config']
         session_cookie_name = self.config.SESSION_COOKIE_NAME or "session_id"
         managers = {

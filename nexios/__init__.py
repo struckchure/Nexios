@@ -29,7 +29,7 @@ def get_application(config = BaseConfig) -> NexioApp:
                 
                 
                 ),
-            SessionMiddleware()
+            SessionMiddleware(),
 
         ],
         config=config

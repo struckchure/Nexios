@@ -22,8 +22,6 @@ class NexioApp:
         self.ws_route :List[Routes] = []
         self.http_middlewares: List = middlewares or []
         self.ws_middlewares: List =  []
-        self.pre_routing_http_middlewares: List[Callable] = []
-
         self.startup_handlers: List[Callable] = []
         self.shutdown_handlers: List[Callable] = []
         self.logger = logging.getLogger("nexio")
@@ -87,32 +85,27 @@ class NexioApp:
     async def execute_middleware_stack(self, 
                                      request: Request,
                                      response: NexioResponse, 
-                                     middleware: Callable, 
-                                     handler: Callable, 
-                                     router_middleware, 
-                                     **kwargs) -> Any:
+                                     ) -> Any:
         
         
             
         stack = self.http_middlewares.copy()
 
-        if router_middleware:
-            stack.extend(router_middleware)
-        if callable(middleware):
-            stack.append(middleware)
+        # if router_middleware:
+        #     stack.extend(router_middleware)
+        # if callable(middleware):
+        #     stack.append(middleware)
         index = -1 
-        
         async def next_middleware():
             nonlocal index
             index += 1
             
             if index < len(stack):
                 middleware = stack[index]
-                return await middleware(request, response, next_middleware, **kwargs)
-            else:
-               return await handler(request, response, **kwargs)
+                await middleware(request, response, next_middleware)
+           
             
-        return await next_middleware()
+        await next_middleware()
 
     async def handle_http_request(self, scope: dict, receive: Callable, send: Callable) -> None:
         
@@ -120,7 +113,17 @@ class NexioApp:
         
         response = NexioResponse()
         request.scope['config'] = self.config
-        
+        #TODO : Add error handler 
+        try:
+            await self.execute_middleware_stack(request,response)
+        except Exception as e:
+            self.logger.error(f"Request handler error: {str(e)}")
+            error_response = JSONResponse(
+                {"error": str(e)},
+                status_code=500
+            )
+            await error_response(scope, receive, send)
+            raise 
         
         for route in self.routes:
             
@@ -132,21 +135,8 @@ class NexioApp:
 
                 route_kwargs = match.groupdict()
                 scope['route_params'] = RouteParam(route_kwargs)
-                
-                try:
-                    await self.execute_middleware_stack(request,
-                                                      response,
-                                                      route.middleware,
-                                                      route.handler,
-                                                      route.router_middleware)
-                except Exception as e:
-                    self.logger.error(f"Request handler error: {str(e)}")
-                    error_response = JSONResponse(
-                        {"error": str(e)},
-                        status_code=500
-                    )
-                    await error_response(scope, receive, send)
-                    raise 
+                if not response:
+                    await route.handler(request,response)
                 await response(scope, receive, send)
                 return
         
@@ -192,12 +182,11 @@ class NexioApp:
        
         self.routes.append(route)
 
-    def add_middleware(self, middleware: Callable,pre_routing = False) -> None:
+    def add_middleware(self, middleware: Callable) -> None:
         """Add middleware to the application"""
-        if callable(middleware) and not pre_routing:
+        if callable(middleware):
             self.http_middlewares.append(middleware)
-        else:
-            self.pre_routing_http_middlewares.append(middleware)
+        
 
     def mount_router(self, router: Router) -> None:
         """Mount a router and all its routes to the application"""
