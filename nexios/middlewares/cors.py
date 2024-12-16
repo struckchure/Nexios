@@ -122,6 +122,7 @@ class CORSMiddleware(BaseMiddleware):
     async def preflight_response(self, request: Request, response: NexioResponse) -> NexioResponse:
         
         origin = request.headers.get("origin")
+        
         requested_method = request.headers.get("access-control-request-method")
         requested_headers = request.headers.get("access-control-request-headers")
 
@@ -141,6 +142,7 @@ class CORSMiddleware(BaseMiddleware):
             requested_header_list = [h.strip().lower() for h in requested_headers.split(",")]
             
             # If we allow all headers
+            
             if "*" in self.allow_headers:
                 headers["Access-Control-Allow-Headers"] = "*"
             
@@ -148,6 +150,9 @@ class CORSMiddleware(BaseMiddleware):
                 for header in requested_header_list:
                     if header not in self.allow_headers or header in self.blacklist_headers:
                         return response.json("Disallowed CORS Headers", status_code=400, headers=headers)
+                    
+                print(requested_headers)
                 
                 headers["Access-Control-Allow-Headers"] = requested_headers
-        return response.send("OK", status_code=200, headers=headers)
+        print(headers)
+        return response.json("OK", status_code=201, headers=headers)

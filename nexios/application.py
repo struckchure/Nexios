@@ -124,7 +124,7 @@ class NexioApp:
             )
             await error_response(scope, receive, send)
             raise 
-        
+        print(response._body)
         for route in self.routes:
             
             route.handler = AllowedMethods(route.methods)(route.handler)
@@ -138,24 +138,14 @@ class NexioApp:
                 await route.execute_middleware_stack(request, response)
                 if not response._body:
                     await route.handler(request,response)
-                await response(scope, receive, send)
-                return
+                
+            else:
+                response.json({"error": "Not found"},status_code=404)
+               
         
-        status_code= 200 if request.method.lower() == "options" else 404
-
-        not_found_header = {
-            "Access-Control-Allow-Origin": request.origin or "*",
-            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-            "Access-Control-Allow-Headers": "content-type",
-            "Access-Control-Allow-Credentials" : "true"
-        }
+        await response(scope, receive, send)
+        return 
         
-
-        error_response = response.json({"error": "Not found"},
-                                      status_code=status_code,headers=not_found_header)
-        
-        
-        await error_response(scope, receive, send)
 
     def route(self, path: str, methods: List[Union[str, HTTPMethod]] = allowed_methods_default) -> Callable:
         
