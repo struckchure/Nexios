@@ -151,8 +151,7 @@ class CORSMiddleware(BaseMiddleware):
                     if header not in self.allow_headers or header in self.blacklist_headers:
                         return response.json("Disallowed CORS Headers", status_code=400, headers=headers)
                     
-                print(requested_headers)
                 
                 headers["Access-Control-Allow-Headers"] = requested_headers
-        print(headers)
+        
         return response.json("OK", status_code=201, headers=headers)

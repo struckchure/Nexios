@@ -124,7 +124,6 @@ class NexioApp:
             )
             await error_response(scope, receive, send)
             raise 
-        print(response._body)
         for route in self.routes:
             
             route.handler = AllowedMethods(route.methods)(route.handler)
