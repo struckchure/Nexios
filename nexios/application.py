@@ -133,15 +133,14 @@ class NexioApp:
                 await route.execute_middleware_stack(request, response)
                 if not response._body:
                     await route.handler(request,response)
-                
-            else:
-                response.json({"error": "Not found"},status_code=404)
-               
         
+                await response(scope, receive, send)
+                return 
+            
+        response.json({"error": "Not found"},status_code=404)
+
         await response(scope, receive, send)
         return 
-        
-
     def route(self, path: str, methods: List[Union[str, HTTPMethod]] = allowed_methods_default) -> Callable:
         
         """Decorator to register routes with optional HTTP methods"""
