@@ -204,8 +204,8 @@ class Routes:
                                      ) -> Any:
         
         
-            
-        stack = self.router_middleware.copy()
+        middleware_list = self.router_middleware or []
+        stack = middleware_list.copy()
        
         index = -1 
         async def next_middleware():

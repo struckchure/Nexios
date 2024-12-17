@@ -115,17 +115,13 @@ class NexioApp:
         request.scope['config'] = self.config
         #TODO : Add error handler 
         try:
-            await self.execute_middleware_stack(request,response)
+            await self.execute_middleware_stack(request,response )
         except Exception as e:
             self.logger.error(f"Request handler error: {str(e)}")
-            error_response = JSONResponse(
-                {"error": str(e)},
-                status_code=500
-            )
-            await error_response(scope, receive, send)
+            response.json("Server Error",500)
             raise 
         for route in self.routes:
-            
+            print(route)
             route.handler = AllowedMethods(route.methods)(route.handler)
             
                 
