@@ -121,7 +121,7 @@ class NexioApp:
             response.json("Server Error",500)
             raise 
         for route in self.routes:
-            print(route)
+            
             route.handler = AllowedMethods(route.methods)(route.handler)
             
                 

@@ -175,6 +175,28 @@ class HTTPConnection(typing.Mapping[str, typing.Any]):
     def user_agent(self) -> str:
         """Returns the User-Agent header if available."""
         return self.headers.get("user-agent", "")
+    
+    def build_absolute_uri(self, path: str = "", query_params: dict[str, str] | None = None) -> str:
+        """
+        Builds an absolute URI using the base URL and the provided path.
+
+        :param path: A relative path to append to the base URL.
+        :param query_params: Optional query parameters to append as a query string.
+        :return: A fully constructed absolute URI as a string.
+        """
+        base_url = str(self.base_url).rstrip("/")
+        
+        if path.startswith("/"):
+            uri = f"{base_url}{path}"
+        else:
+            uri = f"{base_url}/{path}"
+        
+        if query_params:
+            from urllib.parse import urlencode
+            query_string = urlencode(query_params)
+            uri = f"{uri}?{query_string}"
+        
+        return uri
 
 
 
