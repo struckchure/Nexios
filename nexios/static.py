@@ -42,5 +42,5 @@ class StaticFilesHandler:
             return response.json("Resource not found !",status_code = 404)
             
 
-        response.file(file_path)
+        response.file(file_path,content_disposition_type="inline")
   

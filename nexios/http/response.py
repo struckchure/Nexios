@@ -272,22 +272,20 @@ class FileResponse(Response):
         self.filename = filename or self.path.name
         self.content_disposition_type = content_disposition_type
         self.status_code = status_code
-        self._headers = {}
+        
         self._cookies: List[Tuple[str, str, dict]] = []
         
-        # Set headers
         self.headers = headers or {}
-        
-        # Determine content type
+        self._headers = {}
         content_type, _ = mimetypes.guess_type(str(self.path))
+
         self.content_type = content_type or 'application/octet-stream'
         self.headers['content-type'] = self.content_type
-        
-        # Set content disposition
         self.headers['content-disposition'] = f'{content_disposition_type}; filename="{self.filename}"'
         
-        # Set content length
         self.headers['content-length'] = str(self.path.stat().st_size)
+        
+        
 
     async def __call__(self, scope: dict, receive: typing.Callable, send: typing.Callable) -> None:
         """Stream the file in chunks."""
@@ -448,7 +446,8 @@ class NexioResponse:
             filename=filename,
             status_code=self._status_code,
             headers=self.headers,
-            content_disposition_type=content_disposition_type
+            content_disposition_type=content_disposition_type,
+            
         )
         return self
 
@@ -552,6 +551,7 @@ class NexioResponse:
     def _get_base_response(self):
         """Get the appropriate response type based on content type."""
         if self._response is not None:
+            print(self._response.headers)
             return self._response
 
         if self._content_type == "application/json":
