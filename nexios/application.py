@@ -6,7 +6,7 @@ from .http.response import NexioResponse
 from .http.response import JSONResponse
 from .types import HTTPMethod
 from .decorators import allowed_methods
-from .routing import Router, Routes
+from .routing import Router, Routes,WSRouter
 from enum import Enum
 from .config.settings import BaseConfig
 import logging,traceback
@@ -19,7 +19,7 @@ class NexioApp:
                  middlewares: list = None):
         self.config = config
         self.routes: List[Routes] = []
-        self.ws_route :List[Routes] = []
+        self.ws_routes :List[Routes] = []
         self.http_middlewares: List = middlewares or []
         self.ws_middlewares: List =  []
         self.startup_handlers: List[Callable] = []
@@ -159,7 +159,7 @@ class NexioApp:
     def add_ws_route(self, route: Routes) -> None:
         """Add a route to the application"""
         
-        self.ws_route.append(route)
+        self.ws_routes.append(route)
 
     def add_route(self, route: Routes) -> None:
         """Add a route to the application"""
@@ -177,6 +177,12 @@ class NexioApp:
         """Mount a router and all its routes to the application"""
         for route in router.get_routes():
             self.add_route(route)
+
+    def mount_ws_router(self, router:WSRouter ) -> None:
+        """Mount a router and all its routes to the application"""
+        for route in router.get_routes():
+            
+            self.add_ws_route(route)
     
     async def execute_ws_middleware_stack(self, ws, **kwargs):
         """
@@ -201,13 +207,14 @@ class NexioApp:
     async def handler_websocket(self, scope, receive, send):
         ws = await get_websocket_session(scope, receive, send)
         await self.execute_ws_middleware_stack(ws)
-        for route in self.ws_route:
+        for route in self.ws_routes:
             match = route.pattern.match(ws.url.path)
             if match:
                 route_kwargs = match.groupdict()
                 scope['route_params'] = RouteParam(route_kwargs)
                 
                 try:
+                    await route.execute_middleware_stack(ws)
                     await route.handler(ws, **route_kwargs)
                     return
 

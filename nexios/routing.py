@@ -244,6 +244,7 @@ class WebsocketRoutes:
         self.pattern = route_info.pattern
         self.param_names = route_info.param_names
         self.route_type = route_info.route_type
+        self.router_middleware = None
     
     def match(self, path: str) -> Optional[dict]:
         """
@@ -254,6 +255,26 @@ class WebsocketRoutes:
             return match.groupdict()
         return None
     
+    async def execute_middleware_stack(self, ws, **kwargs):
+        """
+        Executes WebSocket middleware stack after route matching.
+        """
+        middleware_list = self.router_middleware or []
+
+        stack = middleware_list.copy()
+        index = -1
+
+        async def next_middleware():
+            nonlocal index
+            index += 1
+            if index < len(stack):
+                middleware = stack[index]
+                return await middleware(ws, next_middleware, **kwargs)
+            else:
+                # No more middleware to process
+                return None
+
+        return await next_middleware()
     def __call__(self) -> tuple:
         """Return the route components for registration"""
         return self.pattern, self.handler, self.middleware
