@@ -260,3 +260,63 @@ class WebsocketRoutes:
     
     def __repr__(self) -> str:
         return f"<Route {self.raw_path} methods={self.methods}>"
+    
+
+
+class WSRouter(BaseRouter):
+    def __init__(self, prefix: Optional[str] = None):
+        self.prefix = prefix or ""
+        self.routes: List[WebsocketRoutes] = []
+        self.middlewares: List[Callable] = []
+        
+        if self.prefix and not self.prefix.startswith("/"):
+            warnings.warn("WSRouter prefix should start with '/'")
+            self.prefix = f"/{self.prefix}"
+    
+    def add_route(self, route: WebsocketRoutes) -> None:
+        """Add a WebSocket route with proper prefix handling"""
+        if self.prefix:
+            prefixed_route = WebsocketRoutes(
+                f"{self.prefix}{route.raw_path}",
+                route.handler,
+                middleware=route.middleware
+            )
+            self.routes.append(prefixed_route)
+        else:
+            self.routes.append(route)
+    
+    def add_middleware(self, middleware: Callable) -> None:
+        """Add middleware to the WebSocket router"""
+        if callable(middleware):
+            self.middlewares.append(middleware)
+    
+    def get_routes(self) -> List[WebsocketRoutes]:
+        """Get all WebSocket routes with their patterns, handlers, and middleware"""
+        routes = []
+        for route in self.routes:
+            route_ = WebsocketRoutes(
+                path=route.raw_path, 
+                handler=route.handler, 
+                middleware=route.middleware
+            )
+            setattr(route_, "router_middleware", self.middlewares)
+            routes.append(route_)
+        return routes
+
+    def ws(self, path: str) -> Callable:
+        """Decorator to register a WebSocket route."""
+        def decorator(handler: Callable) -> Callable:
+            route = WebsocketRoutes(path, handler)
+            self.add_route(route)
+            return handler
+        return decorator
+
+    async def handle_websocket(self, ws, **kwargs):
+        """
+        Handle a WebSocket connection for all routes in this router.
+        This method should be implemented by the application that uses this router.
+        """
+        pass
+
+    def __repr__(self) -> str:
+        return f"<WSRouter prefix='{self.prefix}' routes={len(self.routes)}>"

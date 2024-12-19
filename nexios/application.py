@@ -5,8 +5,8 @@ from .http.request import Request
 from .http.response import NexioResponse
 from .http.response import JSONResponse
 from .types import HTTPMethod
-from .decorators import AllowedMethods
-from .routers import Router, Routes
+from .decorators import allowed_methods
+from .routing import Router, Routes
 from enum import Enum
 from .config.settings import BaseConfig
 import logging,traceback
@@ -122,7 +122,7 @@ class NexioApp:
             raise 
         for route in self.routes:
             
-            route.handler = AllowedMethods(route.methods)(route.handler)
+            route.handler = allowed_methods(route.methods)(route.handler)
             
                 
             match = route.pattern.match(request.url.path)
@@ -145,7 +145,7 @@ class NexioApp:
         
         """Decorator to register routes with optional HTTP methods"""
         def decorator(handler: Callable) -> Callable:
-            handler = AllowedMethods(methods)(handler)
+            handler = allowed_methods(methods)(handler)
             self.add_route(Routes(path, handler,methods=methods))
             return handler
         return decorator
@@ -177,15 +177,12 @@ class NexioApp:
         """Mount a router and all its routes to the application"""
         for route in router.get_routes():
             self.add_route(route)
-    async def execute_ws_middleware_stack(
-        self, ws, middleware: Callable, handler: Callable, **kwargs
-    ) -> Any:
+    
+    async def execute_ws_middleware_stack(self, ws, **kwargs):
         """
-        Executes WebSocket middleware stack with a handler.
+        Executes WebSocket middleware stack after route matching.
         """
         stack = self.ws_middlewares.copy()
-        if callable(middleware):
-            stack.append(middleware)
         index = -1
 
         async def next_middleware():
@@ -195,37 +192,32 @@ class NexioApp:
                 middleware = stack[index]
                 return await middleware(ws, next_middleware, **kwargs)
             else:
-                return await handler(ws, **kwargs)
+                # No more middleware to process
+                return None
 
         return await next_middleware()
 
+    
     async def handler_websocket(self, scope, receive, send):
         ws = await get_websocket_session(scope, receive, send)
-
+        await self.execute_ws_middleware_stack(ws)
         for route in self.ws_route:
-            
             match = route.pattern.match(ws.url.path)
             if match:
                 route_kwargs = match.groupdict()
-                scope['route_params']  =    RouteParam(route_kwargs)
+                scope['route_params'] = RouteParam(route_kwargs)
                 
-
                 try:
-                    await self.execute_ws_middleware_stack(
-                        ws,
-                        route.middleware,
-                        route.handler,
-                        **route_kwargs
-                    )
+                    await route.handler(ws, **route_kwargs)
+                    return
+
                 except Exception as e:
                     error = traceback.format_exc()
-                    
                     self.logger.error(f"WebSocket handler error: {error}")
+                    await ws.close(code=1011, reason=f"Internal Server Error: {str(e)}")
                     return
-                return
 
         await ws.close(reason="Not found")
-
     def add_ws_middleware(self, middleware: Callable) -> None:
         """
         Add a WebSocket middleware to the application.

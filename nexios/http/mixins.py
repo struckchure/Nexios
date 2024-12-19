@@ -1,4 +1,4 @@
-from ..NValidator import Schema,ValidationError
+from ..validator import Schema,ValidationError
 import warnings
 class RequestValidatonMixin:
     validated = False

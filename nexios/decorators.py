@@ -25,7 +25,7 @@ class RouteDecorator:
     
 
 
-class AllowedMethods(RouteDecorator):
+class allowed_methods(RouteDecorator):
     def __init__(self, methods: List[Union[str, HTTPMethod]]):
         super().__init__()
         self.allowed_methods = [method.upper() if isinstance(method, str) else method.value 

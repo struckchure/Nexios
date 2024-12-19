@@ -3,7 +3,7 @@ from .sessions.middleware import SessionMiddleware
 from .middlewares.logging import ErrorHandlerMiddleware
 from .middlewares.common import CommonMiddleware
 from .config.settings import BaseConfig
-from .routers import Router
+from .routing import Router
 from .middlewares.cors import CORSMiddleware
 import os
 

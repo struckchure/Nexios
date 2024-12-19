@@ -1,6 +1,6 @@
 from nexios.http.response import NexioResponse
 from nexios.http.request import Request
-from nexios.routers import Router, Routes
+from nexios.routing import Router, Routes
 from nexios.decorators import AllowedMethods, validate_request
 from models.tasks import TaskModel
 from schemas.task_schemas import CreateTaskSchema, UpdateTaskSchema
