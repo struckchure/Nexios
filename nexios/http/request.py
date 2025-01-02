@@ -328,3 +328,19 @@ class Request(HTTPConnection):
     def session(self):
         assert "session" in self.scope, "Session middleware not installed"
         return self.scope['session']
+    
+    @property
+    async def files(self) -> dict[str, typing.Any]:
+        """
+        This method returns a dictionary of files from the form_data.
+        """
+        form_data = await self.form_data
+        files_dict = {}
+        for key, value in form_data.items():
+            if isinstance(value, (list, tuple)):
+                for item in value:
+                    if hasattr(item, 'filename'):
+                        files_dict[key] = item
+            elif hasattr(value, 'filename'):
+                files_dict[key] = value
+        return files_dict
