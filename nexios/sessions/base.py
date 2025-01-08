@@ -1,6 +1,6 @@
 import typing
 from nexios.config import get_config
-from datetime import datetime
+from datetime import datetime,timedelta
 class BaseSessionInterface:
 
     modified = False
@@ -99,9 +99,9 @@ class BaseSessionInterface:
     def get_expiration_time(self) -> datetime | None:
         """Returns the expiration time for the session. Uses `self.session_config.session_expiration_time`."""
         if not self.session_config:
-            return datetime.utcnow() +   86400
+            return datetime.utcnow() + timedelta(minutes=86400)
         if self.session_config.session_permanent:
-            return datetime.utcnow() + self.session_config.session_expiration_time or 86400
+            return datetime.utcnow() + timedelta(minutes=self.session_config.session_expiration_time or 86400)
         return None
 
     @property

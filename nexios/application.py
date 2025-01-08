@@ -79,16 +79,18 @@ class NexioApp:
                 await send({"type": "lifespan.shutdown.failed", "message": str(e)})
 
    
+    
     async def execute_middleware_stack(self, 
                                      request: Request,
                                      response: NexioResponse, 
-                                     ) -> Any:
-        
-        
-            
+                                     handler: Callable = None) -> Any:
+        """Execute middleware stack including the handler as the last 'middleware'."""
         stack = self.http_middlewares.copy()
 
-       
+        # If we have a handler, add it to the stack
+        if handler:
+            stack.append(handler)
+
         index = -1 
         async def next_middleware():
             nonlocal index
@@ -97,45 +99,42 @@ class NexioApp:
             if index < len(stack):
                 middleware = stack[index]
                 if not response._body:
-                    await middleware(request, response, next_middleware)
-
+                    if index == len(stack) - 1:  # This is the handler
+                        await middleware(request, response)
+                    else:
+                        await middleware(request, response, next_middleware)
                 return
-           
-            
+
         await next_middleware()
 
     async def handle_http_request(self, scope: dict, receive: Callable, send: Callable) -> None:
-        
         request = Request(scope, receive, send)
-        
         response = NexioResponse()
         request.scope['config'] = self.config
-        #TODO : Add error handler 
+        
         try:
-            await self.execute_middleware_stack(request,response )
+            for route in self.routes:
+                route.handler = allowed_methods(route.methods)(route.handler)
+                match = route.pattern.match(request.url.path)
+                if match:
+                    route_kwargs = match.groupdict()
+                    scope['route_params'] = RouteParam(route_kwargs)
+                    
+                    if not response._body:
+                        if route.router_middleware and len(route.router_middleware) > 0:
+                            print("ALl middleware on this route are",route.router_middleware)
+                            self.http_middlewares.extend(route.router_middleware)
+                        await self.execute_middleware_stack(request, response, lambda req, res: route.handler(req, res))
+                        [self.http_middlewares.remove(x) for x in route.router_middleware or []]
+                    
+                    await response(scope, receive, send)
+                    return 
+
+            response.json({"error": "Not found"}, status_code=404)
         except Exception as e:
             self.logger.error(f"Request handler error: {str(e)}")
-            response.json("Server Error",500)
-            raise 
-        for route in self.routes:
-            
-            route.handler = allowed_methods(route.methods)(route.handler)
-            
-                
-            match = route.pattern.match(request.url.path)
-            if match:
-
-                route_kwargs = match.groupdict()
-                scope['route_params'] = RouteParam(route_kwargs)
-                await route.execute_middleware_stack(request, response)
-                if not response._body:
-                    await route.handler(request,response)
+            response.json("Server Error", 500)
         
-                await response(scope, receive, send)
-                return 
-            
-        response.json({"error": "Not found"},status_code=404)
-
         await response(scope, receive, send)
         return 
     def route(self, path: str, methods: List[Union[str, HTTPMethod]] = allowed_methods_default) -> Callable:

@@ -104,7 +104,6 @@ class Router(BaseRouter):
             prefixed_route = Routes(
                 f"{self.prefix}{route.raw_path}",
                 route.handler,
-                middleware=route.middleware,
                 methods=route.methods
             )
             self.routes.append(prefixed_route)
@@ -123,7 +122,6 @@ class Router(BaseRouter):
             route_ = Routes(
                 path=route.raw_path, 
                 handler=route.handler, 
-                middleware=route.middleware,
                 methods=route.methods)
             setattr(route_,"router_middleware",self.middlewares)
             
@@ -174,14 +172,12 @@ class Routes:
         self,
         path: str,
         handler: Callable,
-        methods: Optional[List[str]] = None,
-        middleware: Optional[Callable] = None
+        methods: Optional[List[str]] = None
     ):
         
         assert callable(handler), "Route handler must be callable"
         self.raw_path = path
         self.handler = handler
-        self.middleware = middleware
         self.methods = methods or  allowed_methods
         route_info = RouteBuilder.create_pattern(path)
         self.pattern = route_info.pattern
@@ -201,25 +197,28 @@ class Routes:
     async def execute_middleware_stack(self, 
                                      request: Request,
                                      response: NexioResponse, 
-                                     ) -> Any:
-        
-        
-        middleware_list = self.router_middleware or []
-        stack = middleware_list.copy()
-       
+                                     handler: Callable = None) -> Any:
+        """Execute middleware stack including the handler as the last 'middleware'."""
+        stack = self.http_middlewares.copy()
+
+        # If we have a handler, add it to the stack
+        if handler:
+            stack.append(handler)
+
         index = -1 
         async def next_middleware():
             nonlocal index
             index += 1
+            
             if index < len(stack):
                 middleware = stack[index]
-                
                 if not response._body:
-                    await middleware(request, response, next_middleware)
-
+                    if index == len(stack) - 1:  # This is the handler
+                        await middleware(request, response)
+                    else:
+                        await middleware(request, response, next_middleware)
                 return
-           
-            
+
         await next_middleware()
     def __call__(self) -> tuple:
         """Return the route components for registration"""
@@ -280,7 +279,7 @@ class WebsocketRoutes:
         return self.pattern, self.handler, self.middleware
     
     def __repr__(self) -> str:
-        return f"<Route {self.raw_path} methods={self.methods}>"
+        return f"<WSRoute {self.raw_path}>"
     
 
 
