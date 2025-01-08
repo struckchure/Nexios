@@ -323,11 +323,7 @@ class Request(HTTPConnection):
                     raw_headers.append((name.encode("latin-1"), value.encode("latin-1")))
             await self._send({"type": "http.response.push", "path": path, "headers": raw_headers})
 
-    
-    @property
-    def session(self):
-        assert "session" in self.scope, "Session middleware not installed"
-        return self.scope['session']
+   
     
     @property
     async def files(self) -> dict[str, typing.Any]:

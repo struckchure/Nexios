@@ -3,19 +3,16 @@
 from typing import Any, Callable, List, Union
 from .http.request import Request
 from .http.response import NexioResponse
-from .http.response import JSONResponse
 from .types import HTTPMethod
 from .decorators import allowed_methods
 from .routing import Router, Routes,WSRouter
-from enum import Enum
-from .config.settings import BaseConfig
 import logging,traceback
 from .structs import RouteParam
 from .websockets import get_websocket_session
 allowed_methods_default = ['get','post','delete','put','patch','options']
 class NexioApp:
     def __init__(self, 
-                 config: Enum = BaseConfig,
+                 config = None,
                  middlewares: list = None):
         self.config = config
         self.routes: List[Routes] = []

@@ -2,14 +2,13 @@ import os,uuid
 import json
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from nexios.config.settings import BaseConfig
 from .base import BaseSessionInterface
 
 
 class FileSessionManager(BaseSessionInterface):
-    def __init__(self, session_key: str, config: BaseConfig = BaseConfig):
+    def __init__(self, session_key: str):
         session_key = session_key or uuid.uuid4()
-        super().__init__(session_key, config)
+        super().__init__(session_key)
         self.session_file_path = os.path.join(self.config.SESSION_FILE_STORAGE_PATH or "sessions", f"{session_key}.json")
         
         # Ensure the session storage directory exists

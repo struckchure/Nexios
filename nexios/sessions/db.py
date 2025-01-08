@@ -2,14 +2,13 @@ import uuid
 from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
 from .db_models import Session
-from nexios.config.settings import BaseConfig
 from .base import BaseSessionInterface
 
 
 class DBSessionManager(BaseSessionInterface):
-    def __init__(self, session_key: str, config: BaseConfig = BaseConfig):
+    def __init__(self, session_key: str):
         session_key = session_key or str(uuid.uuid4())
-        super().__init__(session_key, config)
+        super().__init__(session_key)
         self.session_key = session_key
 
     async def _load_session_data(self) -> Optional[Dict[str, Any]]:

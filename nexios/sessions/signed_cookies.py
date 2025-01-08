@@ -1,14 +1,15 @@
 from itsdangerous import URLSafeTimedSerializer, BadSignature
 import typing
-from nexios.config.settings import BaseConfig
+from nexios.config import get_config
 from .base import BaseSessionInterface
 
 
 class SignedSessionManager(BaseSessionInterface):
-    def __init__(self, session_key: str, config: BaseConfig = BaseConfig):
-        super().__init__(session_key, config)
+    def __init__(self, session_key: str):
+        super().__init__(session_key)
+        config = get_config()
         self.secret_key = config.secret_key
-        self.serializer = URLSafeTimedSerializer(secret_key=config.SECRET_KEY,
+        self.serializer = URLSafeTimedSerializer(secret_key=config.secret_key,
                                                  salt="nexio.session.signed_cookie")
         session_key = session_key
 
