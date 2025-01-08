@@ -9,7 +9,6 @@ from .middlewares.cors import CORSMiddleware
 import os
 
 def get_application(config = None) -> NexioApp:
-    print("condif if",config)
     set_config(config)
 
     app = NexioApp(

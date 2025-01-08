@@ -122,7 +122,6 @@ class NexioApp:
                     
                     if not response._body:
                         if route.router_middleware and len(route.router_middleware) > 0:
-                            print("ALl middleware on this route are",route.router_middleware)
                             self.http_middlewares.extend(route.router_middleware)
                         await self.execute_middleware_stack(request, response, lambda req, res: route.handler(req, res))
                         [self.http_middlewares.remove(x) for x in route.router_middleware or []]
