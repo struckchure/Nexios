@@ -27,7 +27,7 @@ class BaseSessionInterface:
         
         self.modified = True
         self.accessed = True
-        print(self.modified)
+        
         self._session_cache[key] = value
     
     def get_session(self, key):
@@ -107,7 +107,7 @@ class BaseSessionInterface:
     @property
     def should_set_cookie(self) -> bool:
         """Determines if the cookie should be set. Depends on `config.SESSION_REFRESH_EACH_REQUEST`."""
-        print(self.modified)
+        
         if not self.session_config:
             
             return self.modified

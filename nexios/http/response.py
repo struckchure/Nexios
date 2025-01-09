@@ -551,7 +551,7 @@ class NexioResponse:
     def _get_base_response(self):
         """Get the appropriate response type based on content type."""
         if self._response is not None:
-            print(self._response.headers)
+            
             return self._response
 
         if self._content_type == "application/json":

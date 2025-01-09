@@ -32,7 +32,7 @@ class SessionMiddleware(BaseMiddleware):
         await session.load()
         # request.scope['session'] = session
         request.session = session
-        print("Request before controller")
+        
 
     async def process_response(self, request :Request , response :NexioResponse):
         
@@ -42,7 +42,7 @@ class SessionMiddleware(BaseMiddleware):
                 
                 )
             return 
-        print("Before respnse retuen check",request.session.modified)
+        
         if request.session.should_set_cookie:
             await request.session.save()
 

@@ -78,7 +78,7 @@ class CORSMiddleware(BaseMiddleware):
             return False
 
         if "*" in self.allow_origins:
-            print("Allowed")
+            
             return True
 
         if self.allow_origin_regex and self.allow_origin_regex.fullmatch(origin):
