@@ -216,7 +216,7 @@
             data.append("priority", priority)
             data.append("image", image)
 
-            fetch("http://localhost:8000/api/create", { method: "post", body: data })
+            fetch("http://localhost:8000/api/create", { method: "delete", body: data })
                 .then(response => (
                     response.json()
                 ))

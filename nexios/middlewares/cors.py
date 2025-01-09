@@ -5,14 +5,14 @@ from nexios.http.request import Request
 from nexios.config import get_config
 from typing import Callable, Optional
 
-ALL_METHODS = ("DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT")
+ALL_METHODS = ("delete", "get", "head", "options", "patch", "post", "put")
 BASIC_HEADERS = {"Accept", "Accept-Language", "Content-Language", "Content-Type"}
 SAFELISTED_HEADERS = {"accept", "accept-language", "content-language", "content-type"}
 
 class CORSMiddleware(BaseMiddleware):
     def __init__(self):
         config = get_config().cors
-
+        
         # Load configuration from the CORS object
         self.allow_origins = config.allow_origins or []
         self.blacklist_origins = config.blacklist_origins or []
@@ -36,7 +36,7 @@ class CORSMiddleware(BaseMiddleware):
             self.simple_headers["Access-Control-Expose-Headers"] = ", ".join(self.expose_headers)
 
         self.preflight_headers = {
-            "Access-Control-Allow-Methods": ", ".join(self.allow_methods),
+            "Access-Control-Allow-Methods": ", ".join([x.upper() for x in self.allow_methods]),
             "Access-Control-Max-Age": str(self.max_age),
         }
         if self.allow_credentials:
@@ -88,7 +88,14 @@ class CORSMiddleware(BaseMiddleware):
             return self.dynamic_origin_validator(origin)
 
         return origin in self.allow_origins
-
+    def is_allowed_method(self,method :str) -> bool:
+        
+        if "*" in self.allow_methods:
+            return True
+        if not method.lower() in [x.lower() for x in self.allow_methods]:
+            
+            return False
+        return True
     async def preflight_response(self, request: Request, response: NexioResponse) -> NexioResponse:
         origin = request.headers.get("origin")
         requested_method = request.headers.get("access-control-request-method")
@@ -107,7 +114,7 @@ class CORSMiddleware(BaseMiddleware):
         headers["Access-Control-Allow-Origin"] = origin
 
         
-        if requested_method not in self.allow_methods:
+        if not self.is_allowed_method(requested_method):
             if self.debug:
                 print(f"Preflight request denied: Method '{requested_method}' is not allowed.")
             
