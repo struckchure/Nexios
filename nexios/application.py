@@ -1,4 +1,3 @@
-#TODO : Add, route, application level middleware, and router level middleware
 
 from typing import Any, Callable, List, Union
 from .http.request import Request
@@ -9,6 +8,7 @@ from .routing import Router, Routes,WSRouter
 import logging,traceback
 from .structs import RouteParam
 from .websockets import get_websocket_session
+import traceback
 allowed_methods_default = ['get','post','delete','put','patch','options']
 class NexioApp:
     def __init__(self, 
@@ -85,6 +85,9 @@ class NexioApp:
                                      response: NexioResponse, 
                                      handler: Callable = None) -> Any:
         """Execute middleware stack including the handler as the last 'middleware'."""
+        async def default_handler(req,res :NexioResponse):
+            return res.json({"error":"Not Found"},status_code=404)
+        handler = handler or default_handler
         stack = self.http_middlewares.copy()
 
         # If we have a handler, add it to the stack
@@ -111,7 +114,9 @@ class NexioApp:
         request = Request(scope, receive, send)
         response = NexioResponse()
         request.scope['config'] = self.config
+       
         
+        handler = None
         try:
             for route in self.routes:
                 route.handler = allowed_methods(route.methods)(route.handler)
@@ -120,18 +125,26 @@ class NexioApp:
                     route_kwargs = match.groupdict()
                     scope['route_params'] = RouteParam(route_kwargs)
                     
-                    if not response._body:
-                        if route.router_middleware and len(route.router_middleware) > 0:
-                            self.http_middlewares.extend(route.router_middleware)
-                        await self.execute_middleware_stack(request, response, lambda req, res: route.handler(req, res))
-                        [self.http_middlewares.remove(x) for x in route.router_middleware or []]
                     
-                    await response(scope, receive, send)
-                    return 
+                    if route.router_middleware and len(route.router_middleware) > 0:
+                        self.http_middlewares.extend(route.router_middleware)
+                    handler = lambda req, res: route.handler(req, res, **route_kwargs)
+                    print("found")
+                    # await self.execute_middleware_stack(request, response, lambda req, res: route.handler(req, res))
+                    # [self.http_middlewares.remove(x) for x in route.router_middleware or []]
+                    
+                    # await response(scope, receive, send)
+                    # return 
+                    break
+            await self.execute_middleware_stack(request, response, handler)
+            
+            if handler:
+                [self.http_middlewares.remove(x) for x in route.router_middleware or []]
 
-            response.json({"error": "Not found"}, status_code=404)
+            
         except Exception as e:
-            self.logger.error(f"Request handler error: {str(e)}")
+            error = traceback.format_exc()
+            self.logger.error(f"Request handler error: {str(errors)}")
             response.json("Server Error", 500)
         
         await response(scope, receive, send)
