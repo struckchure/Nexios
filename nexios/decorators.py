@@ -34,13 +34,13 @@ class allowed_methods(RouteDecorator):
 
     def __call__(self, handler):
         @wraps(handler)
-        async def wrapper(request: Request, response: NexioResponse, **kwargs):
+        async def wrapper(request: Request, response: NexioResponse):
             if request.method.upper() not in self.allowed_methods:
                 return response.json({
                     "error": f"Method {request.method} not allowed",
                     "allowed_methods": self.allowed_methods
                 },status_code=405)
-            return await handler(request, response, **kwargs)
+            return await handler(request, response)
         return wrapper 
     
 

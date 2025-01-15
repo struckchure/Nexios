@@ -10,6 +10,29 @@ from .structs import RouteParam
 from .websockets import get_websocket_session
 import traceback
 allowed_methods_default = ['get','post','delete','put','patch','options']
+
+from typing import Dict, Any
+import json
+
+def validate_params(params: Dict[str, Any], param_types: Dict[str, type]) -> bool:
+    errors = []
+    for param, expected_type in param_types.items():
+        try:
+            _param = expected_type(params[param])
+        except Exception:
+            _param = params[param]
+        if param not in params:
+            errors.append(f"Missing parameter: {param}")
+        
+       
+        elif not isinstance(_param, expected_type):
+            errors.append(f"Parameter '{param}' should be of type {expected_type.__name__}. Got {type(params[param]).__name__}.")
+    
+    if errors:
+        return False, errors
+    return True, []
+
+
 class NexioApp:
     def __init__(self, 
                  config = None,
@@ -123,18 +146,20 @@ class NexioApp:
                 match = route.pattern.match(request.url.path)
                 if match:
                     route_kwargs = match.groupdict()
+                    handler_validator = getattr(route,"validator",None)
+                    if handler_validator:
+                        is_valid,errors = validate_params(route_kwargs,handler_validator)
+                        if not is_valid:
+                            response.json({"error":errors},status_code=422)
+                            break
                     scope['route_params'] = RouteParam(route_kwargs)
                     
                     
                     if route.router_middleware and len(route.router_middleware) > 0:
                         self.http_middlewares.extend(route.router_middleware)
-                    handler = lambda req, res: route.handler(req, res, **route_kwargs)
-                    print("found")
-                    # await self.execute_middleware_stack(request, response, lambda req, res: route.handler(req, res))
-                    # [self.http_middlewares.remove(x) for x in route.router_middleware or []]
-                    
-                    # await response(scope, receive, send)
-                    # return 
+                    handler = lambda req, res: route.handler(req, res)
+                   
+                   
                     break
             await self.execute_middleware_stack(request, response, handler)
             
@@ -144,17 +169,17 @@ class NexioApp:
             
         except Exception as e:
             error = traceback.format_exc()
-            self.logger.error(f"Request handler error: {str(errors)}")
+            self.logger.error(f"Request handler error: {str(error)}")
             response.json("Server Error", 500)
         
         await response(scope, receive, send)
         return 
-    def route(self, path: str, methods: List[Union[str, HTTPMethod]] = allowed_methods_default) -> Callable:
+    def route(self, path: str, methods: List[Union[str, HTTPMethod]] = allowed_methods_default,validator = None) -> Callable:
         
         """Decorator to register routes with optional HTTP methods"""
         def decorator(handler: Callable) -> Callable:
             handler = allowed_methods(methods)(handler)
-            self.add_route(Routes(path, handler,methods=methods))
+            self.add_route(Routes(path, handler,methods=methods,validator=validator))
             return handler
         return decorator
     def ws_route(self, path: str) -> Callable:
@@ -249,26 +274,26 @@ class NexioApp:
         else:
             await self.handler_websocket(scope, receive, send)
 
-    def get(self, path: str) -> Callable:
+    def get(self, path: str,validator = None) -> Callable:
         """Decorator to register a GET route."""
-        return self.route(path, methods=["GET"])
+        return self.route(path, methods=["GET"],validator = validator)
 
-    def post(self, path: str) -> Callable:
+    def post(self, path: str,validator = None) -> Callable:
         """Decorator to register a POST route."""
-        return self.route(path, methods=["POST"])
+        return self.route(path, methods=["POST"],validator= validator)
 
-    def delete(self, path: str) -> Callable:
+    def delete(self, path: str,validator = None) -> Callable:
         """Decorator to register a DELETE route."""
-        return self.route(path, methods=["DELETE"])
+        return self.route(path, methods=["DELETE"],validator = validator)
 
-    def put(self, path: str) -> Callable:
+    def put(self, path: str,validator = None) -> Callable:
         """Decorator to register a PUT route."""
-        return self.route(path, methods=["PUT"])
+        return self.route(path, methods=["PUT"],validator = validator)
 
-    def patch(self, path: str) -> Callable:
+    def patch(self, path: str,validator = None) -> Callable:
         """Decorator to register a PATCH route."""
-        return self.route(path, methods=["PATCH"])
+        return self.route(path, methods=["PATCH"],validator = validator)
 
-    def options(self, path: str) -> Callable:
+    def options(self, path: str,validator = None) -> Callable:
         """Decorator to register an OPTIONS route."""
-        return self.route(path, methods=["OPTIONS"])
+        return self.route(path, methods=["OPTIONS"],validator = validator)

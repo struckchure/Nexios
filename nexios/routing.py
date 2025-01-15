@@ -99,12 +99,14 @@ class Router(BaseRouter):
     
     def add_route(self, route: 'Routes') -> None:
         """Add a route with proper prefix handling"""
+        
         if self.prefix:
             # Create new route with prefixed path
             prefixed_route = Routes(
                 f"{self.prefix}{route.raw_path}",
                 route.handler,
-                methods=route.methods
+                methods=route.methods,
+                validator=route.validator
             )
             self.routes.append(prefixed_route)
         else:
@@ -122,43 +124,44 @@ class Router(BaseRouter):
             route_ = Routes(
                 path=route.raw_path, 
                 handler=route.handler, 
-                methods=route.methods)
+                methods=route.methods,
+                validator=route.validator)
             setattr(route_,"router_middleware",self.middlewares)
             
             routes.append(route_)
         return routes
 
-    def handle(self):pass
-    def get(self, path: str) -> Callable:
+    
+    def get(self, path: str,validator = None) -> Callable:
         """Decorator to register a GET route."""
-        return self.route(path, methods=["GET"])
+        return self.route(path, methods=["GET"],validator = validator)
 
-    def post(self, path: str) -> Callable:
+    def post(self, path: str,validator = None) -> Callable:
         """Decorator to register a POST route."""
-        return self.route(path, methods=["POST"])
+        return self.route(path, methods=["POST"],validator= validator)
 
-    def delete(self, path: str) -> Callable:
+    def delete(self, path: str,validator = None) -> Callable:
         """Decorator to register a DELETE route."""
-        return self.route(path, methods=["DELETE"])
+        return self.route(path, methods=["DELETE"],validator = validator)
 
-    def put(self, path: str) -> Callable:
+    def put(self, path: str,validator = None) -> Callable:
         """Decorator to register a PUT route."""
-        return self.route(path, methods=["PUT"])
+        return self.route(path, methods=["PUT"],validator = validator)
 
-    def patch(self, path: str) -> Callable:
+    def patch(self, path: str,validator = None) -> Callable:
         """Decorator to register a PATCH route."""
-        return self.route(path, methods=["PATCH"])
+        return self.route(path, methods=["PATCH"],validator = validator)
 
-    def options(self, path: str) -> Callable:
+    def options(self, path: str,validator = None) -> Callable:
         """Decorator to register an OPTIONS route."""
-        return self.route(path, methods=["OPTIONS"])
+        return self.route(path, methods=["OPTIONS"],validator = validator)
 
             
     
-    def route(self, path: str, methods: Optional[List[str]] = None) -> Callable:
+    def route(self, path: str, methods: Optional[List[str]] = None,validator = None) -> Callable:
         """Route decorator with method restrictions"""
         def decorator(handler: Callable) -> Callable:
-            route = Routes(path, handler, methods=methods)
+            route = Routes(path, handler, methods=methods,validator=validator)
             self.add_route(route)
             return handler
         return decorator
@@ -172,10 +175,11 @@ class Routes:
         self,
         path: str,
         handler: Callable,
-        methods: Optional[List[str]] = None
+        methods: Optional[List[str]] = None,
+        validator = None
     ):
-        
         assert callable(handler), "Route handler must be callable"
+        self.validator = validator
         self.raw_path = path
         self.handler = handler
         self.methods = methods or  allowed_methods
