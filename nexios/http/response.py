@@ -123,9 +123,9 @@ class Response:
         """Delete a cookie by setting its expiry to the past."""
         self.set_cookie(
             key=key,
-            value="",
+            value=None,
             max_age=0,
-            expires="Thu, 01 Jan 1970 00:00:00 GMT",
+            expires=0,
             path=path,
             domain=domain
         )
