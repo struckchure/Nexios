@@ -2,6 +2,8 @@ from nexios.http import response,request
 from nexios.validator import Schema
 from nexios.http.response import NexioResponse
 import traceback
+from functools import wraps
+from typing import Callable
 class APIHandler:
     allowed_methods = ['get','post','delete','put','patch','options']
     async def handle_error(self, error: Exception, request: request.Request, response: response.NexioResponse) -> response.NexioResponse:
@@ -21,12 +23,6 @@ class APIHandler:
             return response.json("Method not allowed",status_code=405)
         
         handler = getattr(self, method, None)
-        validator = getattr(self,f"validate_{method}",None)
-        if  validator  and issubclass(validator,Schema):
-            request._validation_schema = validator
-            request._validation_errors = {}
-            request._validated_data = None
-        
         if not callable(handler):
             return response.status(405)
         try:
