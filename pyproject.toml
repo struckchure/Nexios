@@ -4,7 +4,7 @@ build-backend = 'setuptools.build_meta'
 
 [tool.poetry]
 name = "nexios"
-version = "0.3.5"
+version = "0.3.6"
 description = "Nexio is a modern, high-performance ASGI web framework for Python."
 authors = ["Chidebele Dunamis <techwithdunamix@example.com>"]
 license = "MIT"
