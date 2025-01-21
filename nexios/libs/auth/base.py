@@ -2,13 +2,19 @@ from __future__ import annotations
 import typing
 from urllib.parse import urlencode
 
+_user_loader = None
 
+def get_user_loader():
+    return _user_loader
 
-from starlette._utils import is_async_callable
-from starlette.exceptions import HTTPException
+def user_loader(func):
+    print(func)
+    global _user_loader
+    _user_loader = func
+    
+
 from nexios.http import Request,Response
-from starlette.responses import RedirectResponse
-from starlette.websockets import WebSocket
+
 
 
 class AuthenticationError(Exception):
@@ -16,7 +22,7 @@ class AuthenticationError(Exception):
 
 
 class AuthenticationBackend:
-    async def authenticate(self, req: Request):
+    async def authenticate(self, req: Request,res :Response):
         raise NotImplementedError() 
 
 
