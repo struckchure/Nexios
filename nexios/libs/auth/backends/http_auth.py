@@ -7,7 +7,9 @@ from nexios.libs.auth.base import UnauthenticatedUser,SimpleUser
 from nexios.libs.auth.base import get_user_loader
 class BasicAuthBackend(AuthenticationBackend):
 
- 
+    def __init__(self,authenticate_func):
+        self.authenticate_func = authenticate_func
+
     async def authenticate(self, request :Request, response :Response) -> Optional[Tuple[str, dict]]:
        
         auth_header = request.headers.get("Authorization")
@@ -23,19 +25,10 @@ class BasicAuthBackend(AuthenticationBackend):
         except (ValueError, base64.binascii.Error):
             return None
 
-        #
-        user = await self.validate_user(username, password)
+        
+        user = await self.authenticate_func(username, password)
         if not user:
            return UnauthenticatedUser()
 
         return user
-    async def validate_user(self, username: str, password: str) -> Optional[dict]:
-        user_loader = get_user_loader()
-        if user_loader:
-            if inspect.iscoroutinefunction(user_loader):
-                user = await user_loader(username,password)
-                return user
-            user = user_loader(username,password)
-            return user
-        
-        return None
+    
