@@ -55,7 +55,7 @@ def init(name, full, extras, setup_db):
     demo_controller_path = os.path.join(controllers_dir, "demo_controller.py")
     demo_init_path = os.path.join(controllers_dir, "__init__.py")
 
-    with open("templates/demo_controller.py") as demo_controller:
+    with open(os.path.join(os.path.dirname(__file__),"templates/demo_controller.py")) as demo_controller:
         demo_controller_code = demo_controller.read()
     with open(demo_controller_path, 'w') as f:
         f.write(demo_controller_code)
@@ -69,7 +69,7 @@ def init(name, full, extras, setup_db):
     else:
         config_path = os.path.join(project_dir,"config.py")
         with open(config_path, 'w') as f:
-            with open("templates/config.py") as db_config:
+            with  open(os.path.join(os.path.dirname(__file__),"templates/config.py")) as db_config:
                 f.write(db_config.read())
                
     
@@ -77,7 +77,7 @@ def init(name, full, extras, setup_db):
         
     main_dir = os.path.join(project_dir, "main.py")
     with open(main_dir, 'w') as f:
-        with open("templates/main.py") as db_config:
+        with open(os.path.join(os.path.dirname(__file__),"templates/main.py")) as db_config:
             f.write(db_config.read())
                
     click.secho(f"🎉 Nexios project '{name}' has been initialized successfully!", fg="green", bold=True)
@@ -114,11 +114,11 @@ def setup_database(project_dir):
     config_path = os.path.join(project_dir, "config.py")
     with open(config_path, 'w') as f:
         if db_type == 'sqlite3':
-            with open("templates/config_db_sqlite3.py") as db_config:
+            with open(os.path.join(os.path.dirname(__file__),"templates/config_db_sqlite3.py")) as db_config:
                 data = db_config.read()
                 f.write(data.format(db_name=db_name))
         else:
-            with open("templates/config_db.py") as db_config:
+            with open(os.path.join(os.path.dirname(__file__),"templates/config_db.py")) as db_config:
                 data = db_config.read()
                 f.write(data.format(
                     db_user=db_user,
