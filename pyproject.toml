@@ -22,6 +22,9 @@ itsdangerous = "*"
 python-multipart = "*"
 
 [tool.poetry.scripts]
-nexios = "nexios.cli.main:main"
+nexios = "nexios.cli.main:init"
+nexios = "nexios.cli.main:run"
+nexios = "nexios.cli.main:dev"
+
 
 
