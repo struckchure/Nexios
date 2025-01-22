@@ -1,10 +1,10 @@
 import base64,inspect
 from typing import Optional, Tuple
-from nexios.libs.auth.base import AuthenticationBackend
+from nexios.auth.base import AuthenticationBackend
 from nexios.config import app_config
 from nexios.http import Request, Response
-from nexios.libs.auth.base import UnauthenticatedUser,SimpleUser
-from nexios.libs.auth.base import get_user_loader
+from nexios.auth.base import UnauthenticatedUser,SimpleUser
+from nexios.auth.base import get_user_loader
 class BasicAuthBackend(AuthenticationBackend):
 
     def __init__(self,authenticate_func):

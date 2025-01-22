@@ -1,8 +1,8 @@
 from typing import Optional, Tuple
-from nexios.libs.auth.base import AuthenticationBackend
+from nexios.auth.base import AuthenticationBackend
 from nexios.http import Request, Response
-from nexios.libs.auth.base import UnauthenticatedUser
-from nexios.libs.auth.base import get_user_loader
+from nexios.auth.base import UnauthenticatedUser
+from nexios.auth.base import get_user_loader
 
 class APIKeyAuthBackend(AuthenticationBackend):
 

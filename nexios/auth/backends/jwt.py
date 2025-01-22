@@ -1,8 +1,8 @@
 import jwt
 from typing import Optional, Tuple
-from nexios.libs.auth.base import AuthenticationBackend
+from nexios.auth.base import AuthenticationBackend
 from nexios.http import Request, Response
-from nexios.libs.auth.base import UnauthenticatedUser, SimpleUser
+from nexios.auth.base import UnauthenticatedUser, SimpleUser
 from nexios.config import app_config
 # Utility functions for JWT
 def create_jwt(payload: dict, secret: str, algorithm: str = "HS256") -> str:
