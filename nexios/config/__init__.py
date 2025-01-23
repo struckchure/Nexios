@@ -10,6 +10,6 @@ def get_config(): #support for this will soo be droped
     return _global_config
 
 
-lambda _:_()
+@lambda _:_()
 def app_config():
-    return get_config().get("app")
+    return get_config()
