@@ -254,7 +254,8 @@ class Request(HTTPConnection):
 
     @property
     async def json(self) -> typing.Any:
-        if  self.content_type != "application/json":
+        
+        if  self.content_type.decode() != "application/json":
             return {}
         if not hasattr(self, "_json"):  
             body = await self.body()

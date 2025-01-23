@@ -144,7 +144,6 @@ class NexioApp:
         try:
             for route in self.routes:
                 url = self.normalize_path(request.url.path)
-                print(url)
                 match = route.pattern.match(url)
                 if match:
                     route.handler = allowed_methods(route.methods)(route.handler)
