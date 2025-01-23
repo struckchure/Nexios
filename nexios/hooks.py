@@ -15,7 +15,7 @@ def before_request(func=None, *, log_level=None, only_methods=None, for_routes=N
     def decorator(handler):
         @wraps(handler)
         async def wrapper(*args, **kwargs):
-            req, res = args[-2], args[-1]  # Assuming req and res are the last two positional arguments
+            req, res = args[-2], args[-1]
             if only_methods and req.method.upper() not in map(str.upper, only_methods):
                 return await handler(*args, **kwargs)
             if for_routes and req.url.path not in for_routes:
@@ -40,7 +40,7 @@ def after_request(func=None, *, log_level=None, only_methods=None, for_routes=No
     def decorator(handler):
         @wraps(handler)
         async def wrapper(*args, **kwargs):
-            req, res = args[-2], args[-1]  # Assuming req and res are the last two positional arguments
+            req, res = args[-2], args[-1]
             response = await handler(*args, **kwargs)
             if only_methods and req.method.upper() not in map(str.upper, only_methods):
                 return response
@@ -60,7 +60,7 @@ def analytics(func):
     """
     @wraps(func)
     async def wrapper(*args, **kwargs):
-        req, res = args[-2], args[-1]  # Assuming req and res are the last two positional arguments
+        req, res = args[-2], args[-1]
         start_time = time.time()
         response = await func(*args, **kwargs)
         elapsed_time = time.time() - start_time
@@ -86,7 +86,7 @@ def maintenance_mode(is_maintenance):
     def decorator(handler):
         @wraps(handler)
         async def wrapper(*args, **kwargs):
-            req, res = args[-2], args[-1]  # Assuming req and res are the last two positional arguments
+            req, res = args[-2], args[-1]
             if is_maintenance:
                 return res.json({"error": "Service unavailable due to maintenance"}, status_code=503)
             return await handler(*args, **kwargs)
@@ -102,7 +102,7 @@ def request_timeout(timeout):
     def decorator(handler):
         @wraps(handler)
         async def wrapper(*args, **kwargs):
-            req, res = args[-2], args[-1]  # Assuming req and res are the last two positional arguments
+            req, res = args[-2], args[-1]
             try:
                 return await asyncio.wait_for(handler(*args, **kwargs), float(timeout))
             except asyncio.TimeoutError:
@@ -119,7 +119,7 @@ def capture_request_metadata(log_func):
     def decorator(handler):
         @wraps(handler)
         async def wrapper(*args, **kwargs):
-            req, res = args[-2], args[-1]  # Assuming req and res are the last two positional arguments
+            req, res = args[-2], args[-1]
             metadata = {
                 "method": req.method,
                 "url": str(req.url),
@@ -129,5 +129,29 @@ def capture_request_metadata(log_func):
             log_func(metadata)
             return await handler(*args, **kwargs)
         return wrapper
+    return decorator
+def use_for_route(route: str):
+    """
+    A decorator to apply middleware only to specific routes for both class-based and function-based middleware.
+    """
+    def decorator(func :Callable):
+        @wraps(func)
+        async def wrapper_func(request,response, call_next):
+            if request.url.path == route:
+                return await func(request, response,call_next)
+            else:
+                return await call_next()
+        
+        @wraps(func)
+        async def wrapper_klass(self,request,response, call_next):
+            if request.url.path == route:
+                return await func(self,request, response,call_next)
+            else:
+                return await call_next()
+        if func.__name__ == "__call__":
+            return wrapper_klass
+        else:
+            return wrapper_func
+        
     return decorator
 

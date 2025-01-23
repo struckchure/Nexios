@@ -8,7 +8,7 @@ from nexios.http import Request, Response
 from nexios.auth.base import UnauthenticatedUser, SimpleUser
 from nexios.config import get_config
 
-def create_jwt(payload: dict, secret: str, algorithm: str = "HS256") -> str:
+def create_jwt(payload: dict, secret: str = None, algorithm: str = "HS256") -> str:
     """
     Create a JWT token.
     Args:
@@ -18,6 +18,7 @@ def create_jwt(payload: dict, secret: str, algorithm: str = "HS256") -> str:
     Returns:
         str: Encoded JWT token.
     """
+    secret = secret or get_config().secret_key
     return jwt.encode(payload, secret, algorithm=algorithm)
 
 def decode_jwt(token: str, secret: str, algorithms: list) -> dict:

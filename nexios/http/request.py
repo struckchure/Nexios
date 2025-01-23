@@ -142,18 +142,9 @@ class HTTPConnection(typing.Mapping[str, typing.Any]):
             return Address(*host_port)
         return None
 
-    # @property
-    # def session(self) -> dict[str, typing.Any]:
-    #     assert "session" in self.scope, "SessionMiddleware must be installed to access request.session"
-    #     return self.scope["session"]
-
-    @property
-    def auth(self) -> typing.Any:
-        assert "auth" in self.scope, "AuthenticationMiddleware must be installed to access request.auth"
-        return self.scope["auth"]
-
+  
    
-   #TODO : ADD USER PROPERTY 
+   
 
     @property
     def state(self) -> State:
@@ -227,7 +218,12 @@ class Request(HTTPConnection):
     @property
     def receive(self):
         return self._receive
-
+    @property
+    def content_type(self):
+        content_type_header = self.headers.get("Content-Type")
+        content_type: bytes
+        content_type, _ = parse_options_header(content_type_header)
+        return content_type
     async def stream(self) -> typing.AsyncGenerator[bytes, None]:
         if hasattr(self, "_body"):
             yield self._body
@@ -258,6 +254,8 @@ class Request(HTTPConnection):
 
     @property
     async def json(self) -> typing.Any:
+        if  self.content_type != "application/json":
+            return {}
         if not hasattr(self, "_json"):  
             body = await self.body()
             try:
