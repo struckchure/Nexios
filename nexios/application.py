@@ -100,7 +100,8 @@ class NexioApp:
                 await send({"type": "lifespan.startup.failed", "message": str(e)})
             else:
                 await send({"type": "lifespan.shutdown.failed", "message": str(e)})
-
+    def normalize_path(self,path: str) -> str:
+        return path.rstrip("/").lower().replace("//", "/")
    
     
     async def execute_middleware_stack(self, 
@@ -142,9 +143,11 @@ class NexioApp:
         handler = None
         try:
             for route in self.routes:
-                route.handler = allowed_methods(route.methods)(route.handler)
-                match = route.pattern.match(request.url.path)
+                url = self.normalize_path(request.url.path)
+                print(url)
+                match = route.pattern.match(url)
                 if match:
+                    route.handler = allowed_methods(route.methods)(route.handler)
                     route_kwargs = match.groupdict()
                     handler_validator = getattr(route,"validator",None)
                     if handler_validator:
@@ -241,7 +244,9 @@ class NexioApp:
         ws = await get_websocket_session(scope, receive, send)
         await self.execute_ws_middleware_stack(ws)
         for route in self.ws_routes:
-            match = route.pattern.match(ws.url.path)
+            url = self.normalize_path(ws.url.path)
+            match = route.pattern.match(url)
+            
             if match:
                 route_kwargs = match.groupdict()
                 scope['route_params'] = RouteParam(route_kwargs)
