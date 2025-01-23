@@ -1,10 +1,13 @@
-import jwt
+try:
+    import jwt
+except ImportError:
+    raise ImportError("Please install PyJWT to use JWT authentication backend")
 from typing import Optional, Tuple
 from nexios.auth.base import AuthenticationBackend
 from nexios.http import Request, Response
 from nexios.auth.base import UnauthenticatedUser, SimpleUser
-from nexios.config import app_config
-# Utility functions for JWT
+from nexios.config import get_config
+
 def create_jwt(payload: dict, secret: str, algorithm: str = "HS256") -> str:
     """
     Create a JWT token.
@@ -35,14 +38,15 @@ def decode_jwt(token: str, secret: str, algorithms: list) -> dict:
         raise ValueError("Invalid token")
 
 class JWTAuthBackend(AuthenticationBackend):
-    def __init__(self, authenticator_func):
-        self.authenticator_func = authenticator_func
+    def __init__(self, authenticate_func):
+        self.authenticate_func = authenticate_func
       
       
 
     async def authenticate(self, request: Request, response: Response) -> Optional[Tuple[str, dict]]:
-        self.secret = app_config.secret
-        self.algorithms = app_config.jwt_algorithms
+        app_config = get_config()
+        self.secret = app_config.secret_key
+        self.algorithms = app_config.jwt_algorithms or ["HS256"]
     
         auth_header = request.headers.get("Authorization")
         if not auth_header or not auth_header.startswith("Bearer "):
@@ -52,10 +56,11 @@ class JWTAuthBackend(AuthenticationBackend):
         token = auth_header.split(" ")[1]
         try:
             payload = decode_jwt(token, self.secret, self.algorithms)
-        except ValueError:
+        except ValueError as e:
+
             return None
 
-        user = await self.authenticator_func(**payload)
+        user = await self.authenticate_func(**payload)
         if not user:
             return UnauthenticatedUser()
 
