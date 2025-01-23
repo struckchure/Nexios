@@ -1,6 +1,6 @@
 from functools import wraps, lru_cache
 import asyncio
-import time
+import time,re
 from typing import Callable
 
 def before_request(func=None, *, log_level=None, only_methods=None, for_routes=None):
@@ -155,3 +155,31 @@ def use_for_route(route: str):
         
     return decorator
 
+
+def use_for_route(route: str):
+    if route.endswith("/*"):
+        route = route[:-2]  # Remove the '*' from the route
+        route = f"^{route}/.*$"  # Regex to match anything after /admin (i.e., /admin/*)
+    else:
+        route = f"^{route}$"  # Exact match for /admin
+    def decorator(func: Callable):
+        @wraps(func)
+        async def wrapper_func(request, response, call_next):
+            if re.match(route, request.url.path):
+                return await func(request, response, call_next)
+            else:
+                return await call_next()
+        
+        @wraps(func)
+        async def wrapper_klass(self, request, response, call_next):
+            if re.match(route, request.url.path):
+                return await func(self, request, response, call_next)
+            else:
+                return await call_next()
+
+        if func.__name__ == "__call__":
+            return wrapper_klass
+        else:
+            return wrapper_func
+
+    return decorator
