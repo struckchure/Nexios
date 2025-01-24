@@ -40,6 +40,11 @@ class BaseSessionInterface:
         self.accessed = True
         return self._session_cache.items()
     
+    def delete_session(self, key):
+        self.modified = True
+        self.deleted = True
+        if key in self._session_cache:
+            del self._session_cache[key]
     def keys(self):
         return self._session_cache.keys()
     
