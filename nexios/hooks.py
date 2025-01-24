@@ -158,10 +158,10 @@ def use_for_route(route: str):
 
 def use_for_route(route: str):
     if route.endswith("/*"):
-        route = route[:-2]  # Remove the '*' from the route
-        route = f"^{route}/.*$"  # Regex to match anything after /admin (i.e., /admin/*)
+        route = route[:-2] 
+        route = f"^{route}/.*$"  
     else:
-        route = f"^{route}$"  # Exact match for /admin
+        route = f"^{route}$" 
     def decorator(func: Callable):
         @wraps(func)
         async def wrapper_func(request, response, call_next):

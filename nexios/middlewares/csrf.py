@@ -1,56 +1,107 @@
-import secrets
-from nexios.middlewares.base import BaseMiddleware
-from nexios.http import Request,Response
+import secrets,re
 from nexios.config import get_config
+from itsdangerous import URLSafeSerializer, BadSignature
+from nexios.middlewares.base import BaseMiddleware
+from nexios.http import Request, Response
 
 class CSRFMiddleware(BaseMiddleware):
     """
-    Middleware to protect against Cross-Site Request Forgery (CSRF) attacks.
+    Middleware to protect against Cross-Site Request Forgery (CSRF) attacks for Nexios.
     """
-    def __init__(self, *kwargs):
-        self.app_config = get_config()
-        self.CSRF_TOKEN_NAME = self.app_config.csrf_token or "csrf_token"
-        super().__init__(*kwargs)
+    def __init__(self) -> None:
+        app_config = get_config()
+        assert app_config.secret_key != None 
+        self.serializer = URLSafeSerializer(app_config.secret_key, "csrftoken")
+        self.required_urls = app_config.csrf_required_urls or ["/cbc"]
+        self.exempt_urls = app_config.csrf_exempt_urls
+        self.sensitive_cookies = app_config.csrf_sensitive_cookies
+        self.safe_methods = app_config.csrf_safe_methods or {"GET", "HEAD", "OPTIONS", "TRACE"}
+        self.cookie_name = app_config.csrf_cookie_name or "csrftoken"
+        self.cookie_path = app_config.csrf_cookie_path or "/"
+        self.cookie_domain = app_config.csrf_cookie_domain
+        self.cookie_secure =   app_config.csrf_cookie_secure or False
+        self.cookie_httponly = app_config.csrf_cookie_httponly or False
+        self.cookie_samesite = app_config.csrf_cookie_samesite or "Lax"
+        self.header_name = app_config.csrf_header_name or "X-CSRFToken"
 
-
-    async def process_request(self, request: Request, response :Response):
+    async def process_request(self, request: Request, response: Response):
         """
         Process the incoming request to validate the CSRF token for unsafe HTTP methods.
         """
-        if request.method in ("POST", "PUT", "PATCH", "DELETE"):
-            
-            csrf_token = request.session.get_session(self.CSRF_TOKEN_NAME)
+        csrf_cookie = request.cookies.get(self.cookie_name)
+        print("Cokkie",csrf_cookie)
+        if request.method.upper() in self.safe_methods:
+            return
+        if self._url_is_required(request.url.path) or (
+            request.method.upper() not in self.safe_methods
+            and not self._url_is_exempt(request.url.path)
+            and self._has_sensitive_cookies(request.cookies)
+        ):
+            submitted_csrf_token = request.headers.get(self.header_name)
+            if not csrf_cookie:
+                return response.send("CSRF token missing from cookies", status_code=403)
 
-            # Check if the token is missing or invalid
-            if not csrf_token or not self._validate_token(request, csrf_token):
-                return response.send("Invalid CSRF Token",status_code=403)
+            if not submitted_csrf_token:
+                return response.send("CSRF token missing from headers", status_code=403)
 
-        self._ensure_csrf_token_in_session(request)
-        response.delete_cookie(self.CSRF_TOKEN_NAME)
-    def _validate_token(self, request: Request, csrf_token: str) -> bool:
+            if not self._csrf_tokens_match(csrf_cookie, submitted_csrf_token):
+                return response.send("CSRF token incorrect", status_code=403)
+
+    async def process_response(self, request: Request, response: Response):
         """
-        Validate the CSRF token from the request against the stored session token.
+        Inject the CSRF token into the response for client-side usage if not already set.
         """
-        request_token = (
-            request.headers.get("X-CSRF-Token") or
-            request.cookies.get(self.CSRF_TOKEN_NAME)
+       
+        csrf_token = self._generate_csrf_token()
+        
+        response.set_cookie(
+            key=self.cookie_name,
+            value=csrf_token,
+            path=self.cookie_path,
+            domain=self.cookie_domain,
+            secure=self.cookie_secure,
+            httponly=self.cookie_httponly,
+            samesite=self.cookie_samesite,
         )
-        return secrets.compare_digest(csrf_token, request_token or "")
 
-    def _ensure_csrf_token_in_session(self, request: Request):
-        """
-        Ensure a CSRF token exists in the session; if not, generate a new one.
-        """
-        session = request.session.get_session(self.CSRF_TOKEN_NAME)
-        if not session:
-            request.session.set_session(self.CSRF_TOKEN_NAME, secrets.token_hex(32))
+    def _has_sensitive_cookies(self, cookies: dict) -> bool:
+        """Check if the request contains sensitive cookies."""
+        if not self.sensitive_cookies:
+            return True
+        for sensitive_cookie in self.sensitive_cookies:
+            if sensitive_cookie in cookies:
+                return True
+        return False
 
-    async def process_response(self, request: Request, response):
-        """
-        Inject the CSRF token into the response for client-side usage.
-        """
-        session = request.session
-        csrf_token = session.get_session(self.CSRF_TOKEN_NAME)
-        if csrf_token:
-            response.set_cookie(self.CSRF_TOKEN_NAME, csrf_token, httponly=True)
-        return response
+    def _url_is_required(self, url: str) -> bool:
+        """Check if the URL requires CSRF validation."""
+        if not self.required_urls:
+            return False
+        for required_url in self.required_urls:
+            match = re.match(required_url, url)
+            if match and match.group() == url:
+                return True
+        return False
+
+    def _url_is_exempt(self, url: str) -> bool:
+        """Check if the URL is exempt from CSRF validation."""
+        if not self.exempt_urls:
+            return False
+        for exempt_url in self.exempt_urls:
+            match = re.match(exempt_url, url)
+            if match and match.group() == url:
+                return True
+        return False
+
+    def _generate_csrf_token(self) -> str:
+        """Generate a secure CSRF token."""
+        return self.serializer.dumps(secrets.token_urlsafe(32))
+
+    def _csrf_tokens_match(self, token1: str, token2: str) -> bool:
+        """Compare two CSRF tokens securely."""
+        try:
+            decoded1 = self.serializer.loads(token1)
+            decoded2 = self.serializer.loads(token2)
+            return secrets.compare_digest(decoded1, decoded2)
+        except BadSignature:
+            return False
