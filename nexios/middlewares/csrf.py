@@ -12,7 +12,7 @@ class CSRFMiddleware(BaseMiddleware):
         app_config = get_config()
         assert app_config.secret_key != None 
         self.serializer = URLSafeSerializer(app_config.secret_key, "csrftoken")
-        self.required_urls = app_config.csrf_required_urls or ["/cbc"]
+        self.required_urls = app_config.csrf_required_urls or []
         self.exempt_urls = app_config.csrf_exempt_urls
         self.sensitive_cookies = app_config.csrf_sensitive_cookies
         self.safe_methods = app_config.csrf_safe_methods or {"GET", "HEAD", "OPTIONS", "TRACE"}
@@ -20,21 +20,23 @@ class CSRFMiddleware(BaseMiddleware):
         self.cookie_path = app_config.csrf_cookie_path or "/"
         self.cookie_domain = app_config.csrf_cookie_domain
         self.cookie_secure =   app_config.csrf_cookie_secure or False
-        self.cookie_httponly = app_config.csrf_cookie_httponly or False
+        self.cookie_httponly = app_config.csrf_cookie_httponly or True
         self.cookie_samesite = app_config.csrf_cookie_samesite or "Lax"
         self.header_name = app_config.csrf_header_name or "X-CSRFToken"
+        self.use_csrf = app_config.csrf_enabled or False
 
     async def process_request(self, request: Request, response: Response):
         """
         Process the incoming request to validate the CSRF token for unsafe HTTP methods.
         """
+
+        if not self.use_csrf:
+            return
         csrf_cookie = request.cookies.get(self.cookie_name)
-        print("Cokkie",csrf_cookie)
         if request.method.upper() in self.safe_methods:
             return
         if self._url_is_required(request.url.path) or (
-            request.method.upper() not in self.safe_methods
-            and not self._url_is_exempt(request.url.path)
+            self._url_is_exempt(request.url.path)
             and self._has_sensitive_cookies(request.cookies)
         ):
             submitted_csrf_token = request.headers.get(self.header_name)
@@ -46,12 +48,14 @@ class CSRFMiddleware(BaseMiddleware):
 
             if not self._csrf_tokens_match(csrf_cookie, submitted_csrf_token):
                 return response.send("CSRF token incorrect", status_code=403)
+        response.set_cookie(self.cookie_name,value=None,expires=0)
 
     async def process_response(self, request: Request, response: Response):
         """
         Inject the CSRF token into the response for client-side usage if not already set.
         """
-       
+        if not self.use_csrf:
+            return
         csrf_token = self._generate_csrf_token()
         
         response.set_cookie(
@@ -75,8 +79,12 @@ class CSRFMiddleware(BaseMiddleware):
 
     def _url_is_required(self, url: str) -> bool:
         """Check if the URL requires CSRF validation."""
+
         if not self.required_urls:
             return False
+        
+        if "*" in self.required_urls:
+            return True
         for required_url in self.required_urls:
             match = re.match(required_url, url)
             if match and match.group() == url:
