@@ -254,13 +254,15 @@ class Request(HTTPConnection):
 
     @property
     async def json(self) -> typing.Any:
-        
-        if  self.content_type.decode() != "application/json":
-            return {}
-        if not hasattr(self, "_json"):  
-            body = await self.body()
+     
+        if not hasattr(self, "_json"):
+            _body = await self.body()
             try:
-                self._json = json.loads(body.decode())
+                body = _body.decode()
+            except UnicodeDecodeError:
+                return {}
+            try:
+                self._json = json.loads(body)
             except json.JSONDecodeError:
                 self._json = {}
         return self._json
