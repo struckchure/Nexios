@@ -55,7 +55,7 @@ class ClientDisconnect(Exception):
     pass
 
 
-class HTTPConnection(typing.Mapping[str, typing.Any]):
+class HTTPConnection:
     """
     A base class for incoming HTTP connections, that is used to provide
     any functionality that is common to both `Request` and `WebSocket`.
@@ -65,14 +65,14 @@ class HTTPConnection(typing.Mapping[str, typing.Any]):
         assert scope["type"] in ("http", "websocket")
         self.scope = scope
 
-    def __getitem__(self, key: str) -> typing.Any:
-        return self.scope[key]
+    # def __getitem__(self, key: str) -> typing.Any:
+    #     return self.scope[key]
 
-    def __iter__(self) -> typing.Iterator[str]:
-        return iter(self.scope)
+    # def __iter__(self) -> typing.Iterator[str]:
+    #     return iter(self.scope)
 
-    def __len__(self) -> int:
-        return len(self.scope)
+    # def __len__(self) -> int:
+    #     return len(self.scope)
 
     # Don't use the `abc.Mapping.__eq__` implementation.
     # Connection instances should never be considered equal
