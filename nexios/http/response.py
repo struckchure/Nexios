@@ -437,7 +437,14 @@ class NexioResponse:
         self._body = data
         self._content_type = "application/json"
         return self
+    def empty(self, status_code=None,headers = {}):
+        self._status_code = status_code or self._status_code or 200
+        self.headers.update(headers)
 
+        self._body = None
+        self._content_type = "application/json"
+        return self
+        
     def html(self, content, status_code=None,headers = {}):
         """Send HTML response."""
         self._status_code = status_code or self._status_code or 200

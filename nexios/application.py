@@ -10,6 +10,7 @@ from .structs import RouteParam
 from .websockets import get_websocket_session
 from .middlewares.errors.server_error_handler import ServerErrorMiddleware
 import traceback
+from .exception_handler import ExceptionMiddleware
 allowed_methods_default = ['get','post','delete','put','patch','options']
 
 from typing import Dict, Any
@@ -45,7 +46,7 @@ class NexioApp:
         self.ws_middlewares: List =  []
         self.startup_handlers: List[Callable] = []
         self.shutdown_handlers: List[Callable] = []
-        self.logger = logging.getLogger("nexio")
+        self.exceptions_handler = ExceptionMiddleware()
 
    
     def on_startup(self, handler: Callable) -> Callable:
@@ -114,7 +115,7 @@ class NexioApp:
         async def default_handler(req,res :NexioResponse):
             return res.json({"error":"Not Found"},status_code=404)
         handler = handler or default_handler
-        stack = self.http_middlewares.copy()
+        stack = [*self.http_middlewares.copy(),self.exceptions_handler]
 
         # If we have a handler, add it to the stack
         if handler:
@@ -299,3 +300,11 @@ class NexioApp:
     def options(self, path: str,validator = None) -> Callable:
         """Decorator to register an OPTIONS route."""
         return self.route(path, methods=["OPTIONS"],validator = validator)
+
+
+    def add_exception_handler(
+        self,
+        exc_class_or_status_code,
+        handler
+    ) -> None:
+        self.exceptions_handler.add_exception_handler(exc_class_or_status_code,handler)

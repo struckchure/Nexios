@@ -4,7 +4,7 @@ from collections.abc import Mapping
 
 
 class HTTPException(Exception):
-    def __init__(self, status_code: int, detail: str | None = None, headers: Mapping[str, str] | None = None) -> None:
+    def __init__(self, status_code, detail = None, headers = []) -> None:
         super().__init__(detail or http.HTTPStatus(status_code).phrase)
         self.status_code = status_code
         self.detail = self.args[0]  

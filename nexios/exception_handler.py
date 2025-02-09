@@ -1,36 +1,47 @@
 from __future__ import annotations
-
 import typing
-
-from nexios._exception_handler import (
-    ExceptionHandlers,
-    StatusHandlers,
-    wrap_app_handling_exceptions,
-)
-from nexios.exceptions import HTTPException, WebSocketException
-from nexios.requests import Request
-from nexios.responses import PlainTextResponse, Response
+from nexios.exceptions import HTTPException
+from nexios.http import Request,Response
 from nexios.websockets import WebSocket
+from nexios.config import get_config
+def _lookup_exception_handler(exc_handlers, exc: Exception) :
+    
+    for cls in type(exc).__mro__:
+        if cls in exc_handlers:
+            return exc_handlers[cls]
+    return None
+async def wrap_app_handling_exceptions(request :Request, response :Response, call_next, exception_handlers, status_handlers) -> Response:
+   
+    try:
+        exception_handlers, status_handlers =  exception_handlers, status_handlers
+    except KeyError:
+        exception_handlers, status_handlers = {}, {}
+
+    
+
+    try:
+        await call_next()
+    except Exception as exc:
+        handler = None
+
+        if isinstance(exc, HTTPException):
+            handler = status_handlers.get(exc.status_code)
+
+        if handler is None:
+            handler = _lookup_exception_handler(exception_handlers, exc)
+            if not handler:
+                raise exc
+            return  await handler(request,response,exc)
+
+       
 
 
 class ExceptionMiddleware:
-    def __init__(
-        self,
-        app: typing.Callable[[Request], Response],
-        handlers: typing.Mapping[typing.Any, typing.Callable[[Request, Exception], Response]] | None = None,
-        debug: bool = False,
-    ) -> None:
-        self.app = app
-        self.debug = debug  # TODO: We ought to handle 404 cases if debug is set.
-        self._status_handlers: StatusHandlers = {}
-        self._exception_handlers: ExceptionHandlers = {
-            HTTPException: self.http_exception,
-            WebSocketException: self.websocket_exception,
-        }
-        if handlers is not None:
-            for key, value in handlers.items():
-                self.add_exception_handler(key, value)
-
+    def __init__(self ) -> None:
+        self.debug = get_config().debug or False # TODO: We ought to handle 404 cases if debug is set.
+        self._status_handlers = {}
+        self._exception_handlers = {HTTPException: self.http_exception}
+       
     def add_exception_handler(
         self,
         exc_class_or_status_code: int | type[Exception],
@@ -42,22 +53,24 @@ class ExceptionMiddleware:
             assert issubclass(exc_class_or_status_code, Exception)
             self._exception_handlers[exc_class_or_status_code] = handler
 
-    async def __call__(self, request: Request) -> Response:
+    async def __call__(self, request: Request,response :Response,call_next) -> Response:
         request.exception_handlers = (self._exception_handlers, self._status_handlers)
 
-        if isinstance(request, WebSocket):
-            conn: WebSocket = request
-        else:
-            conn: Request = request
+       
 
-        return await wrap_app_handling_exceptions(self.app, conn)
+        return await wrap_app_handling_exceptions(
+            request=request,
+            response=response,
+            call_next=call_next,
+            exception_handlers=self._exception_handlers,
+            status_handlers=self._status_handlers
+            
+            
+        )
 
-    def http_exception(self, request: Request, exc: Exception) -> Response:
+    async def http_exception(self, request: Request,response:Response, exc: Exception) -> Response:
         assert isinstance(exc, HTTPException)
         if exc.status_code in {204, 304}:
-            return Response(status_code=exc.status_code, headers=exc.headers)
-        return PlainTextResponse(exc.detail, status_code=exc.status_code, headers=exc.headers)
+            return response.empty(status_code=exc.status_code, headers=exc.headers)
+        return response.text(exc.detail, status_code=exc.status_code, headers=exc.headers)
 
-    async def websocket_exception(self, websocket: WebSocket, exc: Exception) -> None:
-        assert isinstance(exc, WebSocketException)
-        await websocket.close(code=exc.code, reason=exc.reason)  # pragma: no cover
