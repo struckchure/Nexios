@@ -87,6 +87,7 @@ class BaseRouter:
     def add_middleware(self, middleware: Callable) -> None:
         raise NotImplementedError("Not implemented")
 
+    
 class Router(BaseRouter):
     def __init__(self, prefix: Optional[str] = None):
         self.prefix = prefix or ""
@@ -131,7 +132,11 @@ class Router(BaseRouter):
             routes.append(route_)
         return routes
 
-    
+
+    def mount_router(self, router :"Router") -> None:
+        """Mount a router and all its routes to the application"""
+        self.routes.extend(router.get_routes())
+
     def get(self, path: str,validator = None) -> Callable:
         """Decorator to register a GET route."""
         return self.route(path, methods=["GET"],validator = validator)

@@ -16,7 +16,9 @@ class BaseSessionInterface:
         
         config = get_config()
         self.session_key = session_key 
-        assert config.secret_key != None, "Secret key is required to use session"
+        # assert config.secret_key != None, "Secret key is required to use session"
+        if not config.secret_key:
+            return 
         self.config = config
         self.session_config = config.session
 

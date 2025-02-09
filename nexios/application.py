@@ -8,11 +8,11 @@ from .routing import Router, Routes,WSRouter
 import logging,traceback
 from .structs import RouteParam
 from .websockets import get_websocket_session
+from .middlewares.errors.server_error_handler import ServerErrorMiddleware
 import traceback
 allowed_methods_default = ['get','post','delete','put','patch','options']
 
 from typing import Dict, Any
-import json
 
 def validate_params(params: Dict[str, Any], param_types: Dict[str, type]) -> bool:
     errors = []
@@ -38,6 +38,7 @@ class NexioApp:
                  config = None,
                  middlewares: list = None):
         self.config = config
+        self.server_error_handler = None
         self.routes: List[Routes] = []
         self.ws_routes :List[Routes] = []
         self.http_middlewares: List = middlewares or []
@@ -46,6 +47,7 @@ class NexioApp:
         self.shutdown_handlers: List[Callable] = []
         self.logger = logging.getLogger("nexio")
 
+   
     def on_startup(self, handler: Callable) -> Callable:
         """Decorator to register startup handlers"""
         self.startup_handlers.append(handler)
@@ -141,38 +143,34 @@ class NexioApp:
        
         
         handler = None
-        try:
-            for route in self.routes:
-                url = self.normalize_path(request.url.path)
-                match = route.pattern.match(url)
-                if match:
-                    route.handler = allowed_methods(route.methods)(route.handler)
-                    route_kwargs = match.groupdict()
-                    handler_validator = getattr(route,"validator",None)
-                    if handler_validator:
-                        is_valid,errors = validate_params(route_kwargs,handler_validator)
-                        if not is_valid:
-                            response.json({"error":errors},status_code=422)
-                            break
-                    scope['route_params'] = RouteParam(route_kwargs)
-                    
-                    
-                    if route.router_middleware and len(route.router_middleware) > 0:
-                        self.http_middlewares.extend(route.router_middleware)
-                    handler = lambda req, res: route.handler(req, res)
-                   
-                   
-                    break
-            await self.execute_middleware_stack(request, response, handler)
-            
-            if handler:
-                [self.http_middlewares.remove(x) for x in route.router_middleware or []]
+        
+        for route in self.routes:
+            url = self.normalize_path(request.url.path)
+            match = route.pattern.match(url)
+            if match:
+                route.handler = allowed_methods(route.methods)(route.handler)
+                route_kwargs = match.groupdict()
+                handler_validator = getattr(route,"validator",None)
+                if handler_validator:
+                    is_valid,errors = validate_params(route_kwargs,handler_validator)
+                    if not is_valid:
+                        response.json({"error":errors},status_code=422)
+                        break
+                scope['route_params'] = RouteParam(route_kwargs)
+                
+                
+                if route.router_middleware and len(route.router_middleware) > 0:
+                    self.http_middlewares.extend(route.router_middleware)
+                handler = lambda req, res: route.handler(req, res)
+                
+                
+                break
+        await self.execute_middleware_stack(request, response, handler)
+        
+        if handler:
+            [self.http_middlewares.remove(x) for x in route.router_middleware or []]
 
-            
-        except Exception as e:
-            error = traceback.format_exc()
-            self.logger.error(f"Request handler error: {str(error)}")
-            response.json("Server Error", 500)
+     
         
         await response(scope, receive, send)
         return 

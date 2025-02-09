@@ -13,7 +13,8 @@ class CORSMiddleware(BaseMiddleware):
     def __init__(self):
         config = get_config().cors
         
-        # Load configuration from the CORS object
+        if not config:
+            return None
         self.allow_origins = config.allow_origins or []
         self.blacklist_origins = config.blacklist_origins or []
         self.allow_methods = config.allow_methods or ALL_METHODS
@@ -46,6 +47,10 @@ class CORSMiddleware(BaseMiddleware):
         else:
             self.allow_headers  = list(SAFELISTED_HEADERS)
     async def process_request(self, request: Request, response):
+        config = get_config().cors 
+        if not config:
+            return None
+        
         origin = request.origin
         method = request.scope["method"]
 
@@ -59,6 +64,10 @@ class CORSMiddleware(BaseMiddleware):
         return None
 
     async def process_response(self, request: Request, response: NexioResponse):
+        config = get_config().cors
+        
+        if not config:
+            return None
         origin = request.origin
 
         if origin and self.is_allowed_origin(origin):

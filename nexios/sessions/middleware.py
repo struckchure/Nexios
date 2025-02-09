@@ -5,11 +5,19 @@ from .base import BaseSessionInterface
 from nexios.http.request import Request
 from nexios.http.response import NexioResponse
 from nexios.config import get_config
+import warnings
 class SessionMiddleware(BaseMiddleware):
 
     async def process_request(self, request :Request, response):
     
-        self.config = get_config().session
+        self.config = get_config().session 
+        if not self.config:
+            warnings.warn(
+            " Warning: secret_key is not set! Sessions will not be used. "
+            "Set a secret_key to enable secure session handling.",
+            RuntimeWarning
+            )
+            return
         if self.config:
             session_cookie_name = self.config.session_cookie_name
         else:
@@ -33,7 +41,13 @@ class SessionMiddleware(BaseMiddleware):
         
 
     async def process_response(self, request :Request , response :NexioResponse):
-        
+        if not self.config:
+            warnings.warn(
+            " Warning: secret_key is not set! Sessions will not be used. "
+            "Set a secret_key to enable secure session handling.",
+            RuntimeWarning
+            )
+            return 
         if request.session.is_empty() and request.session.accessed:
             response.delete_cookie(
                 key= self.session_cookie_name

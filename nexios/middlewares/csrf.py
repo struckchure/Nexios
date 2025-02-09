@@ -10,7 +10,11 @@ class CSRFMiddleware(BaseMiddleware):
     """
     def __init__(self) -> None:
         app_config = get_config()
-        assert app_config.secret_key != None 
+        self.use_csrf = app_config.csrf_enabled or False
+        if self.use_csrf:
+            assert app_config.secret_key != None
+        if not self.use_csrf:
+            return
         self.serializer = URLSafeSerializer(app_config.secret_key, "csrftoken")
         self.required_urls = app_config.csrf_required_urls or []
         self.exempt_urls = app_config.csrf_exempt_urls
@@ -23,7 +27,6 @@ class CSRFMiddleware(BaseMiddleware):
         self.cookie_httponly = app_config.csrf_cookie_httponly or True
         self.cookie_samesite = app_config.csrf_cookie_samesite or "Lax"
         self.header_name = app_config.csrf_header_name or "X-CSRFToken"
-        self.use_csrf = app_config.csrf_enabled or False
 
     async def process_request(self, request: Request, response: Response):
         """

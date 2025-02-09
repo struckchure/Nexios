@@ -420,6 +420,14 @@ class NexioResponse:
         self._body = content
         self._content_type = "text/plain"
         return self
+    
+    def text(self, content, status_code=None, headers = {}):
+        """Send plain text or HTML content."""
+        self._status_code = status_code or self._status_code or 200
+        self.headers.update(headers)
+        self._body = content
+        self._content_type = "text/plain"
+        return self
 
     def json(self, data, status_code=None,headers = {}):
         """Send JSON response."""
