@@ -6,10 +6,11 @@ async def handle_server_error(req,res,exc):
 
 class NotFound(HTTPException):
     pass
-app = get_application()
+app = get_application(config=3)
+
 
 async def handler_not_found(request: Request,response:Response, exc: Exception):
-    return response.json({"damn":"fvck"})
+    return response.json({"ERROR":"not found"})
     
 app.add_exception_handler(ValueError,handler_not_found)
 @app.get("")
