@@ -2,12 +2,7 @@ import enum
 import json
 import typing
 from typing import AsyncIterator, Iterable, Optional
-
-Scope = typing.MutableMapping[str, typing.Any]
-Message = typing.MutableMapping[str, typing.Any]
-
-Receive = typing.Callable[[], typing.Awaitable[Message]]
-Send = typing.Callable[[Message], typing.Awaitable[None]]
+from nexios.types import Scope,Send,Receive,Message
 from nexios.http.request import HTTPConnection
 
 class WebSocketState(enum.Enum):
@@ -25,7 +20,7 @@ class WebSocketDisconnect(Exception):
 
 class WebSocket(HTTPConnection):
     def __init__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        super().__init__(scope)
+        super().__init__(scope,receive)
         assert scope["type"] == "websocket"
         self._receive = receive
         self._send = send

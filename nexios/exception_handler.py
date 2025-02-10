@@ -2,15 +2,15 @@ from __future__ import annotations
 import typing
 from nexios.exceptions import HTTPException
 from nexios.http import Request,Response
-from nexios.websockets import WebSocket
+from nexios.types import ExceptionHandlerType
 from nexios.config import get_config
-def _lookup_exception_handler(exc_handlers, exc: Exception) :
+def _lookup_exception_handler(exc_handlers :typing.Dict[typing.Any[int ,Exception],ExceptionHandlerType], exc: Exception) :
     
     for cls in type(exc).__mro__:
-        if cls in exc_handlers:
+        if cls in exc_handlers: #type: ignore
             return exc_handlers[cls]
     return None
-async def wrap_app_handling_exceptions(request :Request, response :Response, call_next, exception_handlers, status_handlers) -> Response:
+async def wrap_app_handling_exceptions(request :Request, response :Response, call_next :typing.Callable[...,typing.Awaitable[None]], exception_handlers :typing.Dict[Exception,ExceptionHandlerType], status_handlers:typing.Dict[int ,ExceptionHandlerType] ) -> typing.Any:
    
     try:
         exception_handlers, status_handlers =  exception_handlers, status_handlers
@@ -22,12 +22,12 @@ async def wrap_app_handling_exceptions(request :Request, response :Response, cal
     try:
         await call_next()
     except Exception as exc:
-        handler = None
+        handler :typing.Any[ExceptionHandlerType,None]= None #type: ignore
 
         if isinstance(exc, HTTPException):
-            handler = status_handlers.get(exc.status_code)
+            handler :ExceptionHandlerType = status_handlers.get(exc.status_code) #type: ignore
 
-        if handler is None:
+        if handler is None: #type: ignore
             handler = _lookup_exception_handler(exception_handlers, exc)
             if not handler:
                 raise exc
@@ -39,22 +39,21 @@ async def wrap_app_handling_exceptions(request :Request, response :Response, cal
 class ExceptionMiddleware:
     def __init__(self ) -> None:
         self.debug = get_config().debug or False # TODO: We ought to handle 404 cases if debug is set.
-        self._status_handlers = {}
-        self._exception_handlers = {HTTPException: self.http_exception}
+        self._status_handlers:typing.Dict[int,ExceptionHandlerType]= {}
+        self._exception_handlers :typing.Dict[Exception,ExceptionHandlerType] = {HTTPException: self.http_exception} #type: ignore
        
     def add_exception_handler(
         self,
         exc_class_or_status_code: int | type[Exception],
-        handler: typing.Callable[[Request, Exception], Response],
+        handler: ExceptionHandlerType,
     ) -> None:
         if isinstance(exc_class_or_status_code, int):
             self._status_handlers[exc_class_or_status_code] = handler
         else:
             assert issubclass(exc_class_or_status_code, Exception)
-            self._exception_handlers[exc_class_or_status_code] = handler
+            self._exception_handlers[exc_class_or_status_code] = handler #type:ignore
 
-    async def __call__(self, request: Request,response :Response,call_next) -> Response:
-        request.exception_handlers = (self._exception_handlers, self._status_handlers)
+    async def __call__(self, request: Request,response :Response,call_next :typing.Callable[...,typing.Awaitable[None]],) -> Response:
 
        
 
@@ -68,9 +67,9 @@ class ExceptionMiddleware:
             
         )
 
-    async def http_exception(self, request: Request,response:Response, exc: Exception) -> Response:
+    async def http_exception(self, request: Request,response:Response, exc: HTTPException):
         assert isinstance(exc, HTTPException)
-        if exc.status_code in {204, 304}:
+        if exc.status_code in {204, 304}: #type:ignore
             return response.empty(status_code=exc.status_code, headers=exc.headers)
         return response.text(exc.detail, status_code=exc.status_code, headers=exc.headers)
 

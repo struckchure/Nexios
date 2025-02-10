@@ -1,9 +1,8 @@
 from __future__ import annotations
 import typing
-from collections.abc import Sequence
-from shlex import shlex
 from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit
 from nexios.utils.cuncurrency import run_in_threadpool
+from nexios.types import Scope
 
 class Address(typing.NamedTuple):
     host: str
@@ -21,7 +20,7 @@ class URL:
     def __init__(
         self,
         url: str = "",
-        scope: typing.Optional[str] = None,
+        scope :typing.Optional[Scope] = None,
         **components: typing.Any,
     ) -> None:
         if scope is not None:
@@ -108,7 +107,7 @@ class URL:
         return 
     
     @params.setter
-    def params(self,value):
+    def params(self,value :str):
         return value
     def replace(self, **kwargs: typing.Any) -> "URL":
         if (
@@ -226,35 +225,6 @@ class Secret:
     def __bool__(self) -> bool:
         return bool(self._value)
 
-
-class CommaSeparatedStrings(Sequence):
-    def __init__(self, value: typing.Union[str, typing.Sequence[str]]):
-        if isinstance(value, str):
-            splitter = shlex(value, posix=True)
-            splitter.whitespace = ","
-            splitter.whitespace_split = True
-            self._items = [item.strip() for item in splitter]
-        else:
-            self._items = list(value)
-
-    def __len__(self) -> int:
-        return len(self._items)
-
-    def __getitem__(self, index: typing.Union[int, slice]) -> typing.Any:
-        return self._items[index]
-
-    def __iter__(self) -> typing.Iterator[str]:
-        return iter(self._items)
-
-    def __repr__(self) -> str:
-        class_name = self.__class__.__name__
-        items = [item for item in self]
-        return f"{class_name}({items!r})"
-
-    def __str__(self) -> str:
-        return ", ".join(repr(item) for item in self)
-
-
 class ImmutableMultiDict(typing.Mapping[_KeyType, _CovariantValueType]):
     _dict: typing.Dict[_KeyType, _CovariantValueType]
 
@@ -345,12 +315,12 @@ class MultiDict(ImmutableMultiDict[typing.Any, typing.Any]):
         self._list = [(k, v) for k, v in self._list if k != key]
         return self._dict.pop(key, default)
 
-    def popitem(self) -> typing.Tuple:
+    def popitem(self) -> typing.Tuple[typing.Any,typing.Any]:
         key, value = self._dict.popitem()
         self._list = [(k, v) for k, v in self._list if k != key]
         return key, value
 
-    def poplist(self, key: typing.Any) -> typing.List:
+    def poplist(self, key: typing.Any) -> typing.List[typing.Any]:
         values = [v for k, v in self._list if k == key]
         self.pop(key)
         return values
@@ -366,7 +336,7 @@ class MultiDict(ImmutableMultiDict[typing.Any, typing.Any]):
 
         return self[key]
 
-    def setlist(self, key: typing.Any, values: typing.List) -> None:
+    def setlist(self, key: typing.Any, values: typing.List[typing.Any]) -> None:
         if not values:
             self.pop(key, None)
         else:
@@ -382,7 +352,7 @@ class MultiDict(ImmutableMultiDict[typing.Any, typing.Any]):
         self,
         *args: typing.Union[
             "MultiDict",
-            typing.Mapping,
+            typing.Mapping[str,typing.Any],
             typing.List[typing.Tuple[typing.Any, typing.Any]],
         ],
         **kwargs: typing.Any,
@@ -401,8 +371,8 @@ class QueryParams(ImmutableMultiDict[str, str]):
     def __init__(
         self,
         *args: typing.Union[
-            "ImmutableMultiDict",
-            typing.Mapping,
+            "ImmutableMultiDict[str,typing.Any]",
+            typing.Mapping[str,typing.Any],
             typing.List[typing.Tuple[typing.Any, typing.Any]],
             str,
             bytes,
@@ -470,12 +440,12 @@ class Headers(typing.Mapping[str, str]):
         return list(self._list)
 
     def keys(self) -> typing.List[str]:  # type: ignore[override]
-        return [key.decode("latin-1") for key, value in self._list]
+        return [key.decode("latin-1") for key, _ in self._list]
 
     def values(self) -> typing.List[str]:  # type: ignore[override]
-        return [value.decode("latin-1") for key, value in self._list]
+        return [value.decode("latin-1") for _, value in self._list]
 
-    def items(self) -> typing.List[typing.Tuple[str, str]]:  # type: ignore[override]
+    def items(self) -> typing.List[typing.Tuple[str, str]]:  # type: ignore
         return [
             (key.decode("latin-1"), value.decode("latin-1"))
             for key, value in self._list
@@ -493,7 +463,7 @@ class Headers(typing.Mapping[str, str]):
     def mutablecopy(self) -> "MutableHeaders":
         return MutableHeaders(raw=self._list[:])
 
-    def __getitem__(self, key: str) -> str:
+    def __getitem__(self, key: str): #type: ignore[override]
         get_header_key = key.lower().encode("latin-1")
         for header_key, header_value in self._list:
             if header_key == get_header_key:
@@ -502,7 +472,7 @@ class Headers(typing.Mapping[str, str]):
 
     def __contains__(self, key: typing.Any) -> bool:
         get_header_key = key.lower().encode("latin-1")
-        for header_key, header_value in self._list:
+        for header_key, _ in self._list:
             if header_key == get_header_key:
                 return True
         return False
@@ -537,7 +507,7 @@ class MutableHeaders(Headers):
         set_value = value.encode("latin-1")
 
         found_indexes: "typing.List[int]" = []
-        for idx, (item_key, item_value) in enumerate(self._list):
+        for idx, (item_key, _) in enumerate(self._list):
             if item_key == set_key:
                 found_indexes.append(idx)
 
@@ -557,7 +527,7 @@ class MutableHeaders(Headers):
         del_key = key.lower().encode("latin-1")
 
         pop_indexes: "typing.List[int]" = []
-        for idx, (item_key, item_value) in enumerate(self._list):
+        for idx, (item_key, _) in enumerate(self._list):
             if item_key == del_key:
                 pop_indexes.append(idx)
 
@@ -565,13 +535,13 @@ class MutableHeaders(Headers):
             del self._list[idx]
 
     def __ior__(self, other: typing.Mapping[str, str]) -> "MutableHeaders":
-        if not isinstance(other, typing.Mapping):
+        if not isinstance(other, typing.Mapping): #type: ignore
             raise TypeError(f"Expected a mapping but got {other.__class__.__name__}")
         self.update(other)
         return self
 
     def __or__(self, other: typing.Mapping[str, str]) -> "MutableHeaders":
-        if not isinstance(other, typing.Mapping):
+        if not isinstance(other, typing.Mapping): #type: ignore
             raise TypeError(f"Expected a mapping but got {other.__class__.__name__}")
         new = self.mutablecopy()
         new.update(other)
@@ -589,7 +559,7 @@ class MutableHeaders(Headers):
         set_key = key.lower().encode("latin-1")
         set_value = value.encode("latin-1")
 
-        for idx, (item_key, item_value) in enumerate(self._list):
+        for _, (item_key, item_value) in enumerate(self._list):
             if item_key == set_key:
                 return item_value.decode("latin-1")
         self._list.append((set_key, set_value))
@@ -646,47 +616,56 @@ class State:
 
     
 
+from typing import Any, Dict, Iterator, ItemsView, KeysView, ValuesView
+
 class RouteParam:
+    def __init__(self, data: Dict[str, Any]) -> None:
+        """Initialize the RouteParam with a dictionary."""
+        self.data: Dict[str, Any] = data
 
-    def __init__(self ,data :dict) -> None:
-        self.data = data
-        
-
-
-    def __iter__(self):
-        
+    def __iter__(self) -> Iterator[str]:
+        """Return an iterator over the dictionary keys."""
         return iter(self.data)
-    
 
-    def __getitem__(self, name):
-        return self.data.get(name,None)
-    
+    def __getitem__(self, name: str) -> Any:
+        """Retrieve a value by key, returning None if the key does not exist."""
+        return self.data.get(name, None)
 
-    def __getattribute__(self, name: str) -> typing.Any:
-        # Use object.__getattribute__ to avoid infinite recursion
+    def __getattribute__(self, name: str) -> Any:
+        """
+        Custom attribute access:
+        - If the attribute exists in `data`, return its value.
+        - Otherwise, fallback to the default attribute resolution.
+        """
         data = object.__getattribute__(self, "data")
         if name in data:
             return data[name]
-        # Fallback to default attribute access
         return object.__getattribute__(self, name)
-    def get_lists(self):
+
+    def get_lists(self) -> ItemsView[str, Any]:
+        """Return the dictionary's items (key-value pairs)."""
         return self.data.items()
-    
-    def keys(self):
+
+    def keys(self) -> KeysView[str]:
+        """Return the dictionary's keys."""
         return self.data.keys()
 
-    def values(self):
+    def values(self) -> ValuesView[Any]:
+        """Return the dictionary's values."""
         return self.data.values()
 
-    def items(self):
+    def items(self) -> ItemsView[str, Any]:
+        """Return the dictionary's items (key-value pairs)."""
         return self.data.items()
-    
+
     def __repr__(self) -> str:
-        return f"<RouteParams {self.data.items()}>"
-    
+        """Return a string representation of the RouteParam object."""
+        return f"<RouteParams {dict(self.data)}>"
+
     def __len__(self) -> int:
+        """Return the number of items in the dictionary."""
         return len(self.data)
-    
+
     
 class UploadedFile:
     
@@ -762,7 +741,7 @@ class FormData(ImmutableMultiDict[str, typing.Union[UploadedFile, str]]):
         super().__init__(*args, **kwargs)
 
     async def close(self) -> None:
-        for key, value in self.multi_items():
+        for _, value in self.multi_items():
             if isinstance(value, UploadedFile):
                 await value.close()
 

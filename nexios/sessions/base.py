@@ -37,7 +37,7 @@ class BaseSessionInterface:
         return self._session_cache.get(key, None)
         
 
-    def get_all(self):
+    def get_all(self) :
         self.accessed = True
         return self._session_cache.items()
     

@@ -1,13 +1,17 @@
-from typing import Any, List, Callable, Union, Optional, Pattern,Dict
+from typing import Any, List, Optional, Pattern,Dict,TypeVar,Tuple
 from dataclasses import dataclass
 import re
 import warnings
 from enum import Enum
-from nexios.http import Request,Response
-allowed_methods = ['get','post','put','delete','patch','delete','options']
+
+from nexios.types import MiddlewareType,WsMiddlewareType,HandlerType,WsHandlerType
+from nexios.decorators import allowed_methods
+from typing_extensions import Doc,Annotated #type: ignore
+
+T = TypeVar("T")
 allowed_methods_default = ['get','post','delete','put','patch','options']
 
-from typing_extensions import Doc,Annotated
+
 class RouteType(Enum):
     REGEX = "regex"
     PATH = "path"
@@ -16,7 +20,7 @@ class RouteType(Enum):
 @dataclass
 class RoutePattern:
     """Represents a processed route pattern with metadata"""
-    pattern: Pattern
+    pattern: Pattern[str]
     raw_path: str
     param_names: List[str]
     route_type: RouteType
@@ -27,7 +31,7 @@ class RouteBuilder:
     @staticmethod
     def create_pattern(path: str) -> RoutePattern:
         """Create a route pattern from a path string"""
-        param_names = []
+        param_names :List[str] = []
         
         if path.startswith("^"):
             return RoutePattern(
@@ -78,32 +82,32 @@ class BaseRouter:
     def add_route(self, route: 'Routes') -> None:
         raise NotImplementedError("Not implemented")
     
-    def get_routes(self) -> List[tuple]:
+    def get_routes(self): #type:ignore
         raise NotImplementedError("Not implemented")
     
-    def add_middleware(self, middleware: Callable) -> None:
+    def add_middleware(self, middleware: MiddlewareType) -> T: #type:ignore
         raise NotImplementedError("Not implemented")
 
 class Routes:
     def __init__(
         self,
         path: str,
-        handler: Callable,
+        handler: Optional[HandlerType],
         methods: Optional[List[str]] = None,
-        validator = None
+        validator :Optional[Dict[str,type]]= None
     ):
         assert callable(handler), "Route handler must be callable"
         self.validator = validator
         self.raw_path = path
         self.handler = handler
-        self.methods = methods or  allowed_methods
-        route_info = RouteBuilder.create_pattern(path)
-        self.pattern = route_info.pattern
+        self.methods = methods or  allowed_methods_default
+        route_info  = RouteBuilder.create_pattern(path)
+        self.pattern :Pattern[str] = route_info.pattern
         self.param_names = route_info.param_names
         self.route_type = route_info.route_type
         self.router_middleware = None
     
-    def match(self, path: str) -> Optional[dict]:
+    def match(self, path: str) ->Dict[str,Any] | None:
         """
         Match a path against this route's pattern and return captured parameters
         """
@@ -113,9 +117,9 @@ class Routes:
         return None
     
     
-    def __call__(self) -> tuple:
+    def __call__(self) -> Tuple[Pattern[str],HandlerType]:
         """Return the route components for registration"""
-        return self.pattern, self.handler, self.middleware
+        return self.pattern, self.handler
     
     def __repr__(self) -> str:
         return f"<Route {self.raw_path} methods={self.methods}>"
@@ -123,7 +127,7 @@ class Router(BaseRouter):
     def __init__(self, prefix: Optional[str] = None):
         self.prefix = prefix or ""
         self.routes: List[Routes] = []
-        self.middlewares: List[Callable] = []
+        self.middlewares: List[MiddlewareType] = []
         
         if self.prefix and not self.prefix.startswith("/"):
             warnings.warn("Router prefix should start with '/'")
@@ -152,14 +156,14 @@ class Router(BaseRouter):
         """
         self.routes.append(route)
     
-    def add_middleware(self, middleware: Callable) -> None:
+    def add_middleware(self, middleware: MiddlewareType) -> None:
         """Add middleware to the router"""
         if callable(middleware):
             self.middlewares.append(middleware)
     
-    def get_routes(self) -> List[tuple]:
+    def get_routes(self) -> List["Routes"]:
         """Get all routes with their patterns, handlers, and middleware"""
-        routes = []
+        routes :List[Routes] = []
         for route in self.routes:
             route_ = Routes(
                 path=route.raw_path, 
@@ -179,14 +183,14 @@ class Router(BaseRouter):
     def get(
         self, 
         route: Annotated[
-            Routes, 
+            str, 
             Doc("The route definition including the path and handler function.")
         ], 
         validator: Annotated[
-            Optional[Dict[str,any]], 
+            Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) -> Callable:
+    ) -> Routes | HandlerType | None:
         """
         Registers a GET route.
 
@@ -213,14 +217,14 @@ class Router(BaseRouter):
     def post(
         self, 
         route: Annotated[
-            Routes, 
+            str, 
             Doc("The route definition including the path and handler function.")
         ], 
         validator: Annotated[
-            Optional[Dict[str,any]], 
+            Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) -> Callable:
+    ) ->  Routes | HandlerType | None:
         """
         Registers a POST route.
 
@@ -247,14 +251,14 @@ class Router(BaseRouter):
     def delete(
         self, 
         route: Annotated[
-            Routes, 
+            str, 
             Doc("The route definition including the path and handler function.")
         ], 
         validator: Annotated[
-            Optional[Dict[str,any]], 
+            Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) -> Callable:
+    ) ->  Routes | HandlerType | None:
         """
         Registers a DELETE route.
 
@@ -282,14 +286,14 @@ class Router(BaseRouter):
     def put(
         self, 
         route: Annotated[
-            Routes, 
+            str, 
             Doc("The route definition including the path and handler function.")
         ], 
         validator: Annotated[
-            Optional[Dict[str,any]], 
+            Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) -> Callable:
+    ) ->  Routes | HandlerType | None:
         """
         Registers a PUT route.
 
@@ -316,14 +320,14 @@ class Router(BaseRouter):
     def patch(
         self, 
         route: Annotated[
-            Routes, 
+            str, 
             Doc("The route definition including the path and handler function.")
         ], 
         validator: Annotated[
-            Optional[Dict[str,any]], 
+            Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) -> Callable:
+    ) ->  Routes | HandlerType | None:
         """
         Registers a PATCH route.
 
@@ -352,14 +356,14 @@ class Router(BaseRouter):
     def options(
         self, 
         route: Annotated[
-            Routes, 
+            str, 
             Doc("The route definition including the path and handler function.")
         ], 
         validator: Annotated[
-            Optional[Dict[str,any]], 
+            Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) -> Callable:
+    ) ->  Routes | HandlerType | None:
         """
         Registers an OPTIONS route.
 
@@ -388,24 +392,21 @@ class Router(BaseRouter):
 
 
 
-    def options(self, path: str,validator = None) -> Callable:
-        """Decorator to register an OPTIONS route."""
-        return self.route(path, methods=["OPTIONS"],validator = validator)
-
+   
             
     
     def route(
         self,
         path: Annotated[str, Doc("The URL pattern for the route. Must be a valid string path.")], 
         methods: Annotated[
-            List[Union[str]], 
+            List[str], 
             Doc("A list of allowed HTTP methods (e.g., ['GET', 'POST']). Defaults to all methods.")
         ] = allowed_methods_default,
         validator: Annotated[
-            Dict[str,any], 
+            Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) -> Callable:
+    ) -> "Routes" | "HandlerType":
         """
         Registers a route with the specified HTTP methods and an optional validator.
 
@@ -427,12 +428,12 @@ class Router(BaseRouter):
                 response.json({"message": "User created"}, status_code=201)
             ```
         """
-        def decorator(handler: Callable) -> Callable:
-            handler = allowed_methods(methods)(handler)
-            self.add_route(Routes(path, handler, methods=methods, validator=validator))
-            return handler
-
-        return decorator
+        def decorator(handler: HandlerType) -> HandlerType: #type: ignore
+            handler:HandlerType = allowed_methods(methods)(handler)  #type: ignore
+            route = Routes(path, handler, methods=methods, validator=validator)#type: ignore
+            self.add_route(route)
+            return handler  #type: ignore
+        return decorator  #type: ignore
     
     def __repr__(self) -> str:
         return f"<Router prefix='{self.prefix}' routes={len(self.routes)}>"
@@ -445,20 +446,20 @@ class WebsocketRoutes:
     def __init__(
         self,
         path: str,
-        handler: Callable,
-        middleware: Optional[Callable] = None
+        handler: WsHandlerType,
+        middleware: Optional[WsMiddlewareType] = None
     ):
         assert callable(handler), "Route handler must be callable"
         self.raw_path = path
-        self.handler = handler
-        self.middleware = middleware
+        self.handler:WsHandlerType = handler
+        self.middleware :WsMiddlewareType | None = middleware
         route_info = RouteBuilder.create_pattern(path)
         self.pattern = route_info.pattern
         self.param_names = route_info.param_names
         self.route_type = route_info.route_type
         self.router_middleware = None
     
-    def match(self, path: str) -> Optional[dict]:
+    def match(self, path: str) -> Optional[Dict[str,Any]]:
         """
         Match a path against this route's pattern and return captured parameters
         """
@@ -467,27 +468,8 @@ class WebsocketRoutes:
             return match.groupdict()
         return None
     
-    async def execute_middleware_stack(self, ws, **kwargs):
-        """
-        Executes WebSocket middleware stack after route matching.
-        """
-        middleware_list = self.router_middleware or []
-
-        stack = middleware_list.copy()
-        index = -1
-
-        async def next_middleware():
-            nonlocal index
-            index += 1
-            if index < len(stack):
-                middleware = stack[index]
-                return await middleware(ws, next_middleware, **kwargs)
-            else:
-                # No more middleware to process
-                return None
-
-        return await next_middleware()
-    def __call__(self) -> tuple:
+    
+    def __call__(self) -> Tuple[Pattern[str],WsHandlerType,WsMiddlewareType | None]:
         """Return the route components for registration"""
         return self.pattern, self.handler, self.middleware
     
@@ -500,7 +482,7 @@ class WSRouter(BaseRouter):
     def __init__(self, prefix: Optional[str] = None):
         self.prefix = prefix or ""
         self.routes: List[WebsocketRoutes] = []
-        self.middlewares: List[Callable] = []
+        self.middlewares: List[WsMiddlewareType] = []
         
         if self.prefix and not self.prefix.startswith("/"):
             warnings.warn("WSRouter prefix should start with '/'")
@@ -508,7 +490,7 @@ class WSRouter(BaseRouter):
     
     def add_ws_route(
         self, 
-        route: Annotated[Routes, Doc("An instance of the Routes class representing a WebSocket route.")]
+        route: Annotated[WebsocketRoutes, Doc("An instance of the Routes class representing a WebSocket route.")]
     ) -> None:
         """
         Adds a WebSocket route to the application.
@@ -527,16 +509,16 @@ class WSRouter(BaseRouter):
             app.add_ws_route(route)
             ```
         """
-        self.ws_routes.append(route)
+        self.routes.append(route)
     
-    def add_middleware(self, middleware: Callable) -> None:
+    def add_middleware(self, middleware: WsMiddlewareType) -> None: #type: ignore[override]
         """Add middleware to the WebSocket router"""
         if callable(middleware):
             self.middlewares.append(middleware)
     
     def get_routes(self) -> List[WebsocketRoutes]:
         """Get all WebSocket routes with their patterns, handlers, and middleware"""
-        routes = []
+        routes :List[WebsocketRoutes]= []
         for route in self.routes:
             route_ = WebsocketRoutes(
                 path=route.raw_path, 
@@ -550,7 +532,7 @@ class WSRouter(BaseRouter):
     def ws_route(
         self, 
         path: Annotated[str, Doc("The WebSocket route path. Must be a valid URL pattern.")]
-    ) -> Callable:
+    ) -> WsHandlerType | Any:
         """
         Registers a WebSocket route.
 
@@ -572,14 +554,34 @@ class WSRouter(BaseRouter):
                     await websocket.send_text(f"Echo: {message}")
             ```
     """
-        def decorator(handler: Callable) -> Callable:
-            self.add_ws_route(Routes(path, handler))
+        def decorator(handler: WsHandlerType) -> WsHandlerType:
+            self.add_ws_route(WebsocketRoutes(path, handler))
             return handler
 
         return decorator
+    
+    async def execute_middleware_stack(self, ws :WebsocketRoutes, **kwargs :Dict[str,Any]) -> WsMiddlewareType | None:
+        """
+        Executes WebSocket middleware stack after route matching.
+        """
+        middleware_list :List[WsMiddlewareType] = getattr(self,"router_middleware") or [] #type: ignore
+
+        stack :List[WsMiddlewareType] = middleware_list.copy() 
+        index = -1
+
+        async def next_middleware() -> WsMiddlewareType:
+            nonlocal index
+            index += 1
+            if index < len(stack): #type: ignore:
+                middleware:List[MiddlewareType] = stack[index] #type: ignore
+                return await middleware(ws, next_middleware, **kwargs)#type: ignore
+            else:
+                # No more middleware to process
+                return None #type: ignore
+
+        return await next_middleware()
 
     
-        pass
 
     def __repr__(self) -> str:
         return f"<WSRouter prefix='{self.prefix}' routes={len(self.routes)}>"

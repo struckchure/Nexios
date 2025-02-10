@@ -1,6 +1,7 @@
-from .base import WebSocket,WebSocketDisconnect
+from .base import WebSocket
 from nexios import status
 import typing,json
+from nexios.types import Message
 class WebSocketEndpoint:
     encoding: str | None = None  # May be "text", "bytes", or "json".
 
@@ -33,7 +34,7 @@ class WebSocketEndpoint:
         finally:
             await self.on_disconnect(self.websocket, close_code)
 
-    async def decode(self, websocket: WebSocket, message) -> typing.Any:
+    async def decode(self, websocket: WebSocket, message :Message) -> typing.Any:
         if self.encoding == "text":
             if "text" not in message:
                 await websocket.close(code=status.WS_1003_UNSUPPORTED_DATA)

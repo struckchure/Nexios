@@ -8,3 +8,4 @@ __pycache__/
 index.py
 dist/
 .env
+.mypy_cache/

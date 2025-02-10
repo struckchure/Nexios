@@ -4,24 +4,22 @@ from .http.request import Request
 from .http.response import NexioResponse
 from .types import HTTPMethod
 from .decorators import allowed_methods
-from .routing import Router, Routes,WSRouter
-import traceback
+from .routing import Router, Routes,WSRouter,WebsocketRoutes
 from .structs import RouteParam
-from .websockets import get_websocket_session
-from .middlewares.errors.server_error_handler import ServerErrorMiddleware
+from .websockets import get_websocket_session,WebSocket
 import traceback,typing
 from .exception_handler import ExceptionMiddleware
-from typing_extensions import Doc,Annotated
+from typing_extensions import Doc,Annotated #type:ignore
 from nexios.config import MakeConfig
-from typing import Awaitable,Sequence,Optional
-from .types import MiddlewareType ,Scope,Send,Receive,WsMiddlewareType
+from typing import Awaitable,Optional
+from .types import MiddlewareType ,Scope,Send,Receive,WsMiddlewareType,Message,HandlerType,WsHandlerType
 allowed_methods_default = ['get','post','delete','put','patch','options']
 
 from typing import Dict, Any
 AppType = typing.TypeVar("AppType", bound="NexioApp")
 
-def validate_params(params: Dict[str, Any], param_types: Dict[str, type]) -> bool:
-    errors = []
+def validate_params(params: Dict[str, Any], param_types: Dict[str, type]) -> typing.Tuple[bool,List[str]]:
+    errors :List[str]= []
     for param, expected_type in param_types.items():
         try:
             _param = expected_type(params[param])
@@ -40,8 +38,8 @@ def validate_params(params: Dict[str, Any], param_types: Dict[str, type]) -> boo
 
 
 class NexioApp:
-    def __init__(self :AppType,
-                 config :Annotated[MakeConfig,Doc(
+    def __init__(self ,
+                 config :Annotated[Optional[MakeConfig],Doc(
                     """
                     This subclass is derived from the MakeConfig class and is responsible for managing configurations within the Nexios framework. It takes arguments in the form of dictionaries, allowing for structured and flexible configuration handling. By using dictionaries, this subclass makes it easy to pass multiple configuration values at once, reducing complexity and improving maintainability.
 
@@ -53,24 +51,24 @@ class NexioApp:
                     
                     )] = None,
     
-                    middlewares :Annotated[Sequence[MiddlewareType],Doc(
+                    middlewares :Annotated[List[MiddlewareType],Doc(
                         "A list of middlewares, where each middleware is either a class inherited from BaseMiddleware or an asynchronous callable function that accepts request, response, and callnext"
                         )]= [],
-                    server_error_handler :Annotated[Awaitable,Doc(
+                    server_error_handler :Annotated[Optional[Awaitable[NexioResponse]],Doc(
                         """
                         A function in Nexios responsible for handling server-side exceptions by logging errors, reporting issues, or initiating recovery mechanisms. It prevents crashes by intercepting unexpected failures, ensuring the application remains stable and operational. This function provides a structured approach to error management, allowing developers to define custom handling strategies such as retrying failed requests, sending alerts, or gracefully degrading functionality. By centralizing error processing, it improves maintainability and observability, making debugging and monitoring more efficient. Additionally, it ensures that critical failures do not disrupt the entire system, allowing services to continue running while appropriately managing faults and failures.""" )] = None):
-        self.config :MakeConfig = config
+        self.config  = config
         self.server_error_handler = None
         self.routes: List[Routes] = []
-        self.ws_routes :List[Routes] = []
-        self.http_middlewares: List = middlewares or []
-        self.ws_middlewares: List =  []
-        self.startup_handlers: List[Callable] = []
-        self.shutdown_handlers: List[Callable] = []
-        self.exceptions_handler = ExceptionMiddleware()
+        self.ws_routes :List[WebsocketRoutes] = []
+        self.http_middlewares: List[MiddlewareType] = middlewares or []
+        self.ws_middlewares: List[WsMiddlewareType] =  []
+        self.startup_handlers: List[Callable[[], Awaitable[None]]] = []
+        self.shutdown_handlers: List[Callable[[], Awaitable[None]]] = []
+        self.exceptions_handler :Any[ExceptionMiddleware,None]= server_error_handler or ExceptionMiddleware()
 
    
-    def on_startup(self, handler: Callable[..., Awaitable[Any]]) -> None:
+    def on_startup(self, handler: Callable[[], Awaitable[None]]) -> None:
         """
         Registers a startup handler that executes when the application starts.
 
@@ -112,10 +110,9 @@ class NexioApp:
         application starts.
         """
         self.startup_handlers.append(handler)
-        return handler
 
 
-    def on_shutdown(self, handler: Callable[..., Awaitable[Any]]) -> None:
+    def on_shutdown(self, handler: Callable[[], Awaitable[None]]) -> None:
         """
         Registers a shutdown handler that executes when the application is shutting down.
 
@@ -158,13 +155,15 @@ class NexioApp:
         application is shutting down.
         """
         self.shutdown_handlers.append(handler)
-        return handler
 
 
     async def _startup(self) -> None:
         """Execute all startup handlers sequentially"""
         for handler in self.startup_handlers:
-            await handler()
+            try:
+                await handler()
+            except Exception as e:
+                raise e
 
     async def _shutdown(self) -> None:
         """Execute all shutdown handlers sequentially with error handling"""
@@ -172,20 +171,20 @@ class NexioApp:
             try:
                 await handler()
             except Exception as e:
-                self.logger.error(f"Shutdown handler error: {str(e)}")
+                raise e
 
-    async def __handle_lifespan(self, receive: Callable, send: Callable) -> None:
+    async def __handle_lifespan(self, receive: Receive, send: Send) -> None:
         """Handle ASGI lifespan protocol events"""
         try:
             while True:
-                message = await receive()
+                message:Message = await receive()
                 
                 if message["type"] == "lifespan.startup":
                     try:
                         await self._startup()
                         await send({"type": "lifespan.startup.complete"})
                     except Exception as e:
-                        self.logger.error(f"Startup error: {str(e)}")
+                        
                         await send({"type": "lifespan.startup.failed", "message": str(e)})
                         return
                 
@@ -195,13 +194,13 @@ class NexioApp:
                         await send({"type": "lifespan.shutdown.complete"})
                         return
                     except Exception as e:
-                        self.logger.error(f"Shutdown error: {str(e)}")
+                    
                         await send({"type": "lifespan.shutdown.failed", "message": str(e)})
                         return
 
         except Exception as e:
-            self.logger.error(f"Lifespan error: {str(e)}")
-            if message["type"].startswith("lifespan.startup"):
+        
+            if message["type"].startswith("lifespan.startup"): #type: ignore
                 await send({"type": "lifespan.startup.failed", "message": str(e)})
             else:
                 await send({"type": "lifespan.shutdown.failed", "message": str(e)})
@@ -212,16 +211,15 @@ class NexioApp:
     async def __execute_middleware_stack(self, 
                                      request: Request,
                                      response: NexioResponse, 
-                                     handler: Callable = None) -> Any:
+                                     handler: Optional[HandlerType] = None) -> Any: #type: ignore
         """Execute middleware stack including the handler as the last 'middleware'."""
-        async def default_handler(req,res :NexioResponse):
+        async def default_handler(req :Request,res :NexioResponse):
             return res.json({"error":"Not Found"},status_code=404)
-        handler = handler or default_handler
-        stack = [*self.http_middlewares.copy(),self.exceptions_handler]
+        handler :Optional[HandlerType] | None = handler or default_handler #type: ignore
+        stack :List[MiddlewareType] = [*self.http_middlewares.copy(),self.exceptions_handler] #type: ignore
 
-        # If we have a handler, add it to the stack
-        if handler:
-            stack.append(handler)
+        if handler: #type:ignore
+            stack.append(handler)#type:ignore
 
         index = -1 
         async def next_middleware():
@@ -230,16 +228,16 @@ class NexioApp:
             
             if index < len(stack):
                 middleware = stack[index]
-                if not response._body:
+                if not response._body: #type:ignore
                     if index == len(stack) - 1:  # This is the handler
-                        await middleware(request, response)
+                        await middleware(request, response) #type:ignore
                     else:
-                        await middleware(request, response, next_middleware)
+                        await middleware(request, response, next_middleware) #type:ignore
                 return
 
         await next_middleware()
 
-    async def __handle_http_request(self, scope: dict, receive: Callable, send: Callable) -> None:
+    async def __handle_http_request(self, scope: Scope, receive: Receive, send: Send) -> None:
         request = Request(scope, receive, send)
         response = NexioResponse()
         request.scope['config'] = self.config
@@ -264,14 +262,14 @@ class NexioApp:
                 
                 if route.router_middleware and len(route.router_middleware) > 0:
                     self.http_middlewares.extend(route.router_middleware)
-                handler = lambda req, res: route.handler(req, res)
+                handler = lambda req, res: route.handler(req, res) #type: ignore
                 
                 
                 break
-        await self.__execute_middleware_stack(request, response, handler)
+        await self.__execute_middleware_stack(request, response, handler)  #type: ignore
         
         if handler:
-            [self.http_middlewares.remove(x) for x in route.router_middleware or []]
+            [self.http_middlewares.remove(x) for x in route.router_middleware or []] #type: ignore
 
      
         
@@ -288,7 +286,7 @@ class NexioApp:
             Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) -> Callable:
+    ) -> Any[ Routes , HandlerType ,None]:
         """
         Registers a route with the specified HTTP methods and an optional validator.
 
@@ -310,16 +308,16 @@ class NexioApp:
                 response.json({"message": "User created"}, status_code=201)
             ```
         """
-        def decorator(handler: Callable) -> Callable:
-            handler = allowed_methods(methods)(handler)
+        def decorator(handler: HandlerType) -> HandlerType:#type: ignore
+            handler :HandlerType = allowed_methods(methods)(handler) #type :ignore[no-reder]
             self.add_route(Routes(path, handler, methods=methods, validator=validator))
             return handler
 
         return decorator
     def ws_route(
-    self, 
-    path: Annotated[str, Doc("The WebSocket route path. Must be a valid URL pattern.")]
-) -> Callable:
+        self, 
+        path: Annotated[str, Doc("The WebSocket route path. Must be a valid URL pattern.")]
+    ) -> Callable[...,WsHandlerType]:
         """
         Registers a WebSocket route.
 
@@ -341,15 +339,15 @@ class NexioApp:
                     await websocket.send_text(f"Echo: {message}")
             ```
     """
-        def decorator(handler: Callable) -> Callable:
-            self.add_ws_route(Routes(path, handler))
+        def decorator(handler: WsHandlerType) -> WsHandlerType:
+            self.add_ws_route(WebsocketRoutes(path, handler))
             return handler
 
         return decorator
     
     def add_ws_route(
     self, 
-    route: Annotated[Routes, Doc("An instance of the Routes class representing a WebSocket route.")]
+    route: Annotated[WebsocketRoutes, Doc("An instance of the Routes class representing a WebSocket route.")]
 ) -> None:
         """
         Adds a WebSocket route to the application.
@@ -484,33 +482,32 @@ class NexioApp:
             ```
         """
         for route in router.get_routes():
-            self.add_route(route)
+            self.add_ws_route(route)
     
-    async def __execute_ws_middleware_stack(self, ws, **kwargs):
+    async def __execute_ws_middleware_stack(self, ws :WebSocket, **kwargs :Dict[str,Any]) ->  None:
         """
         Executes WebSocket middleware stack after route matching.
         """
         stack = self.ws_middlewares.copy()
         index = -1
 
-        async def next_middleware():
+        async def next_middleware() -> None:
             nonlocal index
             index += 1
             if index < len(stack):
                 middleware = stack[index]
-                return await middleware(ws, next_middleware, **kwargs)
+                return await middleware(ws, next_middleware, **kwargs) #type:ignore 
             else:
-                # No more middleware to process
                 return None
 
         return await next_middleware()
 
     
-    async def __handle_websocket(self, scope, receive, send):
+    async def __handle_websocket(self, scope :Scope, receive :Receive, send :Send):
         ws = await get_websocket_session(scope, receive, send)
         await self.__execute_ws_middleware_stack(ws)
         for route in self.ws_routes:
-            url = self.normalize_path(ws.url.path)
+            url = self.__normalize_path(ws.url.path)
             match = route.pattern.match(url)
             
             if match:
@@ -518,17 +515,17 @@ class NexioApp:
                 scope['route_params'] = RouteParam(route_kwargs)
                 
                 try:
-                    await route.execute_middleware_stack(ws)
+                    await route.execute_middleware_stack(ws) #type: ignore
                     await route.handler(ws, **route_kwargs)
                     return
 
-                except Exception as e:
+                except Exception as _:
                     error = traceback.format_exc()
-                    self.logger.error(f"WebSocket handler error: {error}")
-                    await ws.close(code=1011, reason=f"Internal Server Error: {str(e)}")
+                    await ws.close(code=1011, reason=f"Internal Server Error: {str(error)}")
                     return
 
         await ws.close(reason="Not found")
+        return 
     def add_ws_middleware(
         self, 
         middleware: Annotated[
@@ -576,14 +573,14 @@ class NexioApp:
     def get(
         self, 
         route: Annotated[
-            Routes, 
+            str, 
             Doc("The route definition including the path and handler function.")
         ], 
         validator: Annotated[
-            Optional[Dict[str,any]], 
+            Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) -> Callable:
+    ) ->  Routes | HandlerType | None:
         """
         Registers a GET route.
 
@@ -610,14 +607,14 @@ class NexioApp:
     def post(
         self, 
         route: Annotated[
-            Routes, 
+            str, 
             Doc("The route definition including the path and handler function.")
         ], 
         validator: Annotated[
-            Optional[Dict[str,any]], 
+            Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) -> Callable:
+    ) ->  Routes | HandlerType | None:
         """
         Registers a POST route.
 
@@ -644,14 +641,14 @@ class NexioApp:
     def delete(
         self, 
         route: Annotated[
-            Routes, 
+            str, 
             Doc("The route definition including the path and handler function.")
         ], 
         validator: Annotated[
-            Optional[Dict[str,any]], 
+            Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) -> Callable:
+    ) ->  Routes | HandlerType | None:
         """
         Registers a DELETE route.
 
@@ -679,14 +676,14 @@ class NexioApp:
     def put(
         self, 
         route: Annotated[
-            Routes, 
+            str, 
             Doc("The route definition including the path and handler function.")
         ], 
         validator: Annotated[
-            Optional[Dict[str,any]], 
+            Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) -> Callable:
+    ) ->  Routes | HandlerType | None:
         """
         Registers a PUT route.
 
@@ -713,14 +710,14 @@ class NexioApp:
     def patch(
         self, 
         route: Annotated[
-            Routes, 
+            str, 
             Doc("The route definition including the path and handler function.")
         ], 
         validator: Annotated[
-            Optional[Dict[str,any]], 
+            Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) -> Callable:
+    ) ->  Routes | HandlerType | None:
         """
         Registers a PATCH route.
 
@@ -749,14 +746,14 @@ class NexioApp:
     def options(
         self, 
         route: Annotated[
-            Routes, 
+            str, 
             Doc("The route definition including the path and handler function.")
         ], 
         validator: Annotated[
-            Optional[Dict[str,any]], 
+            Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) -> Callable:
+    ) ->  Routes | HandlerType | None:
         """
         Registers an OPTIONS route.
 
@@ -786,7 +783,7 @@ class NexioApp:
 
     def add_exception_handler(
         self,
-        exc_class_or_status_code,
-        handler
+        exc_class_or_status_code :Any[Exception,int],
+        handler :HandlerType
     ) -> None:
         self.exceptions_handler.add_exception_handler(exc_class_or_status_code,handler)

@@ -1,13 +1,13 @@
-import os,uuid
+import os
 import json
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Optional, Dict, Any
 from .base import BaseSessionInterface
 
 
 class FileSessionManager(BaseSessionInterface):
-    def __init__(self, session_key: str):
-        session_key = session_key or uuid.uuid4()
+    def __init__(self, session_key: str) -> None:
+        session_key = session_key 
         super().__init__(session_key)
         self.session_file_path = os.path.join(self.config.SESSION_FILE_STORAGE_PATH or "sessions", f"{session_key}.json")
         
@@ -40,7 +40,7 @@ class FileSessionManager(BaseSessionInterface):
         """Get a session value."""
         return self._session_cache.get(key, None)
 
-    def get_all(self) -> dict:
+    def get_all(self):
         """Get all session data."""
         return self._session_cache.items()
 
@@ -56,7 +56,7 @@ class FileSessionManager(BaseSessionInterface):
         """Check if the session is empty."""
         return len(self._session_cache.items()) == 0
 
-    async def save(self):
+    async def save(self): #type: ignore
         """Save the session data to the file."""
         self._save_session_data()
 
@@ -72,7 +72,7 @@ class FileSessionManager(BaseSessionInterface):
     def has_expired(self) -> bool:
         """Returns True if the session has expired."""
         expiration_time = self.get_expiration_time()
-        if expiration_time and datetime.utcnow() > expiration_time:
+        if expiration_time and datetime.utcnow() > expiration_time: #type:ignore
             return True
         return False
 

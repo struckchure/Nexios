@@ -2,13 +2,13 @@ from nexios.middlewares.base import BaseMiddleware
 from .signed_cookies import SignedSessionManager
 from .file import FileSessionManager
 from .base import BaseSessionInterface
-from nexios.http.request import Request
-from nexios.http.response import NexioResponse
+from nexios.http import Request,Response
+# from nexios.http.response import NexioResponse
 from nexios.config import get_config
-import warnings
+import warnings,typing
 class SessionMiddleware(BaseMiddleware):
 
-    async def process_request(self, request :Request, response):
+    async def process_request(self, request :Request, response :Response):
     
         self.config = get_config().session 
         if not self.config:
@@ -24,7 +24,7 @@ class SessionMiddleware(BaseMiddleware):
             session_cookie_name =  "session_id"
 
         self.session_cookie_name = session_cookie_name
-        managers = {
+        managers :typing.Dict[str,typing.Any]= {
             "file":FileSessionManager,
             "cookies":SignedSessionManager
         }    
@@ -34,13 +34,12 @@ class SessionMiddleware(BaseMiddleware):
             manager_config  = "cookies"
         
         manager :BaseSessionInterface = managers.get(manager_config,SignedSessionManager)
-        session = manager(session_key=request.cookies.get(session_cookie_name))
-        await session.load()
-        # request.scope['session'] = session
-        request.session = session
+        session :typing.Type[BaseSessionInterface] = manager(session_key=request.cookies.get(session_cookie_name)) #type:ignore
+        await session.load() #type: ignore
+        request.scope['session'] = session
         
 
-    async def process_response(self, request :Request , response :NexioResponse):
+    async def process_response(self, request :Request , response :Response):
         if not self.config:
             warnings.warn(
             " Warning: secret_key is not set! Sessions will not be used. "

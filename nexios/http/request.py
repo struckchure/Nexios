@@ -4,17 +4,19 @@ import json
 import typing
 from http import cookies as http_cookies
 
-import anyio
+import anyio #type:ignore
 
 from nexios.utils.async_helpers import AwaitableOrContextManager, AwaitableOrContextManagerWrapper
 from nexios.structs import URL, Address, FormData, Headers, QueryParams, State
-
 from .formparsers import FormParser, MultiPartException, MultiPartParser
+from nexios.types import Scope,Receive,Message,Send
 try:
-    from multipart.multipart import parse_options_header
+    from multipart.multipart import parse_options_header  #type:ignore
 
 except ImportError:
     parse_options_header =  None
+JSONType = typing.Union[str, int, float, bool, None, typing.Dict[str, typing.Any], typing.List[typing.Any]]
+
 SERVER_PUSH_HEADERS_TO_COPY = {
     "accept",
     "accept-encoding",
@@ -47,7 +49,7 @@ def cookie_parser(cookie_string: str) -> dict[str, str]:
         key, val = key.strip(), val.strip()
         if key or val:
             # unquote using Python's algorithm.
-            cookie_dict[key] = http_cookies._unquote(val)
+            cookie_dict[key] = http_cookies._unquote(val) #type:ignore
     return cookie_dict
 
 
@@ -61,22 +63,11 @@ class HTTPConnection:
     any functionality that is common to both `Request` and `WebSocket`.
     """
 
-    def __init__(self, scope, receive = None) -> None:
+    def __init__(self, scope :Scope, receive :Receive) -> None:
         assert scope["type"] in ("http", "websocket")
         self.scope = scope
 
-    # def __getitem__(self, key: str) -> typing.Any:
-    #     return self.scope[key]
-
-    # def __iter__(self) -> typing.Iterator[str]:
-    #     return iter(self.scope)
-
-    # def __len__(self) -> int:
-    #     return len(self.scope)
-
-    # Don't use the `abc.Mapping.__eq__` implementation.
-    # Connection instances should never be considered equal
-    # unless `self is other`.
+   
     __eq__ = object.__eq__
     __hash__ = object.__hash__
 
@@ -136,7 +127,6 @@ class HTTPConnection:
 
     @property
     def client(self) -> Address | None:
-        # client is a 2 item tuple of (host, port), None if missing
         host_port = self.scope.get("client")
         if host_port is not None:
             return Address(*host_port)
@@ -195,21 +185,21 @@ async def empty_receive() -> typing.NoReturn:
     raise RuntimeError("Receive channel has not been made available")
 
 
-async def empty_send(message) -> typing.NoReturn:
+async def empty_send(message :Message) -> typing.NoReturn:
     raise RuntimeError("Send channel has not been made available")
 
 
 class Request(HTTPConnection):
-    _form: FormData | None
+    _form: FormData | None | typing.Dict[str,typing.Any] #type: ignore
 
-    def __init__(self, scope, receive = empty_receive, send = empty_send):
-        super().__init__(scope)
+    def __init__(self, scope :Scope, receive :Receive = empty_receive, send :Send = empty_send):
+        super().__init__(scope,receive)
         assert scope["type"] == "http"
         self._receive = receive
         self._send = send
         self._stream_consumed = False
         self._is_disconnected = False
-        self._form = None
+        self._form = None  #type: ignore
 
     @property
     def method(self) -> str:
@@ -219,11 +209,11 @@ class Request(HTTPConnection):
     def receive(self):
         return self._receive
     @property
-    def content_type(self):
+    def content_type(self) -> str | None:
         content_type_header = self.headers.get("Content-Type")
-        content_type: bytes
-        content_type, _ = parse_options_header(content_type_header)
-        return content_type
+        content_type: str
+        content_type, _ = parse_options_header(content_type_header) #type:ignore
+        return content_type #type:ignore
     async def stream(self) -> typing.AsyncGenerator[bytes, None]:
         if hasattr(self, "_body"):
             yield self._body
@@ -253,7 +243,7 @@ class Request(HTTPConnection):
         return self._body
 
     @property
-    async def json(self) -> typing.Any:
+    async def json(self) -> JSONType:
      
         if not hasattr(self, "_json"):
             _body = await self.body()
@@ -262,7 +252,7 @@ class Request(HTTPConnection):
             except UnicodeDecodeError:
                 return {}
             try:
-                self._json = json.loads(body)
+                self._json :JSONType = json.loads(body)
             except json.JSONDecodeError:
                 self._json = {}
         return self._json
@@ -274,7 +264,7 @@ class Request(HTTPConnection):
             ), "The `python-multipart` library must be installed to use form parsing."
             content_type_header = self.headers.get("Content-Type")
             content_type: bytes
-            content_type, _ = parse_options_header(content_type_header)
+            content_type, _ = parse_options_header(content_type_header) #type:ignore
             if content_type == b"multipart/form-data":
                 try:
                     multipart_parser = MultiPartParser(
@@ -284,14 +274,14 @@ class Request(HTTPConnection):
                         max_fields=max_fields,
                     )
                     self._form = await multipart_parser.parse()
-                except MultiPartException as exc:
-                    self._form = None
+                except MultiPartException as _:
+                    self._form = {}  #type: ignore
             elif content_type == b"application/x-www-form-urlencoded":
                 form_parser = FormParser(self.headers, self.stream())
                 self._form = await form_parser.parse()
             else:
-                self._form = FormData()
-        return self._form
+                self._form :FormData = FormData()
+        return self._form #type :ignore
     @property
     def form_data(
         self, *, max_files: int | float = 1000, max_fields: int | float = 1000
@@ -300,16 +290,16 @@ class Request(HTTPConnection):
 
     async def close(self) -> None:
         if self._form is not None:  # pragma: no branch
-            await self._form.close()
+            await self._form.close() #type:ignore
 
     async def is_disconnected(self) -> bool:
         if not self._is_disconnected:
-            message = {}
+            message:typing.Dict[str,typing.Any] = {}
 
             # If message isn't immediately available, move on
-            with anyio.CancelScope() as cs:
-                cs.cancel()
-                message = await self._receive()
+            with anyio.CancelScope() as cs:  #type: ignore
+                cs.cancel()  #type: ignore
+                message = await self._receive() #type:ignore
 
             if message.get("type") == "http.disconnect":
                 self._is_disconnected = True
@@ -327,17 +317,22 @@ class Request(HTTPConnection):
    
     
     @property
-    async def files(self) -> dict[str, typing.Any]:
+    async def files(self) -> typing.Dict[str, typing.Any]:
         """
         This method returns a dictionary of files from the form_data.
         """
-        form_data = await self.form_data
+        form_data :FormData = await self.form_data
         files_dict = {}
         for key, value in form_data.items():
             if isinstance(value, (list, tuple)):
-                for item in value:
-                    if hasattr(item, 'filename'):
+                for item in value:  #type: ignore
+                    if hasattr(item, 'filename'):  #type: ignore
                         files_dict[key] = item
             elif hasattr(value, 'filename'):
                 files_dict[key] = value
-        return files_dict
+        return files_dict  #type: ignore
+    
+    
+    @property
+    def session(self):
+        return self.scope['session']

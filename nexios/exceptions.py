@@ -1,10 +1,10 @@
 from __future__ import annotations
 import http
-from collections.abc import Mapping
+import typing
 
 
 class HTTPException(Exception):
-    def __init__(self, status_code, detail = None, headers = []) -> None:
+    def __init__(self, status_code :int, detail:str|None = None, headers:typing.Dict[str,typing.Any] = {}) -> None:
         super().__init__(detail or http.HTTPStatus(status_code).phrase)
         self.status_code = status_code
         self.detail = self.args[0]  
