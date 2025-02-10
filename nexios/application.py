@@ -14,11 +14,11 @@ from .exception_handler import ExceptionMiddleware
 from typing_extensions import Doc,Annotated
 from nexios.config import MakeConfig
 from typing import Awaitable,Sequence
-from .types import MiddlewareType
+from .types import MiddlewareType ,Scope,Send,Receive
 allowed_methods_default = ['get','post','delete','put','patch','options']
 
 from typing import Dict, Any
-AppType = typing.TypeVar("AppType", bound="Starlette")
+AppType = typing.TypeVar("AppType", bound="NexioApp")
 
 def validate_params(params: Dict[str, Any], param_types: Dict[str, type]) -> bool:
     errors = []
@@ -70,22 +70,103 @@ class NexioApp:
         self.exceptions_handler = ExceptionMiddleware()
 
    
-    def on_startup(self, handler: Callable) -> Callable:
-        """Decorator to register startup handlers"""
+    def on_startup(self, handler: Callable[..., Awaitable[Any]]) -> None:
+        """
+        Registers a startup handler that executes when the application starts.
+
+        This method allows you to define functions that will be executed before
+        the application begins handling requests. It is useful for initializing
+        resources such as database connections, loading configuration settings, 
+        or preparing caches.
+
+        The provided function must be asynchronous (`async def`) since it 
+        will be awaited during the startup phase.
+
+        Args:
+            handler (Callable): An asynchronous function to be executed at startup.
+
+        Returns:
+            Callable: The same handler function, allowing it to be used as a decorator.
+
+        Example:
+            ```python
+
+            @app.on_startup
+            async def connect_to_db():
+                global db
+                db = await Database.connect("postgres://user:password@localhost:5432/mydb")
+                print("Database connection established.")
+
+            @app.on_startup
+            async def cache_warmup():
+                global cache
+                cache = await load_initial_cache()
+                print("Cache warmed up and ready.")
+            ```
+
+        In this example:
+        - `connect_to_db` establishes a database connection before the app starts.
+        - `cache_warmup` preloads data into a cache for faster access.
+
+        These functions will be executed in the order they are registered when the
+        application starts.
+        """
         self.startup_handlers.append(handler)
         return handler
 
-    def on_shutdown(self, handler: Callable) -> Callable:
-        """Decorator to register shutdown handlers"""
+
+    def on_shutdown(self, handler: Callable[..., Awaitable[Any]]) -> None:
+        """
+        Registers a shutdown handler that executes when the application is shutting down.
+
+        This method allows you to define functions that will be executed when the 
+        application is stopping. It is useful for cleaning up resources such as 
+        closing database connections, saving application state, or gracefully 
+        terminating background tasks.
+
+        The provided function must be asynchronous (`async def`) since it will be 
+        awaited during the shutdown phase.
+
+        Args:
+            handler (Callable): An asynchronous function to be executed during shutdown.
+
+        Returns:
+            Callable: The same handler function, allowing it to be used as a decorator.
+
+        Example:
+            ```python
+            app = NexioApp()
+
+            @app.on_shutdown
+            async def disconnect_db():
+                global db
+                await db.disconnect()
+                print("Database connection closed.")
+
+            @app.on_shutdown
+            async def clear_cache():
+                global cache
+                await cache.clear()
+                print("Cache cleared before shutdown.")
+            ```
+
+        In this example:
+        - `disconnect_db` ensures that the database connection is properly closed.
+        - `clear_cache` removes cached data to free up memory before the app stops.
+
+        These functions will be executed in the order they are registered when the
+        application is shutting down.
+        """
         self.shutdown_handlers.append(handler)
         return handler
 
-    async def startup(self) -> None:
+
+    async def _startup(self) -> None:
         """Execute all startup handlers sequentially"""
         for handler in self.startup_handlers:
             await handler()
 
-    async def shutdown(self) -> None:
+    async def _shutdown(self) -> None:
         """Execute all shutdown handlers sequentially with error handling"""
         for handler in self.shutdown_handlers:
             try:
@@ -93,7 +174,7 @@ class NexioApp:
             except Exception as e:
                 self.logger.error(f"Shutdown handler error: {str(e)}")
 
-    async def handle_lifespan(self, receive: Callable, send: Callable) -> None:
+    async def __handle_lifespan(self, receive: Callable, send: Callable) -> None:
         """Handle ASGI lifespan protocol events"""
         try:
             while True:
@@ -101,7 +182,7 @@ class NexioApp:
                 
                 if message["type"] == "lifespan.startup":
                     try:
-                        await self.startup()
+                        await self._startup()
                         await send({"type": "lifespan.startup.complete"})
                     except Exception as e:
                         self.logger.error(f"Startup error: {str(e)}")
@@ -110,7 +191,7 @@ class NexioApp:
                 
                 elif message["type"] == "lifespan.shutdown":
                     try:
-                        await self.shutdown()
+                        await self._shutdown()
                         await send({"type": "lifespan.shutdown.complete"})
                         return
                     except Exception as e:
@@ -124,11 +205,11 @@ class NexioApp:
                 await send({"type": "lifespan.startup.failed", "message": str(e)})
             else:
                 await send({"type": "lifespan.shutdown.failed", "message": str(e)})
-    def normalize_path(self,path: str) -> str:
+    def __normalize_path(self,path: str) -> str:
         return path.rstrip("/").lower().replace("//", "/")
    
     
-    async def execute_middleware_stack(self, 
+    async def __execute_middleware_stack(self, 
                                      request: Request,
                                      response: NexioResponse, 
                                      handler: Callable = None) -> Any:
@@ -158,7 +239,7 @@ class NexioApp:
 
         await next_middleware()
 
-    async def handle_http_request(self, scope: dict, receive: Callable, send: Callable) -> None:
+    async def __handle_http_request(self, scope: dict, receive: Callable, send: Callable) -> None:
         request = Request(scope, receive, send)
         response = NexioResponse()
         request.scope['config'] = self.config
@@ -167,7 +248,7 @@ class NexioApp:
         handler = None
         
         for route in self.routes:
-            url = self.normalize_path(request.url.path)
+            url = self.__normalize_path(request.url.path)
             match = route.pattern.match(url)
             if match:
                 route.handler = allowed_methods(route.methods)(route.handler)
@@ -187,7 +268,7 @@ class NexioApp:
                 
                 
                 break
-        await self.execute_middleware_stack(request, response, handler)
+        await self.__execute_middleware_stack(request, response, handler)
         
         if handler:
             [self.http_middlewares.remove(x) for x in route.router_middleware or []]
@@ -239,7 +320,7 @@ class NexioApp:
             
             self.add_ws_route(route)
     
-    async def execute_ws_middleware_stack(self, ws, **kwargs):
+    async def __execute_ws_middleware_stack(self, ws, **kwargs):
         """
         Executes WebSocket middleware stack after route matching.
         """
@@ -261,7 +342,7 @@ class NexioApp:
     
     async def handler_websocket(self, scope, receive, send):
         ws = await get_websocket_session(scope, receive, send)
-        await self.execute_ws_middleware_stack(ws)
+        await self.__execute_ws_middleware_stack(ws)
         for route in self.ws_routes:
             url = self.normalize_path(ws.url.path)
             match = route.pattern.match(url)
@@ -288,39 +369,39 @@ class NexioApp:
         """
         if callable(middleware):
             self.ws_middlewares.append(middleware)
-    async def __call__(self, scope: dict, receive: Callable, send: Callable) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """ASGI application callable"""
         if scope["type"] == "lifespan":
-            await self.handle_lifespan(receive, send)
+            await self.__handle_lifespan(receive, send)
         elif scope["type"] == "http":    
-            await self.handle_http_request(scope, receive, send)
+            await self.__handle_http_request(scope, receive, send)
 
         else:
             await self.handler_websocket(scope, receive, send)
 
-    def get(self, path: str,validator = None) -> Callable:
+    def get(self, route: Routes,validator = None) -> Callable:
         """Decorator to register a GET route."""
-        return self.route(path, methods=["GET"],validator = validator)
+        return self.route(route, methods=["GET"],validator = validator)
 
-    def post(self, path: str,validator = None) -> Callable:
+    def post(self, route: Routes,validator = None) -> Callable:
         """Decorator to register a POST route."""
-        return self.route(path, methods=["POST"],validator= validator)
+        return self.route(route, methods=["POST"],validator= validator)
 
-    def delete(self, path: str,validator = None) -> Callable:
+    def delete(self, route: Routes,validator = None) -> Callable:
         """Decorator to register a DELETE route."""
-        return self.route(path, methods=["DELETE"],validator = validator)
+        return self.route(route, methods=["DELETE"],validator = validator)
 
-    def put(self, path: str,validator = None) -> Callable:
+    def put(self, route: Routes,validator = None) -> Callable:
         """Decorator to register a PUT route."""
-        return self.route(path, methods=["PUT"],validator = validator)
+        return self.route(route, methods=["PUT"],validator = validator)
 
-    def patch(self, path: str,validator = None) -> Callable:
+    def patch(self, route: Routes,validator = None) -> Callable:
         """Decorator to register a PATCH route."""
-        return self.route(path, methods=["PATCH"],validator = validator)
+        return self.route(route, methods=["PATCH"],validator = validator)
 
-    def options(self, path: str,validator = None) -> Callable:
+    def options(self, route: Routes,validator = None) -> Callable:
         """Decorator to register an OPTIONS route."""
-        return self.route(path, methods=["OPTIONS"],validator = validator)
+        return self.route(route, methods=["OPTIONS"],validator = validator)
 
 
     def add_exception_handler(
