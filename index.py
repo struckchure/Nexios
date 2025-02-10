@@ -7,8 +7,6 @@ async def handle_server_error(req,res,exc):
 class NotFound(HTTPException):
     pass
 app = get_application()
-
-
 async def handler_not_found(request: Request,response:Response, exc: Exception):
     return response.json({"ERROR":"not found"})
     

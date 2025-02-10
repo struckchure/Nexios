@@ -3,8 +3,7 @@ from dataclasses import dataclass
 import re
 import warnings
 from enum import Enum
-from nexios.http.response import NexioResponse
-from nexios.http.request import Request
+from nexios.http import Request,Response
 allowed_methods = ['get','post','put','delete','patch','delete','options']
 class RouteType(Enum):
     REGEX = "regex"
@@ -203,32 +202,7 @@ class Routes:
             return match.groupdict()
         return None
     
-    async def execute_middleware_stack(self, 
-                                     request: Request,
-                                     response: NexioResponse, 
-                                     handler: Callable = None) -> Any:
-        """Execute middleware stack including the handler as the last 'middleware'."""
-        stack = self.http_middlewares.copy()
-
-        # If we have a handler, add it to the stack
-        if handler:
-            stack.append(handler)
-
-        index = -1 
-        async def next_middleware():
-            nonlocal index
-            index += 1
-            
-            if index < len(stack):
-                middleware = stack[index]
-                if not response._body:
-                    if index == len(stack) - 1:  # This is the handler
-                        await middleware(request, response)
-                    else:
-                        await middleware(request, response, next_middleware)
-                return
-
-        await next_middleware()
+    
     def __call__(self) -> tuple:
         """Return the route components for registration"""
         return self.pattern, self.handler, self.middleware
