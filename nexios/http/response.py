@@ -1,14 +1,15 @@
 from datetime import datetime, timedelta
 from email.utils import formatdate
-from typing import Any, Dict, List, Optional, Tuple, Union, BinaryIO
+from typing import Any, Dict, List, Optional, Tuple, Union,Sequence,Iterator
 from pathlib import Path
 import json
 from base64 import b64encode
 from hashlib import sha1
 import mimetypes
-import os
-from time import time
 import typing
+from nexios.types import Scope,Send,Receive
+
+JSONType = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
 
 
 class Response:
@@ -32,14 +33,14 @@ class Response:
 
     def __init__(
         self,
-        body: Union[str, bytes, dict] = "",
+        body: JSONType = "",
         status_code: int = 200,
         headers: Optional[Dict[str, str]] = None,
         content_type: str = "text/plain",
     ):
-        self.status_code = status_code
-        self._headers = {}
-        self._cookies: List[Tuple[str, str, dict]] = []
+        self.status_code :int = status_code
+        self._headers :typing.Dict[str,typing.Any] = {}
+        self._cookies: List[Tuple[str, str, Dict[str,Any]]] = []
         
         # Initialize headers
         self.headers = headers or {}
@@ -57,7 +58,6 @@ class Response:
         else:
             raise TypeError("Body must be str, bytes, or dict")
 
-        # Set content length
         self.headers['content-length'] = str(len(self._body))
         self.headers['content-type'] = self.content_type
 
@@ -66,7 +66,6 @@ class Response:
         """Get all headers including cookies."""
         headers = self._headers.copy()
         if self._cookies:
-            # Return multiple Set-Cookie headers as a list
             headers['set-cookie'] = [
                 self._serialize_cookie(key, value, options)
                 for key, value, options in self._cookies
@@ -81,17 +80,17 @@ class Response:
     def set_cookie(
         self,
         key: str,
-        value: str,
+        value:Optional[Union[str , None]] ,
         max_age: Optional[int] = None,
-        expires: Optional[Union[str, datetime]] = None,
-        path: str = "/",
+        expires: Optional[Union[str, datetime,int]] = None,
+        path: Optional[str] = "/",
         domain: Optional[str] = None,
         secure: bool = False,
         httponly: bool = False,
         samesite: Optional[str] = None
     ) -> None:
         """Set a cookie with the given parameters."""
-        cookie_options = {}
+        cookie_options :Dict[str,Any] = {}
         
         if max_age is not None:
             cookie_options['max-age'] = str(max_age)
@@ -117,7 +116,7 @@ class Response:
         if samesite is not None:
             cookie_options['samesite'] = samesite
             
-        self._cookies.append((key, value, cookie_options))
+        self._cookies.append((key, value, cookie_options)) #type: ignore
 
     def delete_cookie(self, key: str, path: str = "/", domain: Optional[str] = None) -> None:
         """Delete a cookie by setting its expiry to the past."""
@@ -132,7 +131,7 @@ class Response:
 
     def enable_caching(self, max_age: int = 3600, private: bool = True) -> None:
         """Enable caching with the specified max age (in seconds)."""
-        cache_control = []
+        cache_control :List[str] = []
         if private:
             cache_control.append("private")
         else:
@@ -144,7 +143,7 @@ class Response:
         etag = self._generate_etag()
         self.headers["etag"] = etag
         
-        expires = datetime.utcnow() + timedelta(seconds=max_age)
+        expires = datetime.utcnow() + timedelta(seconds=max_age) #type: ignore
         self.headers["expires"] = formatdate(expires.timestamp(), usegmt=True)
 
     def disable_caching(self) -> None:
@@ -153,11 +152,11 @@ class Response:
         self.headers["pragma"] = "no-cache"
         self.headers["expires"] = "0"
 
-    async def __call__(self, scope: dict, receive: typing.Callable, send: typing.Callable) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Make the response callable as an ASGI application."""
         self.status_code = 200 if scope["method"].lower() == "options" else self.status_code
 
-        headers = []
+        headers :List[Sequence[str | bytes]] = []
         for k, v in self.headers.items():
             
             if k == 'set-cookie':
@@ -181,7 +180,7 @@ class Response:
             'body': self._body,
         })
 
-    def _serialize_cookie(self, key: str, value: str, options: dict) -> str:
+    def _serialize_cookie(self, key: str, value: str, options: Dict[str,Any]) -> str:
         """Serialize a single cookie into a Set-Cookie header value."""
         cookie = f"{key}={value}"
         for opt_key, opt_value in options.items():
@@ -236,7 +235,7 @@ class HTMLResponse(Response):
     """
     def __init__(
         self,
-        content: Union[str, bytes],
+        content: Union[str, JSONType],
         status_code: int = 200,
         headers: Optional[Dict[str, str]] = None,
     ):
@@ -273,7 +272,7 @@ class FileResponse(Response):
         self.content_disposition_type = content_disposition_type
         self.status_code = status_code
         
-        self._cookies: List[Tuple[str, str, dict]] = []
+        self._cookies: List[Tuple[str, str, Dict[str,Any]]] = []
         
         self.headers = headers or {}
         self._headers = {}
@@ -287,9 +286,9 @@ class FileResponse(Response):
         
         
 
-    async def __call__(self, scope: dict, receive: typing.Callable, send: typing.Callable) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Stream the file in chunks."""
-        headers = []
+        headers :List[Sequence[bytes]] = []
         for k, v in self.headers.items():
             if k == 'set-cookie':
                 if isinstance(v, list):
@@ -332,7 +331,7 @@ class StreamingResponse(Response):
         self.content_iterator = content
         self.status_code = status_code
         self._headers = {}
-        self._cookies: List[Tuple[str, str, dict]] = []
+        self._cookies: List[Tuple[str, str, Dict[str,Any]]] = []
         
         # Set headers
         self.headers = headers or {}
@@ -342,9 +341,9 @@ class StreamingResponse(Response):
         # Streaming responses shouldn't have a content-length header
         self.headers.pop('content-length', None)
 
-    async def __call__(self, scope: dict, receive: typing.Callable, send: typing.Callable) -> None:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Stream the content."""
-        headers = []
+        headers :List[Sequence[bytes | str]] = []
         for k, v in self.headers.items():
             if k == 'set-cookie':
                 if isinstance(v, list):
@@ -406,77 +405,77 @@ class NexioResponse:
     """
     def __init__(self):
         self._status_code = 200
-        self._body = None
+        self._body :Optional[JSONType] = None
         self._content_type = "application/json"
-        self.headers = {}
+        self.headers :Dict[str,Any] = {}
         self._response = None
-        self._cookies = []
-        self._delete_cookies = []
+        self._cookies :List[Dict[str,Any]]= []
+        self._delete_cookies  :List[Dict[str,Any]] = []
 
-    def send(self, content, status_code=None, headers = {}):
+    def send(self, content :Any, status_code:Optional[int]= None, headers :Dict[str,Any] = {}):
         """Send plain text or HTML content."""
-        self._status_code = status_code or self._status_code or 200
+        self._status_code = status_code or self._status_code or 200 #type: ignore
         self.headers.update(headers)
         self._body = content
         self._content_type = "text/plain"
         return self
     
-    def text(self, content, status_code=None, headers = {}):
+    def text(self, content :JSONType, status_code :Optional[int] = None, headers :Dict[str,Any] = {}):
         """Send plain text or HTML content."""
-        self._status_code = status_code or self._status_code or 200
+        self._status_code = status_code or self._status_code or 200 #type: ignore
         self.headers.update(headers)
         self._body = content
         self._content_type = "text/plain"
         return self
 
-    def json(self, data, status_code=None,headers = {}):
+    def json(self, data :Union[str, List[Any], Dict[str, Any]], status_code :Optional[int] = None,headers :Dict[str,Any] = {}):
         """Send JSON response."""
-        self._status_code = status_code or self._status_code or 200
+        self._status_code = status_code or self._status_code or 200 #type: ignore
         self.headers.update(headers)
 
         self._body = data
         self._content_type = "application/json"
         return self
-    def empty(self, status_code=None,headers = {}):
-        self._status_code = status_code or self._status_code or 200
+    def empty(self, status_code :Optional[int] =None,headers :Dict[str,Any] = {}):
+        self._status_code = status_code or self._status_code or 200 #type: ignore
         self.headers.update(headers)
 
         self._body = None
         self._content_type = "application/json"
         return self
         
-    def html(self, content, status_code=None,headers = {}):
+    def html(self, content :str, status_code :Optional[int] = None,headers :Dict[str,Any] = {}):
         """Send HTML response."""
-        self._status_code = status_code or self._status_code or 200
+        self._status_code = status_code or self._status_code or 200 #type: ignore
         self.headers.update(headers)
         
         self._body = content
         self._content_type = "text/html; charset=utf-8"
         return self
 
-    def file(self, path, filename=None, content_disposition_type="attachment"):
+    def file(self, path :str, filename :Optional[str]=None, content_disposition_type :str="attachment"):
         """Send file response."""
         self._response = FileResponse(
             path=path,
             filename=filename,
-            status_code=self._status_code,
+            status_code=self._status_code, #type: ignore
             headers=self.headers,
             content_disposition_type=content_disposition_type,
             
         )
         return self
 
-    def stream(self, iterator, content_type="text/plain"):
+    def stream(self, iterator :Iterator[str  |bytes], content_type :str="text/plain"):
         """Send streaming response."""
         self._response = StreamingResponse(
             content=iterator,
-            status_code=self._status_code,
+            status_code=self._status_code, #type: ignore
             headers=self.headers,
             content_type=content_type
         )
         return self
 
-    def redirect(self, url, status_code=302):
+    def redirect(self, url :str, status_code :int =302):
         """Send redirect response."""
         self._response = RedirectResponse(
             url=url,
@@ -485,7 +484,7 @@ class NexioResponse:
         )
         return self
 
-    def status(self, status_code):
+    def status(self, status_code :int):
         """Set response status code."""
         self._status_code = status_code
         return self
@@ -524,7 +523,7 @@ class NexioResponse:
     def delete_cookie(
         self,
         key: str,
-        value: str = None,
+        value: Optional[str] = None,
         max_age: Optional[int] = None,
         expires: Optional[Union[str, datetime]] = None,
         path: str = "/",
@@ -589,17 +588,16 @@ class NexioResponse:
                 content_type=self._content_type
             )
 
-        # Apply cookies if any
         for cookie in self._cookies:
             self._response.set_cookie(**cookie)
 
         if len(self._delete_cookies) > 0:
             for cookie in self._delete_cookies:
-                self._response.delete_cookie(cookie)
+                self._response.delete_cookie(**cookie)
 
         return self._response
 
-    async def __call__(self, scope, receive, send):
+    async def __call__(self, scope :Scope, receive :Receive, send :Send):
         """Make the response ASGI-compatible."""
         
         self._status_code = 200 if scope['method'].lower() == "options" else self._status_code

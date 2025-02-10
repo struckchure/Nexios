@@ -1,4 +1,4 @@
-import typing
+from typing import Dict,Any,Union
 from nexios.config import get_config
 from datetime import datetime,timedelta
 class BaseSessionInterface:
@@ -9,7 +9,7 @@ class BaseSessionInterface:
 
     deleted = False
 
-    _session_cache = {} 
+    _session_cache :Dict[str,Any] = {} 
 
 
     def __init__(self,session_key :str) -> None:
@@ -73,7 +73,7 @@ class BaseSessionInterface:
             return None
         return self.session_config.session_cookie_domain
 
-    def get_cookie_path(self) -> str:
+    def get_cookie_path(self) -> Union[str,None]:
         """Returns the path for which the cookie is valid. Uses `config.SESSION_COOKIE_PATH`."""
         if not self.session_config:
             return None
@@ -85,7 +85,7 @@ class BaseSessionInterface:
             return None
         return self.session_config.session_cookie_httponly
 
-    def get_cookie_secure(self) -> bool:
+    def get_cookie_secure(self) -> bool | None:
         """Returns whether the session cookie should be secure. Uses `session_config.session_cookie_secure`."""
         if not self.session_config:
             return None

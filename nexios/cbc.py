@@ -7,8 +7,7 @@ from typing import Callable
 class APIHandler:
     allowed_methods = ['get','post','delete','put','patch','options']
     async def handle_error(self, error: Exception, request: request.Request, response: response.NexioResponse) -> response.NexioResponse:
-        error  = traceback.format_exc()
-        print(error)
+       pass
     async def before_request(self, request: request.Request, response: response.NexioResponse):
         
         

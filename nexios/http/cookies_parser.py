@@ -1,7 +1,7 @@
 import typing
 from urllib.parse import unquote
 
-def parse_cookies(cookie_string: str) -> typing.Dict[str, str]:
+def parse_cookies(cookie_string: str) -> typing.Dict[str, typing.Any]:
     """
     Parses a ``Cookie`` HTTP header into a dictionary of key/value pairs.
 
@@ -13,7 +13,7 @@ def parse_cookies(cookie_string: str) -> typing.Dict[str, str]:
 
     if cookie_string is None:
         return {}
-    cookie_dict: typing.Dict[str, str] = {}
+    cookie_dict: typing.Dict[str, typing.Optional[str]] = {}
 
     for chunk in cookie_string.split(";"):
         chunk = chunk.strip() 

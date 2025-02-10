@@ -285,7 +285,7 @@ class NexioApp:
             Doc("A list of allowed HTTP methods (e.g., ['GET', 'POST']). Defaults to all methods.")
         ] = allowed_methods_default,
         validator: Annotated[
-            Dict[str,any], 
+            Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
     ) -> Callable:

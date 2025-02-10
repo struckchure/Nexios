@@ -8,7 +8,7 @@ from .routing import Router
 from nexios.middlewares.errors.server_error_handler import ServerErrorMiddleware
 from .middlewares.cors import CORSMiddleware
 from .middlewares.base import BaseMiddleware
-from typing import List,Awaitable,Sequence
+from typing import List,Awaitable,Sequence,Optional
 from .application import NexioApp
 from .types import MiddlewareType  
 from typing_extensions import Doc,Annotated
@@ -28,7 +28,7 @@ def get_application(
                     middlewares :Annotated[Sequence[MiddlewareType],Doc(
                         "A list of middlewares, where each middleware is either a class inherited from BaseMiddleware or an asynchronous callable function that accepts request, response, and callnext"
                         )]= [],
-                    server_error_handler :Annotated[Awaitable,Doc(
+                    server_error_handler :Annotated[Optional[Awaitable],Doc(
                         """
                         A function in Nexios responsible for handling server-side exceptions by logging errors, reporting issues, or initiating recovery mechanisms. It prevents crashes by intercepting unexpected failures, ensuring the application remains stable and operational. This function provides a structured approach to error management, allowing developers to define custom handling strategies such as retrying failed requests, sending alerts, or gracefully degrading functionality. By centralizing error processing, it improves maintainability and observability, making debugging and monitoring more efficient. Additionally, it ensures that critical failures do not disrupt the entire system, allowing services to continue running while appropriately managing faults and failures.""" )] = None) -> NexioApp:
     
