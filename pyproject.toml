@@ -16,6 +16,24 @@ license = "MIT"
 homepage = "https://github.com/techwithdunamix/nexios"
 repository = "https://github.com/techwithdunamix/nexios"
 readme = "readme.md"
+keywords = [
+    "ASGI",
+    "backend",
+    "framework",
+    "web",
+    "Python",
+    "async",
+    "asynchronous",
+    "fastapi",
+    "web server",
+    "API",
+    "scalable",
+    "real-time",
+    "concurrent",
+    "HTTP",
+    "websocket"
+]
+
 
 [tool.poetry.dependencies]
 python = ">=3.9"

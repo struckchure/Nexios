@@ -1,10 +1,13 @@
-from typing import Any, List, Callable, Union, Optional, Pattern
+from typing import Any, List, Callable, Union, Optional, Pattern,Dict
 from dataclasses import dataclass
 import re
 import warnings
 from enum import Enum
 from nexios.http import Request,Response
 allowed_methods = ['get','post','put','delete','patch','delete','options']
+allowed_methods_default = ['get','post','delete','put','patch','options']
+
+from typing_extensions import Doc,Annotated
 class RouteType(Enum):
     REGEX = "regex"
     PATH = "path"
@@ -26,7 +29,6 @@ class RouteBuilder:
         """Create a route pattern from a path string"""
         param_names = []
         
-        # Handle regex routes that start with ^
         if path.startswith("^"):
             return RoutePattern(
                 pattern=re.compile(path),
@@ -35,7 +37,6 @@ class RouteBuilder:
                 route_type=RouteType.REGEX
             )
             
-        # Handle wildcard routes
         if "*" in path:
             wildcard_pattern = path.replace("*", ".*?")
             return RoutePattern(
@@ -45,11 +46,9 @@ class RouteBuilder:
                 route_type=RouteType.WILDCARD
             )
             
-        # Process path parameters
         processed_path = path
         
 
-        # If the path starts with ^ or ends with $, treat it as a regex
         if path.startswith("^") or path.endswith("$"):
             return RoutePattern(
                 pattern=re.compile(path),
@@ -58,7 +57,6 @@ class RouteBuilder:
                 route_type=RouteType.REGEX
             )
         
-        # Handle URL parameters like {param}
         param_matches = re.finditer(r"{(\w+)(?::([^}]+))?}", path)
         for match in param_matches:
             param_name = match.group(1)
@@ -85,94 +83,6 @@ class BaseRouter:
     
     def add_middleware(self, middleware: Callable) -> None:
         raise NotImplementedError("Not implemented")
-
-    
-class Router(BaseRouter):
-    def __init__(self, prefix: Optional[str] = None):
-        self.prefix = prefix or ""
-        self.routes: List[Routes] = []
-        self.middlewares: List[Callable] = []
-        
-        if self.prefix and not self.prefix.startswith("/"):
-            warnings.warn("Router prefix should start with '/'")
-            self.prefix = f"/{self.prefix}"
-    
-    def add_route(self, route: 'Routes') -> None:
-        """Add a route with proper prefix handling"""
-        
-        if self.prefix:
-            # Create new route with prefixed path
-            prefixed_route = Routes(
-                f"{self.prefix}{route.raw_path}",
-                route.handler,
-                methods=route.methods,
-                validator=route.validator
-            )
-            self.routes.append(prefixed_route)
-        else:
-            self.routes.append(route)
-    
-    def add_middleware(self, middleware: Callable) -> None:
-        """Add middleware to the router"""
-        if callable(middleware):
-            self.middlewares.append(middleware)
-    
-    def get_routes(self) -> List[tuple]:
-        """Get all routes with their patterns, handlers, and middleware"""
-        routes = []
-        for route in self.routes:
-            route_ = Routes(
-                path=route.raw_path, 
-                handler=route.handler, 
-                methods=route.methods,
-                validator=route.validator)
-            setattr(route_,"router_middleware",self.middlewares)
-            
-            routes.append(route_)
-        return routes
-
-
-    def mount_router(self, router :"Router") -> None:
-        """Mount a router and all its routes to the application"""
-        self.routes.extend(router.get_routes())
-
-    def get(self, path: str,validator = None) -> Callable:
-        """Decorator to register a GET route."""
-        return self.route(path, methods=["GET"],validator = validator)
-
-    def post(self, path: str,validator = None) -> Callable:
-        """Decorator to register a POST route."""
-        return self.route(path, methods=["POST"],validator= validator)
-
-    def delete(self, path: str,validator = None) -> Callable:
-        """Decorator to register a DELETE route."""
-        return self.route(path, methods=["DELETE"],validator = validator)
-
-    def put(self, path: str,validator = None) -> Callable:
-        """Decorator to register a PUT route."""
-        return self.route(path, methods=["PUT"],validator = validator)
-
-    def patch(self, path: str,validator = None) -> Callable:
-        """Decorator to register a PATCH route."""
-        return self.route(path, methods=["PATCH"],validator = validator)
-
-    def options(self, path: str,validator = None) -> Callable:
-        """Decorator to register an OPTIONS route."""
-        return self.route(path, methods=["OPTIONS"],validator = validator)
-
-            
-    
-    def route(self, path: str, methods: Optional[List[str]] = None,validator = None) -> Callable:
-        """Route decorator with method restrictions"""
-        def decorator(handler: Callable) -> Callable:
-            route = Routes(path, handler, methods=methods,validator=validator)
-            self.add_route(route)
-            return handler
-        return decorator
-    
-    def __repr__(self) -> str:
-        return f"<Router prefix='{self.prefix}' routes={len(self.routes)}>"
-
 
 class Routes:
     def __init__(
@@ -209,6 +119,326 @@ class Routes:
     
     def __repr__(self) -> str:
         return f"<Route {self.raw_path} methods={self.methods}>"
+class Router(BaseRouter):
+    def __init__(self, prefix: Optional[str] = None):
+        self.prefix = prefix or ""
+        self.routes: List[Routes] = []
+        self.middlewares: List[Callable] = []
+        
+        if self.prefix and not self.prefix.startswith("/"):
+            warnings.warn("Router prefix should start with '/'")
+            self.prefix = f"/{self.prefix}"
+    
+    def add_route(
+        self, 
+        route: Annotated[Routes, Doc("An instance of the Routes class representing an HTTP route.")]
+    ) -> None:
+        """
+        Adds an HTTP route to the application.
+
+        This method registers an HTTP route, allowing the application to handle requests for a specific URL path.
+
+        Args:
+            route (Routes): The HTTP route configuration.
+
+        Returns:
+            None
+
+        Example:
+            ```python
+            route = Routes("/home", home_handler, methods=["GET", "POST"])
+            app.add_route(route)
+            ```
+        """
+        self.routes.append(route)
+    
+    def add_middleware(self, middleware: Callable) -> None:
+        """Add middleware to the router"""
+        if callable(middleware):
+            self.middlewares.append(middleware)
+    
+    def get_routes(self) -> List[tuple]:
+        """Get all routes with their patterns, handlers, and middleware"""
+        routes = []
+        for route in self.routes:
+            route_ = Routes(
+                path=route.raw_path, 
+                handler=route.handler, 
+                methods=route.methods,
+                validator=route.validator)
+            setattr(route_,"router_middleware",self.middlewares)
+            
+            routes.append(route_)
+        return routes
+
+
+    def mount_router(self, router :"Router") -> None:
+        """Mount a router and all its routes to the application"""
+        self.routes.extend(router.get_routes())
+
+    def get(
+        self, 
+        route: Annotated[
+            Routes, 
+            Doc("The route definition including the path and handler function.")
+        ], 
+        validator: Annotated[
+            Optional[Dict[str,any]], 
+            Doc("An dict to validate request parameters before calling the handler.")
+        ] = None
+    ) -> Callable:
+        """
+        Registers a GET route.
+
+        This decorator allows you to define an endpoint that handles HTTP GET requests. 
+        GET requests are typically used for retrieving resources.
+
+        Args:
+            route (Routes): The route definition, including path and handler function.
+            validator (Callable, optional): A function to validate the request data before passing it to the handler.
+
+        Returns:
+            Callable: The decorated handler function.
+
+        Example:
+            ```python
+            @app.get("/users")
+            async def get_users(request,response):
+                return response.json({"users": ["Alice", "Bob"]})
+            ```
+        """
+        return self.route(route, methods=["GET"], validator=validator)
+
+
+    def post(
+        self, 
+        route: Annotated[
+            Routes, 
+            Doc("The route definition including the path and handler function.")
+        ], 
+        validator: Annotated[
+            Optional[Dict[str,any]], 
+            Doc("An dict to validate request parameters before calling the handler.")
+        ] = None
+    ) -> Callable:
+        """
+        Registers a POST route.
+
+        This decorator is used to define an endpoint that handles HTTP POST requests, 
+        typically for creating resources.
+
+        Args:
+            route (Routes): The route definition, including path and handler function.
+            validator (Callable, optional): A function to validate the request data before passing it to the handler.
+
+        Returns:
+            Callable: The decorated handler function.
+
+        Example:
+            ```python
+            @app.post("/users")
+            async def create_user(request,response):
+                return response.json({"message": "User created"})
+            ```
+        """
+        return self.route(route, methods=["POST"], validator=validator)
+
+
+    def delete(
+        self, 
+        route: Annotated[
+            Routes, 
+            Doc("The route definition including the path and handler function.")
+        ], 
+        validator: Annotated[
+            Optional[Dict[str,any]], 
+            Doc("An dict to validate request parameters before calling the handler.")
+        ] = None
+    ) -> Callable:
+        """
+        Registers a DELETE route.
+
+        This decorator allows defining an endpoint that handles HTTP DELETE requests, 
+        typically for deleting resources.
+
+        Args:
+            route (Routes): The route definition, including path and handler function.
+            validator (Callable, optional): A function to validate the request data before passing it to the handler.
+
+        Returns:
+            Callable: The decorated handler function.
+
+        Example:
+            ```python
+            @app.delete("/users/{user_id}")
+            def delete_user(request, response):
+                user_id = request.path_params.user_id
+                return responsejson({"message": f"User {user_id} deleted"})
+            ```
+        """
+        return self.route(route, methods=["DELETE"], validator=validator)
+
+
+    def put(
+        self, 
+        route: Annotated[
+            Routes, 
+            Doc("The route definition including the path and handler function.")
+        ], 
+        validator: Annotated[
+            Optional[Dict[str,any]], 
+            Doc("An dict to validate request parameters before calling the handler.")
+        ] = None
+    ) -> Callable:
+        """
+        Registers a PUT route.
+
+        This decorator defines an endpoint that handles HTTP PUT requests, 
+        typically for updating or replacing a resource.
+
+        Args:
+            route (Routes): The route definition, including path and handler function.
+            validator (Callable, optional): A function to validate the request data before passing it to the handler.
+
+        Returns:
+            Callable: The decorated handler function.
+
+        Example:
+            ```python
+            @app.delete("/users/{user_id}")
+            def delete_user(request, response):
+                user_id = request.path_params.user_id
+                return responsejson({"message": f"User {user_id} updated"})
+        """
+        return self.route(route, methods=["PUT"], validator=validator)
+
+
+    def patch(
+        self, 
+        route: Annotated[
+            Routes, 
+            Doc("The route definition including the path and handler function.")
+        ], 
+        validator: Annotated[
+            Optional[Dict[str,any]], 
+            Doc("An dict to validate request parameters before calling the handler.")
+        ] = None
+    ) -> Callable:
+        """
+        Registers a PATCH route.
+
+        This decorator defines an endpoint that handles HTTP PATCH requests, 
+        which are used to apply partial modifications to a resource.
+
+        Args:
+            route (Routes): The route definition, including path and handler function.
+            validator (Callable, optional): A function to validate the request data before passing it to the handler.
+
+        Returns:
+            Callable: The decorated handler function.
+
+        Example:
+            ```python
+            @app.patch("/users/{user_id}")
+            def partial_update_user(request, response):
+                user_id = request.path_params.user_id
+            
+                return respoonse.json({"message": f"User {user_id} partially updated"})
+            ```
+        """
+        return self.route(route, methods=["PATCH"], validator=validator)
+
+
+    def options(
+        self, 
+        route: Annotated[
+            Routes, 
+            Doc("The route definition including the path and handler function.")
+        ], 
+        validator: Annotated[
+            Optional[Dict[str,any]], 
+            Doc("An dict to validate request parameters before calling the handler.")
+        ] = None
+    ) -> Callable:
+        """
+        Registers an OPTIONS route.
+
+        This decorator defines an endpoint that handles HTTP OPTIONS requests, 
+        which are used to describe the communication options for the target resource. 
+        OPTIONS requests are commonly used in CORS (Cross-Origin Resource Sharing) 
+        to check allowed methods, headers, and authentication rules.
+
+        Args:
+            route (Routes): The route definition, including path and handler function.
+            validator (Callable, optional): A function to validate the request data before passing it to the handler.
+
+        Returns:
+            Callable: The decorated handler function.
+
+        Example:
+            ```python
+            @app.options("/users")
+            def options_users(request):
+                return response.json({
+                    "Allow": "GET, POST, DELETE, OPTIONS"
+                })
+            ```
+        """
+        return self.route(route, methods=["OPTIONS"], validator=validator)
+
+
+
+    def options(self, path: str,validator = None) -> Callable:
+        """Decorator to register an OPTIONS route."""
+        return self.route(path, methods=["OPTIONS"],validator = validator)
+
+            
+    
+    def route(
+        self,
+        path: Annotated[str, Doc("The URL pattern for the route. Must be a valid string path.")], 
+        methods: Annotated[
+            List[Union[str]], 
+            Doc("A list of allowed HTTP methods (e.g., ['GET', 'POST']). Defaults to all methods.")
+        ] = allowed_methods_default,
+        validator: Annotated[
+            Dict[str,any], 
+            Doc("An dict to validate request parameters before calling the handler.")
+        ] = None
+    ) -> Callable:
+        """
+        Registers a route with the specified HTTP methods and an optional validator.
+
+        This decorator allows developers to define HTTP routes for the application by specifying
+        the URL path, allowed methods, and an optional parameter validator. It ensures that the 
+        handler only responds to the defined HTTP methods.
+
+       
+
+        Example:
+            ```python
+
+            @app.route("/users", methods=["GET"])
+            async def get_users(request, response):
+                response.json({"users": ["Alice", "Bob"]})
+
+            @app.route("/users", methods=["POST"])
+            async def create_user(request, response):
+                response.json({"message": "User created"}, status_code=201)
+            ```
+        """
+        def decorator(handler: Callable) -> Callable:
+            handler = allowed_methods(methods)(handler)
+            self.add_route(Routes(path, handler, methods=methods, validator=validator))
+            return handler
+
+        return decorator
+    
+    def __repr__(self) -> str:
+        return f"<Router prefix='{self.prefix}' routes={len(self.routes)}>"
+
+
+
     
 
 class WebsocketRoutes:
@@ -276,17 +506,28 @@ class WSRouter(BaseRouter):
             warnings.warn("WSRouter prefix should start with '/'")
             self.prefix = f"/{self.prefix}"
     
-    def add_route(self, route: WebsocketRoutes) -> None:
-        """Add a WebSocket route with proper prefix handling"""
-        if self.prefix:
-            prefixed_route = WebsocketRoutes(
-                f"{self.prefix}{route.raw_path}",
-                route.handler,
-                middleware=route.middleware
-            )
-            self.routes.append(prefixed_route)
-        else:
-            self.routes.append(route)
+    def add_ws_route(
+        self, 
+        route: Annotated[Routes, Doc("An instance of the Routes class representing a WebSocket route.")]
+    ) -> None:
+        """
+        Adds a WebSocket route to the application.
+
+        This method registers a WebSocket route, allowing the application to handle WebSocket connections.
+
+        Args:
+            route (Routes): The WebSocket route configuration.
+
+        Returns:
+            None
+
+        Example:
+            ```python
+            route = Routes("/ws/chat", chat_handler)
+            app.add_ws_route(route)
+            ```
+        """
+        self.ws_routes.append(route)
     
     def add_middleware(self, middleware: Callable) -> None:
         """Add middleware to the WebSocket router"""
@@ -306,19 +547,38 @@ class WSRouter(BaseRouter):
             routes.append(route_)
         return routes
 
-    def ws(self, path: str) -> Callable:
-        """Decorator to register a WebSocket route."""
+    def ws_route(
+        self, 
+        path: Annotated[str, Doc("The WebSocket route path. Must be a valid URL pattern.")]
+    ) -> Callable:
+        """
+        Registers a WebSocket route.
+
+        This decorator is used to define WebSocket routes in the application, allowing handlers 
+        to manage WebSocket connections. When a WebSocket client connects to the given path, 
+        the specified handler function will be executed.
+
+        Returns:
+            Callable: The original WebSocket handler function.
+
+        Example:
+            ```python
+
+            @app.ws_route("/ws/chat")
+            async def chat_handler(websocket):
+                await websocket.accept()
+                while True:
+                    message = await websocket.receive_text()
+                    await websocket.send_text(f"Echo: {message}")
+            ```
+    """
         def decorator(handler: Callable) -> Callable:
-            route = WebsocketRoutes(path, handler)
-            self.add_route(route)
+            self.add_ws_route(Routes(path, handler))
             return handler
+
         return decorator
 
-    async def handle_websocket(self, ws, **kwargs):
-        """
-        Handle a WebSocket connection for all routes in this router.
-        This method should be implemented by the application that uses this router.
-        """
+    
         pass
 
     def __repr__(self) -> str:
