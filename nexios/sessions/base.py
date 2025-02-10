@@ -1,5 +1,5 @@
 from typing import Dict,Any,Union
-from nexios.config import get_config
+from nexios.config import get_config,MakeConfig
 from datetime import datetime,timedelta
 class BaseSessionInterface:
 
@@ -14,9 +14,8 @@ class BaseSessionInterface:
 
     def __init__(self,session_key :str) -> None:
         
-        config = get_config()
+        config :MakeConfig = get_config()
         self.session_key = session_key 
-        # assert config.secret_key != None, "Secret key is required to use session"
         if not config.secret_key:
             return 
         self.config = config
@@ -32,7 +31,7 @@ class BaseSessionInterface:
         
         self._session_cache[key] = value
     
-    def get_session(self, key):
+    def get_session(self, key :str):
         self.accessed = True
         
         return self._session_cache.get(key, None)
@@ -42,7 +41,7 @@ class BaseSessionInterface:
         self.accessed = True
         return self._session_cache.items()
     
-    def delete_session(self, key):
+    def delete_session(self, key :str):
         self.modified = True
         self.deleted = True
         if key in self._session_cache:
@@ -79,7 +78,7 @@ class BaseSessionInterface:
             return None
         return self.session_config.session_cookie_path
 
-    def get_cookie_httponly(self) -> bool:
+    def get_cookie_httponly(self) -> bool | None:
         """Returns whether the session cookie should be HTTPOnly. Uses `session_config.session_cookie_httponly`."""
         if not self.session_config:
             return None
@@ -97,7 +96,7 @@ class BaseSessionInterface:
             return None
         return self.session_config.session_cookie_samesite
 
-    def get_cookie_partitioned(self) -> bool:
+    def get_cookie_partitioned(self) -> bool | None:
         """Returns whether the cookie should be partitioned. Uses `session_config.session_cookie_partitioned`."""
         if not self.session_config:
             return None
@@ -106,9 +105,9 @@ class BaseSessionInterface:
     def get_expiration_time(self) -> datetime | None:
         """Returns the expiration time for the session. Uses `self.session_config.session_expiration_time`."""
         if not self.session_config:
-            return datetime.utcnow() + timedelta(minutes=86400)
+            return datetime.utcnow() + timedelta(minutes=86400) #type: ignore
         if self.session_config.session_permanent:
-            return datetime.utcnow() + timedelta(minutes=self.session_config.session_expiration_time or 86400)
+            return datetime.utcnow() + timedelta(minutes=self.session_config.session_expiration_time or 86400) #type: ignore
         return None
 
     @property
@@ -126,6 +125,6 @@ class BaseSessionInterface:
     def has_expired(self) -> bool:
         """Returns True if the session has expired."""
         expiration_time = self.get_expiration_time()
-        if expiration_time and datetime.utcnow() > expiration_time:
+        if expiration_time and datetime.utcnow() > expiration_time: #type: ignore
             return True
         return False

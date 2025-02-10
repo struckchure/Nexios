@@ -1,93 +1,103 @@
 import json
+from typing import Any, Callable, Dict, Optional
 
 class MakeConfig:
-    def __init__(self, config, defaults=None, validate=None, immutable=False):
+    """
+    A dynamic configuration class that allows nested dictionary access as attributes,
+    with optional validation and immutability.
+
+    Attributes:
+        _config (dict): Stores configuration data.
+        _immutable (bool): If True, prevents modifications.
+        _validate (dict): Stores validation rules for keys.
+
+    Example Usage:
+        config = MakeConfig({"db": {"host": "localhost"}}, immutable=True)
+        print(config.db.host)  # "localhost"
+    """
+
+    def __init__(
+        self, 
+        config: Dict[str, Any], 
+        defaults: Optional[Dict[str, Any]] = None, 
+        validate: Optional[Dict[str, Callable[[Any], bool]]] = None, 
+        immutable: bool = False
+    ):
         """
         Initialize the configuration object.
-        
+
         Args:
-            config (dict): The initial configuration dictionary.
+            config (dict): Initial configuration.
             defaults (dict, optional): Default values for missing keys.
-            validate (dict, optional): Validation rules for keys. Format: {key: callable}.
-            immutable (bool, optional): If True, makes the configuration immutable.
+            validate (dict, optional): Validation rules (e.g., {"port": lambda x: x > 0}).
+            immutable (bool, optional): If True, prevents modifications.
         """
-        self._config = {}
-        self._immutable = immutable
-        self._validate = validate or {}
+        self._config: Dict[str, Any] = {}
+        self._immutable: bool = immutable
+        self._validate: Dict[str, Callable[[Any], bool]] = validate or {}
 
-        # Apply defaults
-        if defaults:
-            config = {**defaults, **config}
+        # Apply defaults before setting config
+        merged_config = {**(defaults or {}), **config}
 
-        # Set configuration with validation
-        for key, value in config.items():
+        for key, value in merged_config.items():
             self._set_config(key, value)
 
-    def _set_config(self, key, value):
+    def _set_config(self, key: str, value: Optional[Any]):
+        """Validates and sets a configuration key."""
         if key in self._validate:
             if not self._validate[key](value):
-                raise ValueError(f"Invalid value for key '{key}': {value}")
+                raise ValueError(f"Invalid value for '{key}': {value}")
         if isinstance(value, dict):
-            value = MakeConfig(value, immutable=self._immutable)  # Recursively nest
+            value = MakeConfig(value, immutable=self._immutable)  #type: ignore
         self._config[key] = value
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: Any):
+        """Handles attribute assignment while respecting immutability."""
         if name in {"_config", "_immutable", "_validate"}:
             super().__setattr__(name, value)
         elif self._immutable:
-            raise AttributeError(f"Cannot modify immutable config: {name}")
+            raise AttributeError(f"Cannot modify immutable config: '{name}'")
         else:
             self._set_config(name, value)
 
-    def __getattr__(self, name):
-        if name in self._config:
-            value = self._config[name]
-            if value is None or (isinstance(value, MakeConfig) and value._config == {}):
-                return None
-            return value
-        return None
+    def __getattr__(self, name: str) -> Any:
+        """Handles attribute access, returning None if key is missing."""
+        return self._config.get(name, None)
 
-    def _get_nested(self, path):
+    def _get_nested(self, path: str) -> Any:
         """
-        Helper method to get nested values, returning None if any part of the path is None or doesn't exist.
-        
+        Retrieve a value from nested keys, returning None if any part is missing.
+
         Args:
-            path (str or list): Either a dot-separated string or a list of keys to navigate through.
+            path (str): Dot-separated path, e.g., "db.host".
 
         Returns:
-            Any: The value at the end of the path or None if any part is missing or None.
+            Any: The value found or None.
         """
-        if isinstance(path, str):
-            path = path.split('.')
-        
-        current = self
-        for key in path:
+        keys = path.split(".")
+        current: Any = self
+        for key in keys:
             if not isinstance(current, MakeConfig):
                 return None
-            current = getattr(current, key, None)
-            if current is None:
-                return None
+            current = current._config.get(key, None)
         return current
 
-    def __getitem__(self, path):
+    def __getitem__(self, path: str) -> Any:
+        """Allow dictionary-like access via dot-separated keys."""
         return self._get_nested(path)
 
-    def to_dict(self):
-        """Export the configuration as a dictionary."""
-        def recurse(config):
-            if isinstance(config, MakeConfig):
-                result = {}
-                for k, v in config._config.items():
-                    if v is not None:
-                        result[k] = recurse(v)
-                return result if result else None
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert configuration to a standard dictionary."""
+        def recurse(config: "MakeConfig") -> Dict[str, Any]:
+            if isinstance(config, MakeConfig): #type: ignore
+                return {k: recurse(v) for k, v in config._config.items()}
             return config
 
         return recurse(self)
 
-    def to_json(self):
-        """Export the configuration as a JSON string."""
+    def to_json(self) -> str:
+        """Convert configuration to a JSON string."""
         return json.dumps(self.to_dict(), indent=4)
 
-    def __repr__(self):
-        return f"Nexios MakeConfig({self.to_dict()})"
+    def __repr__(self) -> str:
+        return f"MakeConfig({self.to_dict()})"
