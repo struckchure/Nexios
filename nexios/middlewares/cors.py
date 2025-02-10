@@ -3,7 +3,7 @@ from nexios.middlewares.base import BaseMiddleware
 from nexios.http.response import NexioResponse
 from nexios.http.request import Request
 from nexios.config import get_config
-from typing import Callable, Optional
+from typing import Callable, Optional,List,Dict,Any
 
 ALL_METHODS = ("delete", "get", "head", "options", "patch", "post", "put")
 BASIC_HEADERS = {"Accept", "Accept-Language", "Content-Language", "Content-Type"}
@@ -15,22 +15,21 @@ class CORSMiddleware(BaseMiddleware):
         
         if not config:
             return None
-        self.allow_origins = config.allow_origins or []
-        self.blacklist_origins = config.blacklist_origins or []
+        self.allow_origins :List[str] = config.allow_origins or []
+        self.blacklist_origins :List[str] = config.blacklist_origins or []
         self.allow_methods = config.allow_methods or ALL_METHODS
-        self.blacklist_headers = config.blacklist_headers or []
+        self.blacklist_headers :List[str] = config.blacklist_headers or []
         self.allow_credentials = config.allow_credentials if config.allow_credentials is not None else True
         self.allow_origin_regex = re.compile(config.allow_origin_regex) if config.allow_origin_regex else None
-        self.expose_headers = config.expose_headers or []
+        self.expose_headers :List[str] = config.expose_headers or []
         self.max_age = config.max_age or 600
         self.strict_origin_checking = config.strict_origin_checking or False
-        self.dynamic_origin_validator: Optional[Callable[[str], bool]] = getattr(config, "dynamic_origin_validator", None)
+        self.dynamic_origin_validator: Optional[Callable[[Optional[str]], bool]] = getattr(config, "dynamic_origin_validator", None)
         self.debug = config.debug or False
         self.custom_error_status = config.custom_error_status or 400
         self.custom_error_messages = getattr(config, "custom_error_messages", {}) or {}
 
-        # Prepare headers
-        self.simple_headers = {}
+        self.simple_headers :Dict[str,Any]= {}
         if self.allow_credentials:
             self.simple_headers["Access-Control-Allow-Credentials"] = "true"
         if self.expose_headers:
@@ -43,10 +42,10 @@ class CORSMiddleware(BaseMiddleware):
         if self.allow_credentials:
             self.preflight_headers["Access-Control-Allow-Credentials"] = "true"
         if config.allow_headers:
-            self.allow_headers  = [*list(SAFELISTED_HEADERS),*config.allow_headers]
+            self.allow_headers :List[str] = [*list(SAFELISTED_HEADERS),*config.allow_headers]
         else:
             self.allow_headers  = list(SAFELISTED_HEADERS)
-    async def process_request(self, request: Request, response):
+    async def process_request(self, request: Request, response :NexioResponse):
         config = get_config().cors 
         if not config:
             return None
@@ -79,7 +78,7 @@ class CORSMiddleware(BaseMiddleware):
         if self.expose_headers:
             response.headers["Access-Control-Expose-Headers"] = ", ".join(self.expose_headers)
 
-    def is_allowed_origin(self, origin: str) -> bool:
+    def is_allowed_origin(self, origin: str | None) -> bool:
         if origin in self.blacklist_origins:
             if self.debug:
                 print(f"Request denied: Origin '{origin}' is blacklisted.")
@@ -97,11 +96,11 @@ class CORSMiddleware(BaseMiddleware):
             return self.dynamic_origin_validator(origin)
 
         return origin in self.allow_origins
-    def is_allowed_method(self,method :str) -> bool:
+    def is_allowed_method(self,method :Optional[str]) -> bool:
         
         if "*" in self.allow_methods:
             return True
-        if not method.lower() in [x.lower() for x in self.allow_methods]:
+        if not (method or "").lower() in [x.lower() for x in self.allow_methods]:
             
             return False
         return True
@@ -120,7 +119,7 @@ class CORSMiddleware(BaseMiddleware):
                 print(f"Preflight request denied: Origin '{origin}' is not allowed.")
             return response.json(self.get_error_message("disallowed_origin"), status_code=self.custom_error_status)
 
-        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Origin"] = origin #type:ignore
 
         
         if not self.is_allowed_method(requested_method):

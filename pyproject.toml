@@ -43,6 +43,8 @@ anyio = "*"
 aiofiles = "*"
 itsdangerous = "*"
 python-multipart = "*"
+python-multipart = "pyjwt"
+
 
 [tool.poetry.scripts]
 nexios = "nexios.cli.main:nexios"

@@ -336,3 +336,7 @@ class Request(HTTPConnection):
     @property
     def session(self):
         return self.scope['session']
+    
+    @property
+    def user(self):
+        return self.scope['user']

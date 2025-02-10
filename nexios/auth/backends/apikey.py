@@ -1,12 +1,12 @@
-from typing import Optional, Tuple
+from typing import Any,Callable,Awaitable
 from nexios.auth.base import AuthenticationBackend
 from nexios.http import Request, Response
 from nexios.auth.base import UnauthenticatedUser
-from nexios.auth.base import get_user_loader
+
 
 class APIKeyAuthBackend(AuthenticationBackend):
 
-    def __init__(self, authenticate_func, header_name: str = "X-API-Key"):
+    def __init__(self, authenticate_func:Callable[...,Awaitable[Any]], header_name: str = "X-API-Key"):
         """
         Initializes the APIKeyAuthBackend with the provided authentication function and optional header name.
         
@@ -16,7 +16,7 @@ class APIKeyAuthBackend(AuthenticationBackend):
         self.authenticate_func = authenticate_func
         self.header_name = header_name
 
-    async def authenticate(self, request: Request, response: Response) -> Optional[Tuple[str, dict]]:
+    async def authenticate(self, request: Request, response: Response) -> Any :#type:ignore[override]
         """
         Authenticates the request by checking for an API key in the specified header.
         

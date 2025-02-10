@@ -592,7 +592,7 @@ class Nested(Field):
                 nested = self.nested
             if isinstance(nested, dict):
                 # defer the import of `NValidator.schema` to avoid circular imports
-                from validator.schema import Schema
+                from nexios.validator.schema import Schema
 
                 nested = Schema.from_dict(nested)
 

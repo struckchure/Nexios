@@ -1,17 +1,6 @@
 from __future__ import annotations
 import typing
-from urllib.parse import urlencode
 
-_user_loader = None
-
-def get_user_loader():
-    return _user_loader
-
-def user_loader(func):
-    print(func)
-    global _user_loader
-    _user_loader = func
-    
 
 from nexios.http import Request,Response
 
@@ -22,7 +11,7 @@ class AuthenticationError(Exception):
 
 
 class AuthenticationBackend:
-    async def authenticate(self, req: Request,res :Response):
+    async def authenticate(self, req: Request,res :Response) -> typing.Any:
         raise NotImplementedError() 
 
 

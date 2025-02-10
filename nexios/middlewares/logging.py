@@ -15,7 +15,7 @@ class ErrorHandlerMiddleware(BaseMiddleware):
     This class processes requests and responses, capturing errors and logging them.
     """
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args :typing.List[typing.Any], **kwargs :typing.Dict[str,typing.Any]) -> None:
         super().__init__(*args, **kwargs)
         # Any additional initialization can be done here
         self.error_status_code = 500
@@ -35,14 +35,14 @@ class ErrorHandlerMiddleware(BaseMiddleware):
         """
         pass
 
-    async def __call__(self, request: Request, response: NexioResponse, next_middleware: typing.Callable) -> NexioResponse:
+    async def __call__(self, request: Request, response: NexioResponse, next_middleware: typing.Callable[...,typing.Awaitable[None]]) -> NexioResponse:
         """
         The core method of the middleware, which processes the request, handles the error, and processes the response.
         """
         try:
-            # Let the next middleware or route handler process the request
-            response = await next_middleware()
-        except Exception as error:
+           
+           await next_middleware()
+        except Exception as _:
             # Capture and log the exception details
             self._log_error(traceback.format_exc())
 
@@ -57,7 +57,7 @@ class ErrorHandlerMiddleware(BaseMiddleware):
 
         return response
 
-    def _log_error(self, error: Exception) -> None:
+    def _log_error(self, error:str) -> None:
         """
         A helper method to log the error details in a structured and configurable way.
         This can be expanded to log to files, external monitoring services, etc.

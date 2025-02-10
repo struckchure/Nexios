@@ -1,14 +1,14 @@
 try:
     import jwt
 except ImportError:
-    raise ImportError("Please install PyJWT to use JWT authentication backend")
-from typing import Optional, Tuple
+    raise ImportError("Install PyJWT to use JWT authentication backend")
+from typing import Optional,Dict,Any,List
 from nexios.auth.base import AuthenticationBackend
 from nexios.http import Request, Response
-from nexios.auth.base import UnauthenticatedUser, SimpleUser
+from nexios.auth.base import UnauthenticatedUser
 from nexios.config import get_config
 
-def create_jwt(payload: dict, secret: str = None, algorithm: str = "HS256") -> str:
+def create_jwt(payload: Dict[str,Any], secret: Optional[str] = None, algorithm: str = "HS256") -> str:
     """
     Create a JWT token.
     Args:
@@ -19,9 +19,9 @@ def create_jwt(payload: dict, secret: str = None, algorithm: str = "HS256") -> s
         str: Encoded JWT token.
     """
     secret = secret or get_config().secret_key
-    return jwt.encode(payload, secret, algorithm=algorithm)
+    return jwt.encode(payload, secret, algorithm=algorithm) #type:ignore
 
-def decode_jwt(token: str, secret: str, algorithms: list) -> dict:
+def decode_jwt(token: str, secret: str, algorithms: List[str]) -> Dict[str,Any]:
     """
     Decode a JWT token.
     Args:
@@ -32,19 +32,19 @@ def decode_jwt(token: str, secret: str, algorithms: list) -> dict:
         dict: Decoded token payload.
     """
     try:
-        return jwt.decode(token, secret, algorithms=algorithms)
-    except jwt.ExpiredSignatureError:
-        raise ValueError("Token has expired")
-    except jwt.InvalidTokenError:
+        return jwt.decode(token, secret, algorithms=algorithms)#type:ignore
+    except jwt.ExpiredSignatureError:#type:ignore
+        raise ValueError("Token has expired")#type:ignore
+    except jwt.InvalidTokenError:#type:ignore
         raise ValueError("Invalid token")
 
 class JWTAuthBackend(AuthenticationBackend):
-    def __init__(self, authenticate_func):
+    def __init__(self, authenticate_func):#type:ignore
         self.authenticate_func = authenticate_func
       
       
 
-    async def authenticate(self, request: Request, response: Response) -> Optional[Tuple[str, dict]]:
+    async def authenticate(self, request: Request, response: Response) -> Any: #type:ignore
         app_config = get_config()
         self.secret = app_config.secret_key
         self.algorithms = app_config.jwt_algorithms or ["HS256"]
@@ -57,11 +57,11 @@ class JWTAuthBackend(AuthenticationBackend):
         token = auth_header.split(" ")[1]
         try:
             payload = decode_jwt(token, self.secret, self.algorithms)
-        except ValueError as e:
+        except ValueError as _:
 
             return None
 
-        user = await self.authenticate_func(**payload)
+        user :Any= await self.authenticate_func(**payload)
         if not user:
             return UnauthenticatedUser()
 

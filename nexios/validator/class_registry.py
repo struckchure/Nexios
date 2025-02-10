@@ -5,7 +5,7 @@ import typing
 from .exceptions import RegistryError
 
 if typing.TYPE_CHECKING:
-    from . import Schema
+    from .schema import Schema
 
     SchemaType = type[Schema]
 
@@ -13,7 +13,7 @@ if typing.TYPE_CHECKING:
 #   <class_name>: <list of class objects>
 #   <module_path_to_class>: <list of class objects>
 # }
-_registry = {}  # type: dict[str, list[SchemaType]]
+_registry:typing.Dict[str,typing.Any] = {}  
 
 
 def register(classname: str, cls: SchemaType) -> None:

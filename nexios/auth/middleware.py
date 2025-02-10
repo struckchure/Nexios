@@ -1,3 +1,4 @@
+#type:ignore
 from __future__ import annotations
 
 import inspect
@@ -5,6 +6,7 @@ import inspect
 from .base import (
     AuthenticationBackend,
     UnauthenticatedUser,
+    BaseUser
 )
 from nexios.middlewares.base import BaseMiddleware
 from nexios.http import Request,Response
@@ -16,11 +18,11 @@ class AuthenticationMiddleware(BaseMiddleware):
    async def process_request(self, request: Request, response: Response):
         
         if not inspect.iscoroutinefunction(self.backend.authenticate):
-            user = self.backend.authenticate(request,response)
+            user:BaseUser = self.backend.authenticate(request,response) 
         else:
-            user = await self.backend.authenticate(request,response)
+            user:BaseUser = await self.backend.authenticate(request,response)
         if user is None:
             request.user = UnauthenticatedUser()
 
-        request.user = user
+        request.scope["user"] = user
          
