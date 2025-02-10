@@ -85,7 +85,7 @@ class BaseRouter:
     def get_routes(self): #type:ignore
         raise NotImplementedError("Not implemented")
     
-    def add_middleware(self, middleware: MiddlewareType) -> T: #type:ignore
+    def add_middleware(self, middleware: MiddlewareType) -> Any: #type:ignore
         raise NotImplementedError("Not implemented")
 
 class Routes:
@@ -572,7 +572,7 @@ class WSRouter(BaseRouter):
         async def next_middleware() -> WsMiddlewareType:
             nonlocal index
             index += 1
-            if index < len(stack): #type: ignore:
+            if index < len(stack): #type: ignore
                 middleware:List[MiddlewareType] = stack[index] #type: ignore
                 return await middleware(ws, next_middleware, **kwargs)#type: ignore
             else:

@@ -1,12 +1,11 @@
 from nexios.http import response,request
-from nexios.validator import Schema
 from nexios.http.response import NexioResponse
-import traceback
-from functools import wraps
-from typing import Callable
+from nexios.types import HandlerType
+from typing import Any
+
 class APIHandler:
     allowed_methods = ['get','post','delete','put','patch','options']
-    async def handle_error(self, error: Exception, request: request.Request, response: response.NexioResponse) -> response.NexioResponse:
+    async def handle_error(self, error: Exception, request: request.Request, response: response.NexioResponse) :
        pass
     async def before_request(self, request: request.Request, response: response.NexioResponse):
         
@@ -16,20 +15,20 @@ class APIHandler:
     async def after_request(self, request: request.Request, response: response.NexioResponse):
         """Hook that runs after each request"""
 
-    async def __call__(self, request: request.Request, response:response.NexioResponse) -> response.NexioResponse:
+    async def __call__(self, request: request.Request, response:response.NexioResponse) ->  Any[HandlerType]:
         method = request.method.lower()
         if method not in self.allowed_methods:
             return response.json("Method not allowed",status_code=405)
         
-        handler = getattr(self, method, None)
+        handler :HandlerType| None = getattr(self, method, None)
         if not callable(handler):
             return response.status(405)
         try:
             before_request = await self.before_request(request, response)
-            if isinstance(before_request,NexioResponse):
+            if isinstance(before_request,NexioResponse): #type:ignore
                 return before_request
             
-            _response = await handler(request,response)
+            _response :HandlerType = await handler(request,response) #type:ignore
             await self.after_request(request,response)
 
             return _response
