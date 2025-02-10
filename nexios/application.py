@@ -288,7 +288,7 @@ class NexioApp:
     def ws_route(self, path: str) -> Callable:
         """Decorator to register routes with optional HTTP methods"""
         def decorator(handler: Callable) -> Callable:
-            self.add_route(Routes(path, handler))
+            self.add_ws_route(Routes(path, handler))
             return handler
         return decorator
     
