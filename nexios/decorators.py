@@ -10,7 +10,7 @@ from .types import HTTPMethod,HandlerType
 class RouteDecorator:
     """Base class for all route decorators"""
     def __init__(self):
-        self.handler :HandlerType | None = None
+        self.handler :HandlerType | None = None #type:ignore
 
     async def __call__(self, request: Request, response: NexioResponse, **kwargs :typing.Dict[str,typing.Any]):
         if self.handler:
@@ -31,7 +31,7 @@ class allowed_methods(RouteDecorator):
                               for method in methods]
         self.allowed_methods.extend(["OPTIONS"])
 
-    def __call__(self, handler:HandlerType) -> HandlerType: #type:ignore[overrides]
+    def __call__(self, handler:HandlerType) -> HandlerType: #type:ignore[override]
         @wraps(handler)
         async def wrapper(request: Request, response: NexioResponse):
             if request.method.upper() not in self.allowed_methods:

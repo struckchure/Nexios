@@ -281,7 +281,7 @@ class Request(HTTPConnection):
                 self._form = await form_parser.parse()
             else:
                 self._form :FormData = FormData()
-        return self._form #type :ignore
+        return self._form #type:ignore
     @property
     def form_data(
         self, *, max_files: int | float = 1000, max_fields: int | float = 1000

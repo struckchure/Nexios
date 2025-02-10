@@ -1,8 +1,8 @@
 from nexios.middlewares.base import BaseMiddleware 
 from nexios.http import Request,Response
 from nexios.config import get_config
-import traceback,html,sys,inspect
-
+import traceback,html,sys,inspect,typing
+from nexios.types import HandlerType
 STYLES = """
 body {
     font-family: Arial, sans-serif;
@@ -151,9 +151,9 @@ CENTER_LINE = """
 
 
 class ServerErrorMiddleware(BaseMiddleware):
-    def __init__(self, handler = None):
+    def __init__(self, handler :HandlerType | None= None):
         self.handler = handler
-    async def __call__(self, request :Request, response :Response, next_middleware):
+    async def __call__(self, request :Request, response :Response, next_middleware : typing.Callable[...,typing.Awaitable[None]]):
         self.debug = get_config().debug or True
         try:
             await next_middleware()
@@ -185,7 +185,7 @@ class ServerErrorMiddleware(BaseMiddleware):
         content = self.generate_plain_text(exc)
         return  response.send(content, status_code=500)
     def format_line(self, index: int, line: str, frame_lineno: int, frame_index: int) -> str:
-        values = {
+        values:typing.Dict[str,typing.Any] = {
             # HTML escape - line could contain < or >
             "line": html.escape(line).replace(" ", "&nbsp"),
             "lineno": (frame_lineno - frame_index) + index,
@@ -195,17 +195,17 @@ class ServerErrorMiddleware(BaseMiddleware):
             return LINE.format(**values)
         return CENTER_LINE.format(**values)
     def generate_frame_html(self, frame: inspect.FrameInfo, is_collapsed: bool) -> str:
-        code_context = "".join(
+        code_context :str = "".join( #type:ignore
             self.format_line(
                 index,
                 line,
                 frame.lineno,
-                frame.index,  
+                frame.index,  #type:ignore
             )
-            for index, line in enumerate(frame.code_context or [])
+            for index, line in enumerate(frame.code_context or []) #type:ignore
         )
 
-        values = {
+        values :typing.Dict[str,typing.Any] = {
            
             "frame_filename": html.escape(frame.filename),
             "frame_lineno": frame.lineno,

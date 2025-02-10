@@ -497,9 +497,9 @@ class NexioResponse:
     def set_cookie(
         self,
         key: str,
-        value: str,
+        value: str | None,
         max_age: Optional[int] = None,
-        expires: Optional[Union[str, datetime]] = None,
+        expires: Optional[Union[str, datetime,int]] = None,
         path: str = "/",
         domain: Optional[str] = None,
         secure: bool = True,

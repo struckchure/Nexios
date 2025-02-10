@@ -1,6 +1,6 @@
-import secrets,re
+import secrets,re,typing
 from nexios.config import get_config
-from itsdangerous import URLSafeSerializer, BadSignature
+from itsdangerous import URLSafeSerializer, BadSignature #type:ignore
 from nexios.middlewares.base import BaseMiddleware
 from nexios.http import Request, Response
 
@@ -15,8 +15,8 @@ class CSRFMiddleware(BaseMiddleware):
             assert app_config.secret_key != None
         if not self.use_csrf:
             return
-        self.serializer = URLSafeSerializer(app_config.secret_key, "csrftoken")
-        self.required_urls = app_config.csrf_required_urls or []
+        self.serializer = URLSafeSerializer(app_config.secret_key, "csrftoken")   #type:ignore
+        self.required_urls :typing.List[str]= app_config.csrf_required_urls or [] 
         self.exempt_urls = app_config.csrf_exempt_urls
         self.sensitive_cookies = app_config.csrf_sensitive_cookies
         self.safe_methods = app_config.csrf_safe_methods or {"GET", "HEAD", "OPTIONS", "TRACE"}
@@ -28,7 +28,7 @@ class CSRFMiddleware(BaseMiddleware):
         self.cookie_samesite = app_config.csrf_cookie_samesite or "Lax"
         self.header_name = app_config.csrf_header_name or "X-CSRFToken"
 
-    async def process_request(self, request: Request, response: Response):
+    async def process_request(self, request: Request, response: Response): 
         """
         Process the incoming request to validate the CSRF token for unsafe HTTP methods.
         """
@@ -71,7 +71,7 @@ class CSRFMiddleware(BaseMiddleware):
             samesite=self.cookie_samesite,
         )
 
-    def _has_sensitive_cookies(self, cookies: dict) -> bool:
+    def _has_sensitive_cookies(self, cookies: typing.Dict[str,typing.Any]) -> bool:
         """Check if the request contains sensitive cookies."""
         if not self.sensitive_cookies:
             return True
@@ -104,15 +104,15 @@ class CSRFMiddleware(BaseMiddleware):
                 return True
         return False
 
-    def _generate_csrf_token(self) -> str:
+    def _generate_csrf_token(self) -> str: #type:ignore
         """Generate a secure CSRF token."""
-        return self.serializer.dumps(secrets.token_urlsafe(32))
+        return self.serializer.dumps(secrets.token_urlsafe(32))  #type:ignore
 
     def _csrf_tokens_match(self, token1: str, token2: str) -> bool:
         """Compare two CSRF tokens securely."""
         try:
-            decoded1 = self.serializer.loads(token1)
-            decoded2 = self.serializer.loads(token2)
-            return secrets.compare_digest(decoded1, decoded2)
+            decoded1 = self.serializer.loads(token1) #type:ignore
+            decoded2 = self.serializer.loads(token2)  #type:ignore
+            return secrets.compare_digest(decoded1, decoded2) #type:ignore
         except BadSignature:
             return False
