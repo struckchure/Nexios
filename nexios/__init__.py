@@ -25,7 +25,7 @@ def get_application(
                     
                     )] = DEFAULT_CONFIG,
     
-                    middlewares :Annotated[:Sequence[MiddlewareType],Doc(
+                    middlewares :Annotated[Sequence[MiddlewareType],Doc(
                         "A list of middlewares, where each middleware is either a class inherited from BaseMiddleware or an asynchronous callable function that accepts request, response, and callnext"
                         )]= [],
                     server_error_handler :Annotated[Awaitable,Doc(

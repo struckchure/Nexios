@@ -5,16 +5,20 @@ from .http.response import NexioResponse
 from .types import HTTPMethod
 from .decorators import allowed_methods
 from .routing import Router, Routes,WSRouter
-import logging,traceback
+import traceback
 from .structs import RouteParam
 from .websockets import get_websocket_session
 from .middlewares.errors.server_error_handler import ServerErrorMiddleware
-import traceback
+import traceback,typing
 from .exception_handler import ExceptionMiddleware
 from typing_extensions import Doc,Annotated
+from nexios.config import MakeConfig
+from typing import Awaitable,Sequence
+from .types import MiddlewareType
 allowed_methods_default = ['get','post','delete','put','patch','options']
 
 from typing import Dict, Any
+AppType = typing.TypeVar("AppType", bound="Starlette")
 
 def validate_params(params: Dict[str, Any], param_types: Dict[str, type]) -> bool:
     errors = []
@@ -36,10 +40,26 @@ def validate_params(params: Dict[str, Any], param_types: Dict[str, type]) -> boo
 
 
 class NexioApp:
-    def __init__(self, 
-                 config = None,
-                 middlewares: list = None):
-        self.config = config
+    def __init__(self :AppType,
+                 config :Annotated[MakeConfig,Doc(
+                    """
+                    This subclass is derived from the MakeConfig class and is responsible for managing configurations within the Nexios framework. It takes arguments in the form of dictionaries, allowing for structured and flexible configuration handling. By using dictionaries, this subclass makes it easy to pass multiple configuration values at once, reducing complexity and improving maintainability.
+
+                    One of the key advantages of this approach is its ability to dynamically update and modify settings without requiring changes to the core codebase. This is particularly useful in environments where configurations need to be frequently adjusted, such as database settings, API credentials, or feature flags. The subclass can also validate the provided configuration data, ensuring that incorrect or missing values are handled properly.
+
+                    Additionally, this design allows for merging and overriding configurations, making it adaptable for various use cases. Whether used for small projects or large-scale applications, this subclass ensures that configuration management remains efficient and scalable. By extending MakeConfig, it leverages existing functionality while adding new capabilities tailored to Nexios. This makes it an essential component for maintaining structured and well-organized application settings.
+                    """
+                    
+                    
+                    )] = None,
+    
+                    middlewares :Annotated[Sequence[MiddlewareType],Doc(
+                        "A list of middlewares, where each middleware is either a class inherited from BaseMiddleware or an asynchronous callable function that accepts request, response, and callnext"
+                        )]= [],
+                    server_error_handler :Annotated[Awaitable,Doc(
+                        """
+                        A function in Nexios responsible for handling server-side exceptions by logging errors, reporting issues, or initiating recovery mechanisms. It prevents crashes by intercepting unexpected failures, ensuring the application remains stable and operational. This function provides a structured approach to error management, allowing developers to define custom handling strategies such as retrying failed requests, sending alerts, or gracefully degrading functionality. By centralizing error processing, it improves maintainability and observability, making debugging and monitoring more efficient. Additionally, it ensures that critical failures do not disrupt the entire system, allowing services to continue running while appropriately managing faults and failures.""" )] = None):
+        self.config :MakeConfig = config
         self.server_error_handler = None
         self.routes: List[Routes] = []
         self.ws_routes :List[Routes] = []

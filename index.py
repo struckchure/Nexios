@@ -6,7 +6,7 @@ async def handle_server_error(req,res,exc):
 
 class NotFound(HTTPException):
     pass
-app = get_application(config=3)
+app = get_application()
 
 
 async def handler_not_found(request: Request,response:Response, exc: Exception):
@@ -15,5 +15,5 @@ async def handler_not_found(request: Request,response:Response, exc: Exception):
 app.add_exception_handler(ValueError,handler_not_found)
 @app.get("")
 async def index(req, res):
-    raise RecursionError("Vale error")
+    # raise RecursionError("Vale error")
     return res.json({"text":"Helloo world"})
