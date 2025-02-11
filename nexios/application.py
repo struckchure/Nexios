@@ -23,8 +23,9 @@ def validate_params(params: Dict[str, Any], param_types: Dict[str, type]) -> typ
     for param, expected_type in param_types.items():
         try:
             _param = expected_type(params[param])
-        except Exception:
-            _param = params[param]
+        except Exception as _:
+            raise ValueError("Cannot validate path parameters for a route that has none.")
+
         if param not in params:
             errors.append(f"Missing parameter: {param}")
         
@@ -424,7 +425,7 @@ class NexioApp:
 
     def mount_router(
         self, 
-        router: Annotated["Router", Doc("An instance of Router containing multiple routes to be mounted.")]
+        router: Annotated[Router, Doc("An instance of Router containing multiple routes to be mounted.")]
     ) -> None:
         """
         Mounts a router and all its routes to the application.

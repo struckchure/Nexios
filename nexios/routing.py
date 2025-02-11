@@ -476,6 +476,27 @@ class WebsocketRoutes:
     def __repr__(self) -> str:
         return f"<WSRoute {self.raw_path}>"
     
+    async def execute_middleware_stack(self, ws :"WebsocketRoutes", **kwargs :Dict[str,Any]) -> WsMiddlewareType | None:
+        """
+        Executes WebSocket middleware stack after route matching.
+        """
+        middleware_list :List[WsMiddlewareType] = getattr(self,"router_middleware") or [] #type: ignore
+
+        stack :List[WsMiddlewareType] = middleware_list.copy() 
+        index = -1
+
+        async def next_middleware() -> WsMiddlewareType:
+            nonlocal index
+            index += 1
+            if index < len(stack): #type: ignore
+                middleware:List[MiddlewareType] = stack[index] #type: ignore
+                return await middleware(ws, next_middleware, **kwargs)#type: ignore
+            else:
+                # No more middleware to process
+                return None #type: ignore
+
+        return await next_middleware()
+    
 
 
 class WSRouter(BaseRouter):
@@ -560,26 +581,7 @@ class WSRouter(BaseRouter):
 
         return decorator
     
-    async def execute_middleware_stack(self, ws :WebsocketRoutes, **kwargs :Dict[str,Any]) -> WsMiddlewareType | None:
-        """
-        Executes WebSocket middleware stack after route matching.
-        """
-        middleware_list :List[WsMiddlewareType] = getattr(self,"router_middleware") or [] #type: ignore
-
-        stack :List[WsMiddlewareType] = middleware_list.copy() 
-        index = -1
-
-        async def next_middleware() -> WsMiddlewareType:
-            nonlocal index
-            index += 1
-            if index < len(stack): #type: ignore
-                middleware:List[MiddlewareType] = stack[index] #type: ignore
-                return await middleware(ws, next_middleware, **kwargs)#type: ignore
-            else:
-                # No more middleware to process
-                return None #type: ignore
-
-        return await next_middleware()
+    
 
     
 
