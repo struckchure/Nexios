@@ -12,3 +12,4 @@ poetry
 
 #testing
 mypy
+pre-commit
