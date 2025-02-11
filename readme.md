@@ -1,65 +1,74 @@
+:  
 
 ---
 
-![nexios Logo](docs/logo.svg)  
-# nexios API Framework 🚀💻  
+#  Nexios – The Future of Python Frameworks!  
 
-Welcome to **nexios**, an ultra-fast Python web framework crafted by **TechWithDunamix** — a visionary developer from Nigeria! 🇳🇬💡 nexios is designed to revolutionize API development by combining speed, simplicity, and a familiar, intuitive structure inspired by Express.js-style controllers. ⚡  
+<p align="center">
+  <img src="./docs/nexiohero.png" width="1000" alt="Nexios Logo"/>
+</p>  
 
-With nexios, developers can enjoy a clean, organized codebase that closely mirrors the lightweight yet powerful design of Express.js, making it an excellent choice for those transitioning from JavaScript or seeking a productivity-focused framework in Python.  
+### 🌟 The lightweight, blazing-fast Python framework you've been waiting for!  
 
----  
+[![GitHub stars](https://img.shields.io/github/stars/TechWithDunamix/Nexios?style=for-the-badge)](https://github.com/TechWithDunamix/Nexios/stargazers)  
+[![PyPI Downloads](https://img.shields.io/pypi/dm/nexios?style=for-the-badge)](https://pypi.org/project/nexios/)  
+[![Documentation](https://img.shields.io/badge/Docs-Read%20Now-blue?style=for-the-badge)](https://your-docs-url.com/)  
 
-## Why Choose nexios? 🤔  
+## ⚡ What is Nexios?  
+Think **FastAPI meets Express.js** but with its own **swagger**! 🎩 Nexios is a modern Python framework designed to help you **build, deploy, and scale** applications **effortlessly**.  
 
-- **⚡ Unrivaled Speed**: Deliver high-performance web applications with ease.  
-- **👨‍💻 Developer-Centric**: Streamlined codebase designed for maximum productivity.  
-- **🔌 Seamless Integration**: Minimal setup and configuration, perfect for developers at any level.  
-- **📚 Familiar Structure**: Inspired by Express.js, nexios offers a straightforward controller style that simplifies routing and API logic.  
+✅ **Super lightweight** – No unnecessary bloat!  
+✅ **Crazy fast** 🚀 – Like, seriously!  
+✅ **Insanely flexible** – Works with any ORM.  
+✅ **Multiple authentication types** – Because security matters!  
 
----  
+## 🛠 Installation  
+```bash
+pip install nexios
+```
 
-## Quick Start 🚀  
+## 🚀 Quick Start  
 
-Get up and running with nexios in just a few simple steps!  
+### 1️⃣ Create a New Nexios Project  
+```bash
+nexios create
+cd <myapp>
+```
 
----  
+### 2️⃣ Follow the Instructions  
+The CLI will guide you through setting up your project structure.  
 
-### Installation  
+### 3️⃣ Expand
+```bash
+nexios run --reload
+```
 
-Install nexios using pip:  
+### 4️⃣ Run Your App  
+```py
+from nexios import get_application
+app = get_application()
+@app.get("/users")
+async def get_users(request,response):
+    return response.json({"users": ["Alice", "Bob"]})
+```
+## 🤯 Nexios vs. The World  
+| Feature      | Nexios 🚀 | FastAPI ⚡ | Django 🏗 | Flask 🍶 |
+|-------------|----------|----------|---------|--------|
+| Speed       | ⚡⚡⚡⚡⚡  | ⚡⚡⚡⚡  | ⚡⚡  | ⚡⚡⚡  |
+| Ease of Use | ✅✅✅✅✅ | ✅✅✅✅ | ✅✅✅ | ✅✅✅✅ |
+| ORM Support | Any! | SQLAlchemy | Django ORM | SQLAlchemy |
+| Async Support | ✅ | ✅ | ❌ (Django 4.1+ has partial) | ❌ |
+| Authentication | ✅  | ✅ | ✅ | ❌ |
+| Built-in Admin Panel | Coming Soon | ❌ | ✅ | ❌ |
+| Best For | APIs & Full Apps | APIs | Full-stack Web Apps | Small Apps |
 
-```shell  
-pip install nexios  
-```  
+## 📖 Read the Full Documentation  
+👉  <a href="https://techwithdunamix.github.io/Nexios/">https://techwithdunamix.github.io/Nexios/</a>
 
-### Basic Example  
+## ⭐ Star Nexios on GitHub!  
+If you love **Nexios**, show some ❤️ by **starring** the repo!  
 
-Here’s a quick example of how easy it is to build APIs with nexios:  
+🔗 [**GitHub Repo**](https://github.com/TechWithDunamix/Nexios)  
 
-```py  
-from nexios.http import Request, Response  
-from nexios import get_application  
+---
 
-app = get_application()  
-
-@app.get("/api")  
-async def get_api_resource(request: Request, response: Response):  
-    return response.json({"message": "Hello, World!"})  
-```  
-
-This controller-style structure allows you to define routes and their corresponding logic seamlessly, just like in Express.js!  
-
-### Running the Application  
-
-Since nexios is built as an `ASGI` framework, it requires an ASGI server like `uvicorn`. Conveniently, nexios comes bundled with `uvicorn` for hassle-free deployment!  
-
-To start your app, simply run:  
-
-```shell  
-uvicorn main:app --reload  
-```  
-
----  
-
-With nexios, API development becomes faster, cleaner, and more intuitive, empowering you to build scalable projects with minimal effort.
