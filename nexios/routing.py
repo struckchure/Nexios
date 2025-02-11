@@ -1,4 +1,4 @@
-from typing import Any, List, Optional, Pattern,Dict,TypeVar,Tuple
+from typing import Any, List, Optional, Pattern,Dict,TypeVar,Tuple,Callable
 from dataclasses import dataclass
 import re
 import warnings
@@ -190,7 +190,7 @@ class Router(BaseRouter):
             Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) -> Routes | HandlerType | None:
+    ) ->Callable[...,Any]:
         """
         Registers a GET route.
 
@@ -224,7 +224,7 @@ class Router(BaseRouter):
             Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) ->  Routes | HandlerType | None:
+    ) ->  Callable[...,Any]:
         """
         Registers a POST route.
 
@@ -258,7 +258,7 @@ class Router(BaseRouter):
             Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) ->  Routes | HandlerType | None:
+    ) ->  Callable[...,Any]:
         """
         Registers a DELETE route.
 
@@ -293,7 +293,7 @@ class Router(BaseRouter):
             Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) ->  Routes | HandlerType | None:
+    ) ->  Callable[...,Any]:
         """
         Registers a PUT route.
 
@@ -327,7 +327,7 @@ class Router(BaseRouter):
             Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) ->  Routes | HandlerType | None:
+    ) -> Callable[...,Any]:
         """
         Registers a PATCH route.
 
@@ -363,7 +363,7 @@ class Router(BaseRouter):
             Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) ->  Routes | HandlerType | None:
+    ) ->  Callable[...,Any]:
         """
         Registers an OPTIONS route.
 
@@ -406,7 +406,7 @@ class Router(BaseRouter):
             Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) -> Routes | HandlerType:
+    ) -> Callable[...,Any]:
         """
         Registers a route with the specified HTTP methods and an optional validator.
 
@@ -429,11 +429,11 @@ class Router(BaseRouter):
             ```
         """
         def decorator(handler: HandlerType) -> HandlerType: #type: ignore
-            handler:HandlerType = allowed_methods(methods)(handler)  #type: ignore
-            route = Routes(path, handler, methods=methods, validator=validator)#type: ignore
+            handler:HandlerType = allowed_methods(methods)(handler)  
+            route = Routes(path, handler, methods=methods, validator=validator)
             self.add_route(route)
-            return handler  #type: ignore
-        return decorator  #type: ignore
+            return handler  
+        return decorator  
     
     def __repr__(self) -> str:
         return f"<Router prefix='{self.prefix}' routes={len(self.routes)}>"
