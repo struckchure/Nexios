@@ -406,7 +406,7 @@ class Router(BaseRouter):
             Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) -> "Routes" | "HandlerType":
+    ) -> Routes | HandlerType:
         """
         Registers a route with the specified HTTP methods and an optional validator.
 

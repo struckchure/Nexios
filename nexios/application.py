@@ -286,7 +286,7 @@ class NexioApp:
             Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) -> Any[ Routes , HandlerType ,None]:
+    ) -> Union[ Routes , HandlerType ,None]:
         """
         Registers a route with the specified HTTP methods and an optional validator.
 
@@ -313,7 +313,7 @@ class NexioApp:
             self.add_route(Routes(path, handler, methods=methods, validator=validator))
             return handler
 
-        return decorator
+        return decorator #type:ignore
     def ws_route(
         self, 
         path: Annotated[str, Doc("The WebSocket route path. Must be a valid URL pattern.")]
@@ -580,7 +580,7 @@ class NexioApp:
             Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) ->  Routes | HandlerType | None:
+    ) ->  Union[Routes,HandlerType,None]:
         """
         Registers a GET route.
 
@@ -614,7 +614,7 @@ class NexioApp:
             Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) ->  Routes | HandlerType | None:
+    ) ->  Union[Routes,HandlerType,None]:
         """
         Registers a POST route.
 
@@ -648,7 +648,7 @@ class NexioApp:
             Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) ->  Routes | HandlerType | None:
+    ) ->  Union[Routes,HandlerType,None]:
         """
         Registers a DELETE route.
 
@@ -683,7 +683,7 @@ class NexioApp:
             Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) ->  Routes | HandlerType | None:
+    ) ->  Union[Routes,HandlerType,None]:
         """
         Registers a PUT route.
 
@@ -717,7 +717,7 @@ class NexioApp:
             Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) ->  Routes | HandlerType | None:
+    ) ->  Union[Routes,HandlerType,None]:
         """
         Registers a PATCH route.
 
@@ -753,7 +753,7 @@ class NexioApp:
             Optional[Dict[str,Any]], 
             Doc("An dict to validate request parameters before calling the handler.")
         ] = None
-    ) ->  Routes | HandlerType | None:
+    ) ->  Union[Routes,HandlerType,None]:
         """
         Registers an OPTIONS route.
 
@@ -783,7 +783,7 @@ class NexioApp:
 
     def add_exception_handler(
         self,
-        exc_class_or_status_code :Any[Exception,int],
+        exc_class_or_status_code :Union[Exception,int],
         handler :HandlerType
     ) -> None:
         self.exceptions_handler.add_exception_handler(exc_class_or_status_code,handler)

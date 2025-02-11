@@ -9,12 +9,17 @@ import anyio #type:ignore
 from nexios.utils.async_helpers import AwaitableOrContextManager, AwaitableOrContextManagerWrapper
 from nexios.structs import URL, Address, FormData, Headers, QueryParams, State
 from .formparsers import FormParser, MultiPartException, MultiPartParser
-from nexios.types import Scope,Receive,Message,Send
+
 try:
     from multipart.multipart import parse_options_header  #type:ignore
 
 except ImportError:
     parse_options_header =  None
+Scope = typing.MutableMapping[str, typing.Any]
+Message = typing.MutableMapping[str, typing.Any]
+
+Receive = typing.Callable[[], typing.Awaitable[Message]]
+Send = typing.Callable[[Message], typing.Awaitable[None]]
 JSONType = typing.Union[str, int, float, bool, None, typing.Dict[str, typing.Any], typing.List[typing.Any]]
 
 SERVER_PUSH_HEADERS_TO_COPY = {

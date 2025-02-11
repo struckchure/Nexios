@@ -7,7 +7,12 @@ from base64 import b64encode
 from hashlib import sha1
 import mimetypes
 import typing
-from nexios.types import Scope,Send,Receive
+
+Scope = typing.MutableMapping[str, typing.Any]
+Message = typing.MutableMapping[str, typing.Any]
+
+Receive = typing.Callable[[], typing.Awaitable[Message]]
+Send = typing.Callable[[Message], typing.Awaitable[None]]
 
 JSONType = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
 

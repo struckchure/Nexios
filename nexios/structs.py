@@ -2,7 +2,12 @@ from __future__ import annotations
 import typing
 from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit
 from nexios.utils.cuncurrency import run_in_threadpool
-from nexios.types import Scope
+
+Scope = typing.MutableMapping[str, typing.Any]
+Message = typing.MutableMapping[str, typing.Any]
+
+Receive = typing.Callable[[], typing.Awaitable[Message]]
+Send = typing.Callable[[Message], typing.Awaitable[None]]
 
 class Address(typing.NamedTuple):
     host: str

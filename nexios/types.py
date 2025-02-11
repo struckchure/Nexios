@@ -1,10 +1,10 @@
 from __future__ import annotations
 from enum import Enum
-from typing import TypeAlias,Callable,Type,Awaitable
+from typing import TypeAlias,Callable,Type,Awaitable,Any
 import typing
-from nexios.http import Request,Response
-from nexios.http.response import NexioResponse
-from nexios.websockets import WebSocket
+from .http.request import Request
+from .http.response import NexioResponse,Response
+from .websockets import WebSocket
 class HTTPMethod(str, Enum):
     GET = "GET"
     POST = "POST"
@@ -29,8 +29,8 @@ MiddlewareType: TypeAlias = Callable[
 WsMiddlewareType :TypeAlias = Callable[[Type[WebSocket],Type[Callable[...,Awaitable[Message]]]], Type[Send]]  
 
 WsHandlerType = Callable[..., Awaitable[Send | Message]]
-HandlerType = Callable[..., Awaitable[Response]]
-ExceptionHandlerType = Callable[[Type[Request],Type[Response]],typing.Any[Awaitable[Response],None]]
+HandlerType = Callable[..., Awaitable[Any]]
+ExceptionHandlerType = Callable[[Type[Request],Type[Response]],typing.Any]
 
 ASGIApp = typing.Callable[[Scope, Receive, Send], typing.Awaitable[None]]
 

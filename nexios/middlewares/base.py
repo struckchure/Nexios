@@ -15,10 +15,10 @@ class BaseMiddleware:
         
 
 
-    async def process_request(self, request :Request, response :Response) -> typing.Any[None,Response]:
+    async def process_request(self, request :Request, response :Response) -> typing.Union[None,Response]:
         """Override this method in child classes to process the request before passing it along."""
         pass
 
-    async def process_response(self, request :Request, response :Response) -> typing.Any[None,Response]:
+    async def process_response(self, request :Request, response :Response) -> typing.Union[None,Response]:
         """Override this method in child classes to process the response before returning it."""
         pass

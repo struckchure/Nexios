@@ -2,8 +2,12 @@ import enum
 import json
 import typing
 from typing import AsyncIterator, Iterable, Optional
-from nexios.types import Scope,Send,Receive,Message
 from nexios.http.request import HTTPConnection
+Scope = typing.MutableMapping[str, typing.Any]
+Message = typing.MutableMapping[str, typing.Any]
+
+Receive = typing.Callable[[], typing.Awaitable[Message]]
+Send = typing.Callable[[Message], typing.Awaitable[None]]
 
 class WebSocketState(enum.Enum):
     CONNECTING = 0
