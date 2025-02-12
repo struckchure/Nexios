@@ -13,4 +13,3 @@ poetry
 #testing
 mypy
 pre-commit
-ruff
