@@ -406,6 +406,9 @@ class QueryParams(ImmutableMultiDict[str, str]):
         class_name = self.__class__.__name__
         query_string = str(self)
         return f"{class_name}({query_string!r})"
+    
+    def __call__(self, *args: Any, **kwds: Any) -> Dict[str,Any]:
+        return self._dict
 
 
 
@@ -670,6 +673,9 @@ class RouteParam:
     def __len__(self) -> int:
         """Return the number of items in the dictionary."""
         return len(self.data)
+    
+    def __call__(self, *args: Any, **kwds: Any) ->  Dict[str, Any]:
+        return self.data
 
     
 class UploadedFile:

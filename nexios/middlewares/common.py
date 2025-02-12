@@ -1,7 +1,8 @@
 from nexios.middlewares.base import BaseMiddleware
-from nexios.http.response import NexioResponse
-from nexios.http.request import Request
+from nexios.http import Request,Response
 from typing_extensions import Annotated, Doc
+import typing
+from typing import Any
 
 
 class CommonMiddleware(BaseMiddleware):
@@ -20,10 +21,9 @@ class CommonMiddleware(BaseMiddleware):
             Request,
             Doc("The incoming HTTP request."),
         ],
-        response: Annotated[
-            NexioResponse,
-            Doc("The response object that can be modified before processing."),
-        ],
+         response:Annotated[
+                           Response,Doc("The HTTP response object that will be returned to the client.")],
+        call_next:   typing.Callable[..., typing.Awaitable[Any]],
     ) -> None:
         """
         Process the incoming request before it reaches the route handler.
@@ -33,12 +33,12 @@ class CommonMiddleware(BaseMiddleware):
 
         Args:
             request (Request): The incoming HTTP request.
-            response (NexioResponse): The response object (not modified here).
+            response (Response): The response object (not modified here).
 
         Returns:
             None
         """
-        pass
+        await call_next()
 
     async def process_response(
         self,
@@ -47,10 +47,10 @@ class CommonMiddleware(BaseMiddleware):
             Doc("The HTTP request associated with the response."),
         ],
         response: Annotated[
-            NexioResponse,
+            Response,
             Doc("The response object that is modified before being sent."),
         ],
-    ) -> NexioResponse:
+    ) -> Response:
         """
         Process the outgoing response and add common security headers.
 
@@ -60,10 +60,10 @@ class CommonMiddleware(BaseMiddleware):
 
         Args:
             request (Request): The HTTP request object.
-            response (NexioResponse): The response object to be modified.
+            response (Response): The response object to be modified.
 
         Returns:
-            NexioResponse: The modified response with additional headers.
+            Response: The modified response with additional headers.
         """
         response.headers["Content-Type"] = "application/json"
 

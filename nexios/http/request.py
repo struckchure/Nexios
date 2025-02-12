@@ -110,11 +110,13 @@ class HTTPConnection:
         return self._headers
 
     @property
+    def path(self) -> str:
+        return self.url.path
+    @property
     def query_params(self) -> QueryParams:
         if not hasattr(self, "_query_params"):  # pragma: no branch
             self._query_params = QueryParams(self.scope["query_string"])
         return self._query_params
-
     @property
     def path_params(self) -> dict[str, typing.Any]:
         return self.scope.get("route_params", {})
@@ -337,6 +339,19 @@ class Request(HTTPConnection):
                 files_dict[key] = value
         return files_dict  #type: ignore
     
+    async def text(self) -> str:
+        """
+        Returns the body of the request as a string.
+        """
+        
+        body = await self.body()
+        return body.decode()
+    
+    def valid(self) -> bool:
+        """
+        Checks if the request is valid by ensuring the method and headers are properly set.
+        """
+        return self.method in {"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"} and bool(self.headers)
     
     @property
     def session(self):

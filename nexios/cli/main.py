@@ -1,14 +1,14 @@
 import os
 import click
 from subprocess import run as run_command
-import click
-import subprocess
-import os
-import sys
 @click.group()
 def nexios():
     """🚀 Nexios CLI - Your tool for quickly spinning up Nexios projects!"""
     pass
+
+
+@nexios.command()
+@click.option('--name', prompt='📂 Enter the project name', help='Name of the Nexios project')
 
 @nexios.command()
 @click.option('--name', prompt='📂 Enter the project name', help='Name of the Nexios project')

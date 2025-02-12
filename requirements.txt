@@ -6,6 +6,7 @@ mkdocs-git-revision-date-localized-plugin
 mkdocs-multirepo-plugin
 mkdocs-rss-plugin
 pymdown-extensions
+mkdocs-cinder
 
 #pypi deployments
 poetry

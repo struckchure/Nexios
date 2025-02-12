@@ -1,6 +1,6 @@
 from nexios.http import Request, Response
 import typing
-from typing_extensions import Annotated, Doc
+from typing_extensions import Annotated, Doc,Any
 
 
 class BaseMiddleware:
@@ -17,9 +17,7 @@ class BaseMiddleware:
     - `process_request()`: To inspect, modify, or reject an incoming request.
     - `process_response()`: To inspect or modify an outgoing response.
 
-    If `process_request` returns a `Response`, the request cycle is short-circuited,
-    and the response is immediately sent back to the client. Otherwise, control is
-    passed to the next middleware in the stack.
+    The user can decide when to call `next()` to proceed to the next middleware or handler.
     """
 
     def __init__(
@@ -46,76 +44,63 @@ class BaseMiddleware:
             Request,
             Doc("The incoming HTTP request object representing the client request."),
         ],
-        response: Annotated[
-            Response,
-            Doc("The HTTP response object that will be returned to the client."),
-        ],
-        next_middleware: Annotated[
-            typing.Callable[..., typing.Awaitable[None]],
+        response:Annotated[
+                           Response,Doc("The HTTP response object that will be returned to the client.")],
+        call_next: Annotated[
+            typing.Callable[..., typing.Awaitable[Any]],
             Doc("The next middleware function in the processing chain."),
         ],
-    ) -> Annotated[
-        typing.Optional[Response],
-        Doc(
-            "If `process_request` returns a response, it short-circuits the request cycle, "
-            "and the returned response is sent to the client immediately. Otherwise, `None` is returned."
-        ),
-    ]:
+    ) ->Any:
         """
         Handles the request-response cycle for the middleware.
 
         This method does the following:
         1. Calls `process_request()` to inspect or modify the request before passing it forward.
-        2. If `process_request()` returns a response, the cycle stops, and the response is returned.
-        3. Otherwise, it calls `next_middleware()`, allowing the request to proceed.
-        4. After the request has been processed, it calls `process_response()` to modify the response.
+        2. Allows the user to decide when to call `next_middleware()`.
+        3. Calls `process_response()` to modify the response after `next_middleware()` is called.
 
         Args:
             request (Request): The incoming HTTP request object.
-            response (Response): The outgoing HTTP response object.
-            next_middleware (Callable[..., Awaitable[None]]): A function representing the next middleware.
+            next_middleware (Callable[..., Awaitable[Response]]): A function representing the next middleware.
 
         Returns:
-            Optional[Response]: A `Response` object if `process_request` terminates the request early.
+            Response: The final HTTP response object.
         """
-        result = await self.process_request(request, response)
-        if result:
-            return result
-
-        await next_middleware()
-
+        await self.process_request(request, response,call_next)
+        
         await self.process_response(request, response)
+        
 
     async def process_request(
         self,
         request: Annotated[
             Request, Doc("The HTTP request object that needs to be processed.")
         ],
-        response: Annotated[
-            Response,
-            Doc("The HTTP response object that will be modified before returning."),
+        response:Annotated[
+                           Response,Doc("The HTTP response object that will be returned to the client.")],
+        call_next: Annotated[
+            typing.Callable[..., typing.Awaitable[Response]],
+            Doc("The next middleware or handler to call."),
         ],
     ) -> Annotated[
-        typing.Optional[Response],
-        Doc(
-            "If this method returns a Response, it stops the middleware chain, and the response is sent immediately. "
-            "Otherwise, it returns `None`, allowing the request to continue."
-        ),
+        Any,
+        Doc("The HTTP response object returned by the next middleware or handler."),
     ]:
         """
         Hook for processing an HTTP request before passing it forward.
 
         Override this method in subclasses to inspect, modify, or reject requests before
-        they reach the next middleware or the application logic.
+        they reach the next middleware or the application logic. The user can decide when
+        to call `next()` to proceed.
 
         Args:
             request (Request): The incoming HTTP request object.
-            response (Response): The outgoing HTTP response object.
+            next (Callable[..., Awaitable[Response]]): The next middleware or handler to call.
 
         Returns:
-            Optional[Response]: A `Response` object if the request cycle should be terminated early. Otherwise, `None`.
+            Response: The HTTP response object returned by the next middleware or handler.
         """
-        pass
+        return await call_next(request)
 
     async def process_response(
         self,
@@ -132,11 +117,8 @@ class BaseMiddleware:
             ),
         ],
     ) -> Annotated[
-        typing.Optional[Response],
-        Doc(
-            "If this method returns a Response, it replaces the existing response before reaching the client. "
-            "Otherwise, it returns `None`, allowing the response to be sent as is."
-        ),
+        Any,
+        Doc("The modified HTTP response object to be returned to the client."),
     ]:
         """
         Hook for processing an HTTP response before returning it to the client.
@@ -149,6 +131,7 @@ class BaseMiddleware:
             response (Response): The outgoing HTTP response object.
 
         Returns:
-            Optional[Response]: A modified `Response` object if the middleware needs to alter the final response.
+            Response: The modified HTTP response object.
         """
-        pass
+        # Default behavior: Return the response as is
+        return response

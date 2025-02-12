@@ -6,6 +6,7 @@ from typing_extensions import Annotated, Doc
 from .base import AuthenticationBackend, UnauthenticatedUser, BaseUser
 from nexios.middlewares.base import BaseMiddleware
 from nexios.http import Request, Response
+import typing
 
 
 class AuthenticationMiddleware(BaseMiddleware):
@@ -47,6 +48,7 @@ class AuthenticationMiddleware(BaseMiddleware):
                 "The HTTP response object, which may be modified during authentication."
             ),
         ],
+        call_next :  typing.Callable[..., typing.Awaitable[typing.Any]]
     ) -> None:
         """
         Processes an incoming request by authenticating the user.
@@ -73,3 +75,4 @@ class AuthenticationMiddleware(BaseMiddleware):
             request.user = UnauthenticatedUser()
 
         request.scope["user"] = user
+        await call_next()

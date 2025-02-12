@@ -3,12 +3,11 @@ from .signed_cookies import SignedSessionManager
 from .file import FileSessionManager
 from .base import BaseSessionInterface
 from nexios.http import Request,Response
-# from nexios.http.response import NexioResponse
 from nexios.config import get_config
 import warnings,typing
 class SessionMiddleware(BaseMiddleware):
 
-    async def process_request(self, request :Request, response :Response):
+    async def process_request(self, request :Request, response :Response,call_next:  typing.Callable[..., typing.Awaitable[typing.Any]]):
     
         self.config = get_config().session 
         if not self.config:
@@ -17,6 +16,7 @@ class SessionMiddleware(BaseMiddleware):
             "Set a secret_key to enable secure session handling.",
             RuntimeWarning
             )
+            await call_next()
             return
         if self.config:
             session_cookie_name = self.config.session_cookie_name
@@ -37,6 +37,7 @@ class SessionMiddleware(BaseMiddleware):
         session :typing.Type[BaseSessionInterface] = manager(session_key=request.cookies.get(session_cookie_name)) #type:ignore
         await session.load() #type: ignore
         request.scope['session'] = session
+        await call_next()
         
 
     async def process_response(self, request :Request , response :Response):

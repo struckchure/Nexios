@@ -21,19 +21,7 @@ class ErrorHandlerMiddleware(BaseMiddleware):
         self.error_status_code = 500
         self.error_message = "An unexpected error occurred"
 
-    async def process_request(self, request: Request, response: NexioResponse) -> None:
-        """
-        Process the request before passing it along to the next middleware.
-        We can add logging or any preprocessing before the request reaches the main handler.
-        """
-        pass
-
-    async def process_response(self, request: Request, response: NexioResponse) -> None:
-        """
-        Process the response after the request has been handled by the main application or other middleware.
-        This is where we can log success responses or handle any post-processing.
-        """
-        pass
+  
 
     async def __call__(self, request: Request, response: NexioResponse, next_middleware: typing.Callable[...,typing.Awaitable[None]]) -> NexioResponse:
         """

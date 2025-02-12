@@ -1,6 +1,7 @@
 from nexios import get_application, NexioApp
 from nexios.exceptions import HTTPException
 from nexios.http import Request, Response
+from nexios.http.response import Response
 from nexios.routing import Router, Routes, WSRouter
 from typing import Callable, Any
 from nexios.websockets import WebSocket
@@ -49,11 +50,11 @@ async def ws(ws: WebSocket):
 async def my_middleware(
     request: Request, response: Response, call_next: Callable[..., Any]
 ):
+    response.text("Hello")
     await call_next()
-    return response.text("Hello")
 
 
-test_router.add_middleware(my_middleware)
+app.add_middleware(my_middleware)
 app.add_route(Routes("", index))
 app.mount_router(test_router)
 app.mount_ws_router(ws_router)

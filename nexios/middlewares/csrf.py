@@ -28,15 +28,17 @@ class CSRFMiddleware(BaseMiddleware):
         self.cookie_samesite = app_config.csrf_cookie_samesite or "Lax"
         self.header_name = app_config.csrf_header_name or "X-CSRFToken"
 
-    async def process_request(self, request: Request, response: Response): 
+    async def process_request(self, request: Request, response: Response, call_next : typing.Callable[..., typing.Awaitable[typing.Any]]): 
         """
         Process the incoming request to validate the CSRF token for unsafe HTTP methods.
         """
 
         if not self.use_csrf:
+            await call_next()
             return
         csrf_cookie = request.cookies.get(self.cookie_name)
         if request.method.upper() in self.safe_methods:
+            await call_next()
             return
         if self._url_is_required(request.url.path) or (
             self._url_is_exempt(request.url.path)
@@ -52,6 +54,7 @@ class CSRFMiddleware(BaseMiddleware):
             if not self._csrf_tokens_match(csrf_cookie, submitted_csrf_token):
                 return response.send("CSRF token incorrect", status_code=403)
         response.set_cookie(self.cookie_name,value=None,expires=0)
+        await call_next()
 
     async def process_response(self, request: Request, response: Response):
         """

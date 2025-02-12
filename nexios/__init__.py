@@ -4,7 +4,7 @@ from .middlewares.common import CommonMiddleware
 from .middlewares.csrf import CSRFMiddleware
 from .config.base import MakeConfig
 from .config import set_config, DEFAULT_CONFIG  # type:ignore
-from .routing import Router  # type:ignore noqa :F401
+from .routing import Router  # type:ignore 
 from nexios.middlewares.errors.server_error_handler import ServerErrorMiddleware
 from .middlewares.cors import CORSMiddleware
 from .middlewares.base import BaseMiddleware  # type:ignore
