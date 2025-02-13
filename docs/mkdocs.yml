@@ -16,14 +16,14 @@ theme:
         name: Switch to light mode
     - media: '(prefers-color-scheme: light)'
       scheme: default
-      primary: "yellow"
+      primary: "deep-purple"
       accent: red
       toggle:
         icon: material/lightbulb
         name: Switch to dark mode
     - media: '(prefers-color-scheme: dark)'
       scheme: slate
-      primary: "yellow"
+      primary: "deep-purple"
       accent: red
       toggle:
         icon: material/lightbulb-outline
@@ -64,8 +64,9 @@ nav:
       - Response Object: core-features/response-object.md
       - Routing : core-features/routing.md
       - Middleware: core-features/middleware.md
+      - Exceptions: core-features/exceptions.md
       - WebSocket Support: core-features/websocket.md
-      - Validators: core-features/validators.md
+      - Validation: core-features/validator.md
   - Integrations:
       - Tortoise ORM: integrations/tortoise-orm.md
       - Redis: integrations/redis.md
