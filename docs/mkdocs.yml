@@ -58,7 +58,7 @@ nav:
       - Introduction: introduction.md
       - Installation: installation.md
       - Hello World: hello_world.md
-      - Basic Routing: routing.md
+      - Basic Routing: basic_routing.md
   - Core Features:
       - Request Object: core-features/request-object.md
       - Response Object: core-features/response-object.md
@@ -90,8 +90,6 @@ plugins:
   - search
   - minify:
       minify_html: true
-  - git-revision-date-localized:
-      enable: true
   - rss:
       match_path: blog/posts/.*
       date_from_meta:

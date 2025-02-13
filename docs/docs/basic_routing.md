@@ -1,16 +1,14 @@
 ## Basic routing
 
 ##### What is a Route?
-<div style="border: 2px solid orange; padding: 10px; background-color: #f4f4f4;">
 A route is like a map that tells your app what to do when someone visits a specific web address (like /users or /products). It listens for certain HTTP methods (like GET, POST) and then runs specific code (called handlers) to respond to the request.
 
-</div>
 
 
+---
 Routing is basically figuring out how your app responds when a client hits a specific endpoint, which is a URI (or path) paired with an HTTP method (like GET, POST, etc.).
 
 Each route can have one or more functions that handle the request, and these functions run when the route gets matched.
-
 
 Nexios provide many style for routing includid decorators,router etc.
 

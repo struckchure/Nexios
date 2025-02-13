@@ -5,7 +5,7 @@ Nexios provides built-in support for WebSockets through its `WebSocket` class an
 
 ---
 
-## 2. Basic WebSocket Endpoint
+## Basic WebSocket Endpoint
 
 A basic WebSocket endpoint in Nexios can be created using the `@app.websocket_route` decorator. Here’s an example:
 
@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
 ---
 
-## 3. Class-Based WebSocket Controller
+##  Class-Based WebSocket Controller
 
 For more complex applications, you can use **class-based controllers** to encapsulate WebSocket logic. This approach improves code organization and reusability.
 
@@ -88,7 +88,7 @@ app.add_ws_route(WebSocketController())
 
 ---
 
-## 4. Handling JSON Data
+## Handling JSON Data
 
 WebSockets often exchange JSON data for structured communication. Here’s how you can handle JSON messages in Nexios:
 
@@ -178,7 +178,7 @@ async def websocket_error_endpoint(websocket: WebSocket):
 
 ---
 
-## 7. Authentication and Authorization
+##  Authentication and Authorization
 
 You can implement authentication by validating tokens or credentials during the WebSocket handshake:
 
@@ -206,14 +206,97 @@ async def websocket_secure_endpoint(websocket: WebSocket):
 
 ```
 
+
+## WebSocket Router and Middleware in Nexios  
+
+### **WebSocket Router**  
+
+In **Nexios**, the `WebsocketRoutes` class helps manage multiple WebSocket endpoints efficiently. Instead of defining WebSocket routes directly on `app`, you can organize them using `WebsocketRoutes` and mount them to the app.
+
+#### **Example: Using WebSocket Router**
+```python
+from nexios.websockets import WebSocket, WebSocketDisconnect
+from nexios.routing import WSRouter
+
+ws_router = WSRouter()
+
+@ws_router.ws_route("/chat")
+async def chat_websocket(websocket: WebSocket):
+    """Handles WebSocket connections for chat."""
+    await websocket.accept()
+    try:
+        while True:
+            data = await websocket.receive_text()
+            await websocket.send_text(f"Chat Message: {data}")
+    except WebSocketDisconnect:
+        print("Chat client disconnected")
+
+@ws_router.ws_route("/notifications")
+async def notifications_websocket(websocket: WebSocket):
+    """Handles WebSocket connections for notifications."""
+    await websocket.accept()
+    try:
+        while True:
+            data = await websocket.receive_text()
+            await websocket.send_text(f"Notification received: {data}")
+    except WebSocketDisconnect:
+        print("Notification client disconnected")
+
+# Mount the WebSocket router to the main app
+app.mount_ws_router(ws_router)
+```
+
+### **Benefits of Using `WSRouter`**
+- **Organized Structure**: Groups multiple WebSocket endpoints together.
+- **Reusability**: Can be reused across different parts of the app.
+- **Easy Integration**: Mounted to the main app using `app.include_ws_router()`.
+
 ---
 
-## 9. Advanced Features
+### **WebSocket Middleware**
+Middleware in **Nexios** allows you to modify WebSocket requests **before** they reach the route handler. This is useful for **authentication, logging, or custom processing**.
 
-- **Binary Data**: Use `websocket.receive_bytes()` and `websocket.send_bytes()` for binary data.
-- **Ping/Pong**: Use `websocket.send_ping()` and `websocket.send_pong()` for keep-alive messages.
-- **Custom Headers**: Access headers during the WebSocket handshake.
+#### **Example: WebSocket Authentication Middleware**
+```python
+from nexios.websockets import WebSocket
+
+async def auth_check(websocket: WebSocket, call_next):
+"""Middleware to check authentication token in WebSocket connections."""
+    token = websocket.query_params.get("token")
+    if token != "valid-token":
+        await websocket.close(code=1008, reason="Unauthorized")
+        return
+    print("Client authenticated.")
+   await call_next()
+
+# Apply middleware to WebSocket routes
+app.add_ws_middleware(auth_check)
+```
+
+
+### **Combining Routers and Middleware**
+You can **combine routers and middleware** for a structured WebSocket setup:
+
+```python
+ws_router = WSRouter()
+
+@ws_router.ws_route("/secured-chat")
+async def secured_chat(websocket: WebSocket):
+    await websocket.accept()
+    while True:
+        data = await websocket.receive_text()
+        await websocket.send_text(f"Secure Chat: {data}")
+
+app.mount_ws_router(ws_router)
+app.add_ws_middleware(AuthMiddleware)  # Protect all WebSocket routes
+```
 
 ---
 
-This guide provides a detailed overview of WebSocket implementation in Nexios. Let me know if you need further clarification or additional examples!
+### **Summary**
+| Feature | Purpose | Example Use Case |
+|---------|---------|------------------|
+| **WebSocket Router (`WSRouter`)** | Groups multiple WebSocket endpoints | Chat, Notifications, Broadcasting |
+| **WebSocket Middleware (`WebSocketMiddleware`)** | Pre-processes WebSocket connections | Authentication, Logging, Custom Headers |
+
+This setup ensures **scalability, maintainability, and security** in real-time applications. Let me know if you need more details! 
