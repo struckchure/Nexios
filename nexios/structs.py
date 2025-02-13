@@ -109,8 +109,8 @@ class URL:
         return self.scheme in ("https", "wss")
     @property
     def params(self):
-        return 
-    
+        return
+
     @params.setter
     def params(self,value :str):
         return value
@@ -406,7 +406,7 @@ class QueryParams(ImmutableMultiDict[str, str]):
         class_name = self.__class__.__name__
         query_string = str(self)
         return f"{class_name}({query_string!r})"
-    
+
     def __call__(self, *args: Any, **kwds: Any) -> Dict[str,Any]:
         return self._dict
 
@@ -458,7 +458,7 @@ class Headers(typing.Mapping[str, str]):
             (key.decode("latin-1"), value.decode("latin-1"))
             for key, value in self._list
         ]
-   
+
 
     def getlist(self, key: str) -> typing.List[str]:
         get_header_key = key.lower().encode("latin-1")
@@ -502,7 +502,7 @@ class Headers(typing.Mapping[str, str]):
         if len(as_dict) == len(self):
             return f"{class_name}({as_dict!r})"
         return f"{class_name}(raw={self.raw!r})"
-   
+
 
 
 class MutableHeaders(Headers):
@@ -620,9 +620,9 @@ class State:
 
 
 
-    
 
-    
+
+
 
 from typing import Any, Dict, Iterator, ItemsView, KeysView, ValuesView
 
@@ -673,13 +673,13 @@ class RouteParam:
     def __len__(self) -> int:
         """Return the number of items in the dictionary."""
         return len(self.data)
-    
+
     def __call__(self, *args: Any, **kwds: Any) ->  Dict[str, Any]:
         return self.data
 
-    
+
 class UploadedFile:
-    
+
     """
     An uploaded file included as part of the request data.
     """
@@ -743,7 +743,7 @@ class UploadedFile:
 
 
 class FormData(ImmutableMultiDict[str, typing.Union[UploadedFile, str]]):
-    
+
     def __init__(
         self,
         *args: FormData | typing.Mapping[str, str | UploadedFile] | list[tuple[str, str | UploadedFile]],
@@ -755,6 +755,3 @@ class FormData(ImmutableMultiDict[str, typing.Union[UploadedFile, str]]):
         for _, value in self.multi_items():
             if isinstance(value, UploadedFile):
                 await value.close()
-
-
-

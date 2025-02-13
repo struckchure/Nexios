@@ -20,7 +20,7 @@ async def wrap_app_handling_exceptions(request :Request, response :Response, cal
     
 
     try:
-        await call_next()
+        await call_next() 
     except Exception as exc:
         handler :typing.Any[ExceptionHandlerType,None]= None #type: ignore
 

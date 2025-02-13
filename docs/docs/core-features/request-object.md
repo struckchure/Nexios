@@ -115,10 +115,10 @@ This method asynchronously yields chunks of the request body. It is useful for h
 ```py
 @app.post("/endpoint")
 async def route_handler(req, res):
-  
+
     # Start streaming the request body
     chunked_data = []
-    
+
     async for chunk in await request.stream():
         # Collecting chunks to simulate processing
         chunked_data.append(chunk.decode())
@@ -163,7 +163,7 @@ async def route_handler(request, response):
     print(request.cookies.items()) #return a key value tuple in a list [(key,value),(key,value)]
 ```
 
-## method 
+## method
 The method attribute provides the HTTP method used for the request. This is typically one of the standard HTTP methods such as GET, POST, PUT, DELETE, PATCH, HEAD, or OPTIONS.
 
 ```py

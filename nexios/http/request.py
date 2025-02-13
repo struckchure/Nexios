@@ -72,7 +72,7 @@ class HTTPConnection:
         assert scope["type"] in ("http", "websocket")
         self.scope = scope
 
-   
+
     __eq__ = object.__eq__
     __hash__ = object.__hash__
 
@@ -139,9 +139,9 @@ class HTTPConnection:
             return Address(*host_port)
         return None
 
-  
-   
-   
+
+
+
 
     @property
     def state(self) -> State:
@@ -153,17 +153,17 @@ class HTTPConnection:
             self._state = State(self.scope["state"])
         return self._state
 
-    
-    
+
+
     @property
     def origin(self):
         return self.headers.get("origin")
-    
+
     @property
     def user_agent(self) -> str:
         """Returns the User-Agent header if available."""
         return self.headers.get("user-agent", "")
-    
+
     def build_absolute_uri(self, path: str = "", query_params: dict[str, str] | None = None) -> str:
         """
         Builds an absolute URI using the base URL and the provided path.
@@ -173,17 +173,17 @@ class HTTPConnection:
         :return: A fully constructed absolute URI as a string.
         """
         base_url = str(self.base_url).rstrip("/")
-        
+
         if path.startswith("/"):
             uri = f"{base_url}{path}"
         else:
             uri = f"{base_url}/{path}"
-        
+
         if query_params:
             from urllib.parse import urlencode
             query_string = urlencode(query_params)
             uri = f"{uri}?{query_string}"
-        
+
         return uri
 
 
@@ -251,7 +251,7 @@ class Request(HTTPConnection):
 
     @property
     async def json(self) -> JSONType:
-     
+
         if not hasattr(self, "_json"):
             _body = await self.body()
             try:
@@ -321,8 +321,8 @@ class Request(HTTPConnection):
                     raw_headers.append((name.encode("latin-1"), value.encode("latin-1")))
             await self._send({"type": "http.response.push", "path": path, "headers": raw_headers})
 
-   
-    
+
+
     @property
     async def files(self) -> typing.Dict[str, typing.Any]:
         """
@@ -338,25 +338,25 @@ class Request(HTTPConnection):
             elif hasattr(value, 'filename'):
                 files_dict[key] = value
         return files_dict  #type: ignore
-    
+
     async def text(self) -> str:
         """
         Returns the body of the request as a string.
         """
-        
+
         body = await self.body()
         return body.decode()
-    
+
     def valid(self) -> bool:
         """
         Checks if the request is valid by ensuring the method and headers are properly set.
         """
         return self.method in {"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"} and bool(self.headers)
-    
+
     @property
     def session(self):
         return self.scope['session']
-    
+
     @property
     def user(self):
         return self.scope['user']

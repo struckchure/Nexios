@@ -10,24 +10,24 @@ theme:
   favicon: logo.png
   logo: logo.png
   palette:
-  - media: "(prefers-color-scheme)"
-    toggle:
-      icon: material/lightbulb-auto
-      name: Switch to light mode
-  - media: '(prefers-color-scheme: light)'
-    scheme: indigo
-    primary: Indigo
-    accent: '#915c83'
-    toggle:
-      icon: material/lightbulb
-      name: Switch to dark mode
-  - media: '(prefers-color-scheme: dark)'
-    scheme: slate
-    primary: Indigo
-    accent: "#915c83"
-    toggle:
-      icon: material/lightbulb-outline
-      name: Switch to system preference
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/lightbulb-auto
+        name: Switch to light mode
+    - media: '(prefers-color-scheme: light)'
+      scheme: default
+      primary: "yellow"
+      accent: red
+      toggle:
+        icon: material/lightbulb
+        name: Switch to dark mode
+    - media: '(prefers-color-scheme: dark)'
+      scheme: slate
+      primary: "yellow"
+      accent: red
+      toggle:
+        icon: material/lightbulb-outline
+        name: Switch to system preference
   features:
   - content.code.annotate
   - content.code.copy
@@ -92,7 +92,7 @@ plugins:
   - git-revision-date-localized:
       enable: true
   - rss:
-      match_path: blog/posts/.* 
+      match_path: blog/posts/.*
       date_from_meta:
         as_creation: date
       categories:

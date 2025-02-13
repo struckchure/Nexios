@@ -176,7 +176,7 @@ With **Tortoise ORM**, you can perform database operations asynchronously, impro
 
 ---
 
-## 
+##
 
 With **Nexios**, you can easily build high-performance, real-time web applications that scale efficiently. The integration of **middleware**, **session management**, **Tortoise ORM**, **WebSockets**, and background task processing makes **Nexios** the perfect choice for developers looking for an ASGI-based framework to handle complex, asynchronous workflows.
 
@@ -184,7 +184,7 @@ From asynchronous routing and template rendering to full WebSocket support and p
 
 Ready to take your web development to the next level? **Nexios** is here to supercharge your development process and make your applications faster, more scalable, and real-time ready. Let's build the future together!
 
---- 
+---
 
 ### 11. Validator Support
 
@@ -204,14 +204,14 @@ class TaskValidator(Validator):
 @app.route("/task", methods=["POST"])
 async def create_task(req, res):
     task_data = await req.json()
-    
+
     # Validate the incoming data using Nexios.Validator
     validator = TaskValidator()
     result = validator.validate(task_data)
-    
+
     if result.errors:
         return res.json({"errors": result.errors}, status=400)
-    
+
     # Data is valid, proceed with task creation
     task = await Task.create(**task_data)
     return res.json({"task_id": task.id})

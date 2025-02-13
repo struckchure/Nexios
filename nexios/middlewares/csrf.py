@@ -16,7 +16,7 @@ class CSRFMiddleware(BaseMiddleware):
         if not self.use_csrf:
             return
         self.serializer = URLSafeSerializer(app_config.secret_key, "csrftoken")   #type:ignore
-        self.required_urls :typing.List[str]= app_config.csrf_required_urls or [] 
+        self.required_urls :typing.List[str]= app_config.csrf_required_urls or []
         self.exempt_urls = app_config.csrf_exempt_urls
         self.sensitive_cookies = app_config.csrf_sensitive_cookies
         self.safe_methods = app_config.csrf_safe_methods or {"GET", "HEAD", "OPTIONS", "TRACE"}
@@ -28,7 +28,7 @@ class CSRFMiddleware(BaseMiddleware):
         self.cookie_samesite = app_config.csrf_cookie_samesite or "Lax"
         self.header_name = app_config.csrf_header_name or "X-CSRFToken"
 
-    async def process_request(self, request: Request, response: Response, call_next : typing.Callable[..., typing.Awaitable[typing.Any]]): 
+    async def process_request(self, request: Request, response: Response, call_next : typing.Callable[..., typing.Awaitable[typing.Any]]):
         """
         Process the incoming request to validate the CSRF token for unsafe HTTP methods.
         """
@@ -63,7 +63,7 @@ class CSRFMiddleware(BaseMiddleware):
         if not self.use_csrf:
             return
         csrf_token = self._generate_csrf_token()
-        
+
         response.set_cookie(
             key=self.cookie_name,
             value=csrf_token,
@@ -88,7 +88,7 @@ class CSRFMiddleware(BaseMiddleware):
 
         if not self.required_urls:
             return False
-        
+
         if "*" in self.required_urls:
             return True
         for required_url in self.required_urls:

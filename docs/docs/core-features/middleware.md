@@ -116,10 +116,10 @@ Here’s an example of a middleware that adds a custom header to the response:
 @app.use
 async def add_header_middleware(request,response, call_next):
     response = await call_next()
-    
+
     # Modify the response by adding a custom header
     response.headers["X-Custom-Header"] = "Modified by Middleware"
-    
+
     return response
 ```
 
@@ -133,10 +133,10 @@ Here’s an example of a middleware that logs the response status code:
 async def log_status_middleware(request,response, call_next):
     # Proceed to the next middleware or handler
     response = await call_next()
-    
+
     # Log the response status code
     print(f"Response Status: {response.status_code}")
-    
+
     return response
 ```
 

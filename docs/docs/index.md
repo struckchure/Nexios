@@ -4,7 +4,7 @@
     <img src="./nexiohero.png" alt="Nexios" class="w-full max-w-full">
     <h1 style="margin: 10px 0; font-size: 42px;">Nexios Framework</h1>
     <p style="font-size: 18px;">High-performance, easy to learn, and built for modern web applications.</p>
-    <a href="/introduction" 
+    <a href="/introduction"
        style="mt-5" class="btn btn-primary bg-red-600 px-2 py-1 rounded-md text-white no-underline decoration-none">
         Get Started
     </a>
@@ -51,37 +51,35 @@
     </a>
 </div>
 
- 
+
 ##Create and activate a virtual environment, then install Nexios.
 1. Create and Activate a Virtual Environment
 
-Before installing Nexios, it's recommended to use a virtual environment to keep dependencies isolated.  
+Before installing Nexios, it's recommended to use a virtual environment to keep dependencies isolated.
 
-### On Windows (CMD or PowerShell):  
+### On Windows (CMD or PowerShell):
 ```sh
 python -m venv venv
 venv\Scripts\activate
 ```
 
-### On macOS/Linux (Terminal):  
+### On macOS/Linux (Terminal):
 ```sh
 python3 -m venv venv
 source venv/bin/activate
 ```
 
-2. Install Nexios  
+2. Install Nexios
 
-Once the virtual environment is active, install Nexios using pip:  
+Once the virtual environment is active, install Nexios using pip:
 ```sh
 pip install nexios
 ```
 
-3. Verify Installation  
+3. Verify Installation
 
-Check if Nexios is installed correctly by running:  
+Check if Nexios is installed correctly by running:
 ```sh
 nexios
 ```
 if nexios is installed the current version will be displayed
-
-

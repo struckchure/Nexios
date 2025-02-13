@@ -17,7 +17,7 @@ def nexios():
 @click.option('--setup-db', is_flag=True, help='Set up a database for the project')
 def init(name, full, extras, setup_db):
     """🎉 Initialize a new Nexios project."""
-    
+
     # Step 1: Create project directory
     project_dir = os.path.abspath(name)
     if not os.path.exists(project_dir):
@@ -25,9 +25,9 @@ def init(name, full, extras, setup_db):
         click.secho(f"📂 Created project directory: {project_dir}", fg="green")
     else:
         click.secho("⚠️ Directory already exists. Using the existing one.", fg="red")
-    
+
     requirements_path = os.path.join(project_dir, "requirements.txt")
-    
+
     with open(requirements_path, 'w') as f:
         f.write("nexios\n")
         if setup_db:
@@ -37,7 +37,7 @@ def init(name, full, extras, setup_db):
         if extras:
             extra_packages = [pkg.strip() for pkg in extras.split(",")]
             f.write("\n".join(extra_packages))
-    
+
     click.secho("📄 Created requirements.txt with dependencies:", fg="cyan")
     click.secho("- nexios", fg="green")
     if setup_db:
@@ -46,12 +46,12 @@ def init(name, full, extras, setup_db):
         click.secho("- nexios[full]", fg="green")
     if extras:
         click.secho(f"- {extras.replace(',', ', ')}", fg="green")
-    
-   
-    
+
+
+
     controllers_dir = os.path.join(project_dir, "controllers")
     os.makedirs(controllers_dir, exist_ok=True)
-    
+
     demo_controller_path = os.path.join(controllers_dir, "demo_controller.py")
     demo_init_path = os.path.join(controllers_dir, "__init__.py")
 
@@ -62,7 +62,7 @@ def init(name, full, extras, setup_db):
     with open(demo_init_path, 'w') as f:
         f.write("""from .demo_controller import index""")
     click.secho(f"📝 Created demo controller at: {demo_controller_path}", fg="magenta")
-    
+
     if setup_db:
         setup_database(project_dir)
 
@@ -71,31 +71,31 @@ def init(name, full, extras, setup_db):
         with open(config_path, 'w') as f:
             with  open(os.path.join(os.path.dirname(__file__),"templates/config.py")) as db_config:
                 f.write(db_config.read())
-               
-    
 
-        
+
+
+
     main_dir = os.path.join(project_dir, "main.py")
     with open(main_dir, 'w') as f:
         with open(os.path.join(os.path.dirname(__file__),"templates/main.py")) as db_config:
             f.write(db_config.read())
-               
+
     click.secho(f"🎉 Nexios project '{name}' has been initialized successfully!", fg="green", bold=True)
     click.secho("🚀 Get started by navigating to your project directory!", fg="cyan", bold=True)
 
 def setup_database(project_dir):
     """Set up a database configuration file."""
-    
+
     db_type = click.prompt(
-        "🗄️ Choose a database type", 
+        "🗄️ Choose a database type",
         type=click.Choice(['sqlite3', 'postgresql', 'mysql'], case_sensitive=False),
         default='sqlite3'
     )
-    
+
     db_name = click.prompt("📂 Enter the database name", default="db.sqlite3" if db_type == 'sqlite3' else "nexios_db")
     db_user = db_password = db_host = db_port = None
     db_driver = None  #
-    
+
     if db_type in ['postgresql', 'mysql']:
         db_user = click.prompt(f"👤 Enter the {db_type} username", default="postgres" if db_type == 'postgresql' else "root")
         db_password = click.prompt(f"🔑 Enter the {db_type} password", hide_input=True, default="password")
@@ -103,14 +103,14 @@ def setup_database(project_dir):
         db_port = click.prompt(f"📟 Enter the database port", default="5432" if db_type == 'postgresql' else "3306")
         db_driver = "asyncpg" if db_type == "postgresql" else "aiomysql"
     else:
-        db_driver = "sqlite3"  
-    
+        db_driver = "sqlite3"
+
     requirements_path = os.path.join(project_dir, "requirements.txt")
     with open(requirements_path, 'a') as f:
         if db_driver and db_driver != "sqlite3":
             f.write(f"\n{db_driver}")
             click.secho(f"📦 Added {db_driver} to requirements.txt", fg="green")
-    
+
     config_path = os.path.join(project_dir, "config.py")
     with open(config_path, 'w') as f:
         if db_type == 'sqlite3':
@@ -155,10 +155,10 @@ def run(host, port, reload):
 
         # sys.exit(1)
     command = ["uvicorn", app_file.replace(".py", ":app"), "--host", host, "--port", str(port)]
-    
+
     if reload:
         command.append("--reload")
-    
+
     os.system(" ".join(command))
 @nexios.command()
 @click.option('--host', default='127.0.0.1', help='Host to run the server on')

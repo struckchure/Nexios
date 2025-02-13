@@ -67,9 +67,9 @@ class BaseMiddleware:
             Response: The final HTTP response object.
         """
         await self.process_request(request, response,call_next)
-        
+
         await self.process_response(request, response)
-        
+
 
     async def process_request(
         self,

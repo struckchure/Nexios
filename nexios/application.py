@@ -239,7 +239,7 @@ class NexioApp:
         request: Request,
         response: NexioResponse,
         handler: Optional[HandlerType] = None,# type: ignore
-    ) -> Any:  
+    ) -> Any:
         """Execute middleware stack including the handler as the last 'middleware'."""
 
         async def default_handler(req: Request, res: NexioResponse):
@@ -262,7 +262,7 @@ class NexioApp:
 
             if index < len(stack):
                 middleware = stack[index]
-              
+
                 if index == len(stack) - 1:
                     await middleware(request, response)  # type:ignore
                 else:

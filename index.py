@@ -6,6 +6,11 @@ from nexios.routing import Router, Routes, WSRouter
 from typing import Callable, Any
 from nexios.websockets import WebSocket
 from nexios.hooks import before_request
+from nexios.testing.transport import NexiosAsyncTransport
+from nexios.testing.client import Client
+import httpx
+import asyncio
+import pytest
 
 test_router = Router()
 
@@ -20,12 +25,17 @@ class NotFound(HTTPException):
 
 app: NexioApp = get_application()
 
+import httpx
+import asyncio
+
+
 
 async def handler_not_found(request: Request, response: Response, exc: Exception):
+    print(request.path)
     return response.json({"ERROR": "not found"})
 
 
-app.add_exception_handler(ValueError, handler_not_found)
+app.add_exception_handler(404, handler_not_found)
 
 
 async def my_jook(request: Request, response: Response) -> Any:
@@ -58,3 +68,12 @@ app.add_middleware(my_middleware)
 app.add_route(Routes("", index))
 app.mount_router(test_router)
 app.mount_ws_router(ws_router)
+
+@pytest.mark.asyncio
+async def test_index():
+    async with Client(app=app,base_url="http://test") as client:
+        response = await client.get("")
+        assert response.status_code == 200
+        assert response.json() == {"text": "Helloo world"}
+
+# asyncio.run(main())
