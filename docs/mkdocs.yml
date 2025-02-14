@@ -70,24 +70,8 @@ nav:
       - WebSocket Support: core-features/websocket.md
       - Validation: core-features/validator.md
       - Session: core-features/session.md
-  - Integrations:
-      - Tortoise ORM: integrations/tortoise-orm.md
-      - Redis: integrations/redis.md
-      - Celery: integrations/celery.md
-  - Tutorials:
-      - Basic Application: tutorials/basic-app.md
-      - Real-Time Chat with WebSockets: tutorials/realtime-chat.md
-      - REST API with ORM: tutorials/rest-api.md
-      - Authentication System: tutorials/authentication.md
-  - API Reference:
-      - Nexios API: api-reference/nexios.md
-      - Middleware API: api-reference/middleware.md
-      - Router API: api-reference/router.md
-  - Advanced Guides:
-      - Custom Middleware: advanced/custom-middleware.md
-      - Extending the Router: advanced/extending-router.md
-      - Writing Custom Validators: advanced/custom-validators.md
-
+  
+ 
 # Plugins
 plugins:
   - search
