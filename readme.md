@@ -24,7 +24,7 @@ Think **FastAPI meets Express.js** but with its own **swagger**! 🎩 Nexios is 
 
 ## 🛠 Installation  
 ```bash
-pip install nexios-api
+pip install nexios
 ```
 
 ## 🚀 Quick Start  
