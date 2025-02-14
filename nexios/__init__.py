@@ -9,7 +9,7 @@ from nexios.middlewares.errors.server_error_handler import ServerErrorMiddleware
 from .middlewares.cors import CORSMiddleware
 from .middlewares.base import BaseMiddleware  # type:ignore
 from typing import Sequence, Optional
-from .application import NexioApp  # type:ignore
+from .application import NexiosApp  # type:ignore
 from .types import MiddlewareType, ExceptionHandlerType
 from typing_extensions import Doc, Annotated  # type:ignore
 
