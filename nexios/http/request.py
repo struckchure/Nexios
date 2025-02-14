@@ -359,7 +359,7 @@ class Request(HTTPConnection):
 
     @property
     def user(self):
-        return self.scope['user']
+        return self.scope.get("user",None)
     @user.setter
     def user(self, value):
         self._user = value 

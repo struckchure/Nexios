@@ -101,10 +101,10 @@ class Routes:
         self.raw_path = path
         self.handler = handler
         self.methods = methods or  allowed_methods_default
-        route_info  = RouteBuilder.create_pattern(path)
-        self.pattern :Pattern[str] = route_info.pattern
-        self.param_names = route_info.param_names
-        self.route_type = route_info.route_type
+        self.route_info  = RouteBuilder.create_pattern(path)
+        self.pattern :Pattern[str] = self.route_info.pattern
+        self.param_names = self.route_info.param_names
+        self.route_type = self.route_info.route_type
         self.router_middleware = None
     
     def match(self, path: str) ->Dict[str,Any] | None:
@@ -154,7 +154,8 @@ class Router(BaseRouter):
             app.add_route(route)
             ```
         """
-        self.routes.append(route)
+        _route = Routes(f"{self.prefix}{route.raw_path}",handler=route.handler,methods=route.methods,validator=route.validator)
+        self.routes.append(_route)
     
     def add_middleware(self, middleware: MiddlewareType) -> None:
         """Add middleware to the router"""
@@ -430,7 +431,7 @@ class Router(BaseRouter):
         """
         def decorator(handler: HandlerType) -> HandlerType: #type: ignore
             _handler:HandlerType = allowed_methods(methods)(handler)  
-            route = Routes(path, _handler, methods=methods, validator=validator)
+            route = Routes(f"{path}", _handler, methods=methods, validator=validator)
             self.add_route(route)
             return _handler  
         return decorator  
@@ -453,10 +454,10 @@ class WebsocketRoutes:
         self.raw_path = path
         self.handler:WsHandlerType = handler
         self.middleware :WsMiddlewareType | None = middleware
-        route_info = RouteBuilder.create_pattern(path)
-        self.pattern = route_info.pattern
-        self.param_names = route_info.param_names
-        self.route_type = route_info.route_type
+        self.route_info = RouteBuilder.create_pattern(path)
+        self.pattern = self.route_info.pattern
+        self.param_names = self.route_info.param_names
+        self.route_type = self.route_info.route_type
         self.router_middleware = None
     
     def match(self, path: str) -> Optional[Dict[str,Any]]:
