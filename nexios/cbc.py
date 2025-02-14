@@ -25,7 +25,7 @@ class APIHandler:
 
     async def __call__(
         self, request: request.Request, response: response.NexioResponse
-    ) -> Any[HandlerType]:
+    ) -> Any:
         method = request.method.lower()
         handler: HandlerType | None = getattr(self, method, None)
         if not callable(handler):

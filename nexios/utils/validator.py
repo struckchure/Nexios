@@ -1,4 +1,4 @@
-from nexios.validator import ValidationError, Schema
+from nexios.validator import ValidationError, Schema #type:ignore
 from functools import wraps
 from typing import Callable, Any, Optional, Awaitable
 from typing_extensions import Annotated

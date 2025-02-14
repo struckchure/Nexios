@@ -429,10 +429,10 @@ class Router(BaseRouter):
             ```
         """
         def decorator(handler: HandlerType) -> HandlerType: #type: ignore
-            handler:HandlerType = allowed_methods(methods)(handler)  
-            route = Routes(path, handler, methods=methods, validator=validator)
+            _handler:HandlerType = allowed_methods(methods)(handler)  
+            route = Routes(path, _handler, methods=methods, validator=validator)
             self.add_route(route)
-            return handler  
+            return _handler  
         return decorator  
     
     def __repr__(self) -> str:

@@ -69,7 +69,7 @@ class AuthenticationMiddleware(BaseMiddleware):
         if not inspect.iscoroutinefunction(self.backend.authenticate):
             user: BaseUser = self.backend.authenticate(request, response)  # type:ignore
         else:
-            user: BaseUser = await self.backend.authenticate(request, response)
+            user: BaseUser = await self.backend.authenticate(request, response)  # type:ignore
 
         if user is None:  # type:ignore
             request.user = UnauthenticatedUser()

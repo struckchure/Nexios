@@ -346,11 +346,11 @@ class NexiosApp:
         """
 
         def decorator(handler: HandlerType) -> HandlerType:  # type: ignore
-            handler: HandlerType = allowed_methods(methods)(
+            _handler: HandlerType = allowed_methods(methods)(
                 handler
             )  # type :ignore[no-reder]
-            self.add_route(Routes(path, handler, methods=methods, validator=validator))
-            return handler
+            self.add_route(Routes(path, _handler, methods=methods, validator=validator))
+            return _handler
 
         return decorator
 
