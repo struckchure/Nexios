@@ -9,3 +9,4 @@ index.py
 dist/
 .env
 .mypy_cache/
+docs/site

@@ -7,8 +7,7 @@ def nexios():
     pass
 
 
-@nexios.command()
-@click.option('--name', prompt='📂 Enter the project name', help='Name of the Nexios project')
+
 
 @nexios.command()
 @click.option('--name', prompt='📂 Enter the project name', help='Name of the Nexios project')
