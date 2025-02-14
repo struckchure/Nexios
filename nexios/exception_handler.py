@@ -32,7 +32,7 @@ async def wrap_app_handling_exceptions(request :Request, response :Response, cal
             if not handler:
                 raise exc
             return  await handler(request,response,exc)
-
+        raise
        
 
 

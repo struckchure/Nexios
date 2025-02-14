@@ -360,3 +360,6 @@ class Request(HTTPConnection):
     @property
     def user(self):
         return self.scope['user']
+    @user.setter
+    def user(self, value):
+        self._user = value 
