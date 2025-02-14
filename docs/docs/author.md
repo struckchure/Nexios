@@ -49,7 +49,7 @@ Hi, I'm **Dunamis**, a passionate developer from Nigeria specializing in **Pytho
 Install Nexio with pip:  
 
 ```bash
-pip install nexio
+pip install nexio-api
 ```
 
 Create a new project in seconds:  

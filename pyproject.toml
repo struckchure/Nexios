@@ -1,4 +1,5 @@
 [build-system]
+
 requires = ['setuptools>=42']
 build-backend = 'setuptools.build_meta'
 
@@ -8,8 +9,8 @@ include-package-data = true
 package-data = {"nexios" = ["*.py"]}
 
 [tool.poetry]
-name = "nexios"
-version = "1.0.4"
+name = "nexios-api"
+version = "0.1.0"
 description = "Nexio is a modern, high-performance ASGI web framework for Python."
 authors = ["Chidebele Dunamis <techwithdunamix@example.com>"]
 license = "MIT"

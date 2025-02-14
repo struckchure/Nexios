@@ -43,7 +43,7 @@ Once activated, you can install project-specific dependencies, and they will be 
 Run the follow command to install nexios
 
 ```bash
-pip install nexios
+pip install nexios-api
 ```
 
 Confirm the installation by running :

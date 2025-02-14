@@ -74,7 +74,7 @@ source venv/bin/activate
 
 Once the virtual environment is active, install Nexios using pip:
 ```sh
-pip install nexios
+pip install nexios-api
 ```
 
 3. Verify Installation
