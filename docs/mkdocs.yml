@@ -58,6 +58,8 @@ nav:
       - Introduction: introduction.md
       - Installation: installation.md
       - Hello World: hello_world.md
+      - application: application.md
+      - configuration: configs.md
       - Basic Routing: basic_routing.md
   - Core Features:
       - Request Object: core-features/request-object.md

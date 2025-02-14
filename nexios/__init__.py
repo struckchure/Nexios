@@ -1,4 +1,4 @@
-from .application import NexioApp
+from .application import NexiosApp
 from .sessions.middleware import SessionMiddleware
 from .middlewares.common import CommonMiddleware
 from .middlewares.csrf import CSRFMiddleware
@@ -40,7 +40,7 @@ def get_application(
                         A function in Nexios responsible for handling server-side exceptions by logging errors, reporting issues, or initiating recovery mechanisms. It prevents crashes by intercepting unexpected failures, ensuring the application remains stable and operational. This function provides a structured approach to error management, allowing developers to define custom handling strategies such as retrying failed requests, sending alerts, or gracefully degrading functionality. By centralizing error processing, it improves maintainability and observability, making debugging and monitoring more efficient. Additionally, it ensures that critical failures do not disrupt the entire system, allowing services to continue running while appropriately managing faults and failures."""
         ),
     ] = None,
-) -> NexioApp:
+) -> NexiosApp:
     """
     Initializes and returns a `Nexios` application instance, serving as the core entry point for building web applications.
 
@@ -67,7 +67,7 @@ def get_application(
 
     set_config(config)
 
-    app = NexioApp(
+    app = NexiosApp(
         middlewares=[
             ServerErrorMiddleware(handler=server_error_handler),
             CommonMiddleware(),

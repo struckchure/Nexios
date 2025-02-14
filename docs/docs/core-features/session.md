@@ -136,7 +136,11 @@ class RedisSession(BaseSessionInterface):
         return self.redis_client.get(self.session_key)
 
 
-app.set_session_backend(RedisSession)
+config = MakeConfig({
+    "session":{
+        "backend" : RedisSession()
+    }
+})
 ```
 
 ---

@@ -33,7 +33,7 @@ class SessionMiddleware(BaseMiddleware):
         else:
             manager_config  = "cookies"
 
-        manager :BaseSessionInterface = managers.get(manager_config,SignedSessionManager)
+        manager :BaseSessionInterface = self.config.manager or managers.get(manager_config,SignedSessionManager)
         session :typing.Type[BaseSessionInterface] = manager(session_key=request.cookies.get(session_cookie_name)) #type:ignore
         await session.load() #type: ignore
         request.scope['session'] = session

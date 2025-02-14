@@ -26,7 +26,7 @@ allowed_methods_default = ["get", "post", "delete", "put", "patch", "options"]
 
 from typing import Dict, Any
 
-AppType = typing.TypeVar("AppType", bound="NexioApp")
+AppType = typing.TypeVar("AppType", bound="NexiosApp")
 
 
 def validate_params(
@@ -54,7 +54,7 @@ def validate_params(
     return True, []
 
 
-class NexioApp:
+class NexiosApp:
     def __init__(
         self,
         config: Annotated[
@@ -838,3 +838,6 @@ class NexioApp:
         handler: HandlerType,
     ) -> None:
         self.exceptions_handler.add_exception_handler(exc_class_or_status_code, handler)
+        
+        
+        
