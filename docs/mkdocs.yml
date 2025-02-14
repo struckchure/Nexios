@@ -67,6 +67,7 @@ nav:
       - Exceptions: core-features/exceptions.md
       - WebSocket Support: core-features/websocket.md
       - Validation: core-features/validator.md
+      - Session: core-features/session.md
   - Integrations:
       - Tortoise ORM: integrations/tortoise-orm.md
       - Redis: integrations/redis.md

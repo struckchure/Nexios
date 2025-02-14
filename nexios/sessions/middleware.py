@@ -8,14 +8,14 @@ import warnings,typing
 class SessionMiddleware(BaseMiddleware):
 
     async def process_request(self, request :Request, response :Response,call_next:  typing.Callable[..., typing.Awaitable[typing.Any]]):
-
+        self.secret = get_config().secret_key
+        
+        if not self.secret:
+            warnings.warn("`secret_key` is not set, `secret_key`  is required to use session",RuntimeWarning)
+            return await call_next()
         self.config = get_config().session
         if not self.config:
-            warnings.warn(
-            " Warning: secret_key is not set! Sessions will not be used. "
-            "Set a secret_key to enable secure session handling.",
-            RuntimeWarning
-            )
+            warnings.warn("`Config for session not provided",RuntimeWarning)       
             await call_next()
             return
         if self.config:
@@ -41,7 +41,10 @@ class SessionMiddleware(BaseMiddleware):
 
 
     async def process_response(self, request :Request , response :Response):
+        if not self.secret:
+            warnings.warn("`secret_key` is not set, `secret_key`  is required to use session",RuntimeWarning)
         if not self.config:
+            warnings.warn("`Config for session not provided",RuntimeWarning)       
             return
         if request.session.is_empty() and request.session.accessed:
             response.delete_cookie(

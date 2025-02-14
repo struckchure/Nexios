@@ -34,7 +34,6 @@ class FileSessionManager(BaseSessionInterface):
         """Set a session value."""
         self.modified = True
         self._session_cache[key] = value
-        self._save_session_data()
 
     def get_session(self, key: str) -> Optional[str]:
         """Get a session value."""
