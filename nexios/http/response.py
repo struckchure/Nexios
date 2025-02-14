@@ -608,6 +608,9 @@ class NexioResponse:
         self._status_code = 200 if scope['method'].lower() == "options" else self._status_code
         response = self._get_base_response()
         await response(scope, receive, send)
+        
+    def __str__(self):
+        return f"Response [{self._status_code} {self._body}]"
 
 
 

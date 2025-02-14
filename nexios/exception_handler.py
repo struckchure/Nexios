@@ -31,8 +31,9 @@ async def wrap_app_handling_exceptions(request :Request, response :Response, cal
             handler = _lookup_exception_handler(exception_handlers, exc)
             if not handler:
                 raise exc
+            raise
             return  await handler(request,response,exc)
-        raise
+        raise exc
        
 
 

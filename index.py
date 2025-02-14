@@ -1,5 +1,5 @@
 #type:ignore
-from nexios import get_application
+from nexios import get_application,Router
 from nexios.validator import Schema, fields, validate
 from nexios.utils.validator import validate_request,ValidationError
 app = get_application()
@@ -15,8 +15,11 @@ class UserSchema(Schema):
     id = fields.Int(dump_only=True)
     name = fields.Str(required=True)
     email = fields.Email(required=True)
-
-@app.post("/users")
-@validate_request(UserSchema())
+a = Router()
+@a.get("/users")
+@app.get("/user")
+# @validate_request(UserSchema())
 async def create_user(request, response) -> None:
     return response.json({"text":"hello world"})
+
+app.mount_router(a)

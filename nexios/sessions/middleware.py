@@ -10,10 +10,10 @@ class SessionMiddleware(BaseMiddleware):
     async def process_request(self, request :Request, response :Response,call_next:  typing.Callable[..., typing.Awaitable[typing.Any]]):
         self.secret = get_config().secret_key
         
+        self.config = get_config().session
         if not self.secret:
             warnings.warn("`secret_key` is not set, `secret_key`  is required to use session",RuntimeWarning)
             return await call_next()
-        self.config = get_config().session
         if not self.config:
             warnings.warn("`Config for session not provided",RuntimeWarning)       
             await call_next()

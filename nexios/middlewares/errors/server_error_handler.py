@@ -160,21 +160,20 @@ class ServerErrorMiddleware(BaseMiddleware):
             
         except Exception as exc:
             if self.handler:
-                print(self.handler)
-                return await self.handler(request,response,exc)
+                response =  await self.handler(request,response,exc)
             if self.debug:
-                return self.get_debug_response(request,response,exc)
+                response =  self.get_debug_response(request,response,exc)
             
             else :
-                self.error_response(response)
+                response = self.error_response(response)
             
-            # The exception is always re-raised.  
-            # This ensures that servers can log the error properly  
-            # and allows test clients to optionally trigger the exception within a test case.  
-            raise exc
+            err = traceback.format_exc()
+            print(err)
+            return response
+        
             
     def error_response(self,res :Response):
-        return res.send("Internal Server Error",status_code=2)
+        return res.send("Internal Server Error",status_code=500)
     
     
     def get_debug_response(self, request :Request, response :Response, exc :Exception) -> Response:
@@ -183,7 +182,7 @@ class ServerErrorMiddleware(BaseMiddleware):
             content = self.generate_html(exc)
             return response.html(content, status_code=500)
         content = self.generate_plain_text(exc)
-        return  response.send(content, status_code=500)
+        return response.send(content, status_code=500)
     def format_line(self, index: int, line: str, frame_lineno: int, frame_index: int) -> str:
         values:typing.Dict[str,typing.Any] = {
             # HTML escape - line could contain < or >
