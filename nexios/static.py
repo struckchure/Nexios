@@ -25,7 +25,7 @@ class StaticFilesHandler:
         except (ValueError, RuntimeError):
             return False
 
-    async def __call__(self, request :Request, response :NexiosResponse, **kwargs):
+    async def __call__(self, request :Request, response :NexiosResponse):
         path = request.url.path
         if path.startswith("/"):
             path = path[1:]

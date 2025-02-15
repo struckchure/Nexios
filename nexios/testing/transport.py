@@ -106,7 +106,9 @@ class NexiosAsyncTransport(httpx.AsyncBaseTransport):
             nonlocal response_started, status_code, response_headers
             if message["type"] == "http.response.start":
                 status_code = message["status"]
-                response_headers = [(k.decode(), v.decode()) for k, v in message.get("headers", [])]
+                response_headers = [(k.decode(), v.decode()) for k, v in message.get("headers")] #type:ignore
+               
+                
                 response_started = True
             elif message["type"] == "http.response.body":
                 assert response_started, "Received body before response start"

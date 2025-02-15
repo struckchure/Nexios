@@ -1,13 +1,16 @@
 from datetime import datetime, timedelta
 from email.utils import formatdate
-from typing import Any, Dict, List, Optional, Tuple, Union,Sequence,Iterator
+from typing import Any, Dict, List, Optional, Tuple, Union, Sequence, Generator
 from pathlib import Path
 import json
 from base64 import b64encode
 from hashlib import sha1
 import mimetypes
 import typing
-
+import os
+import anyio
+from typing import AsyncIterator
+from anyio import AsyncFile
 Scope = typing.MutableMapping[str, typing.Any]
 Message = typing.MutableMapping[str, typing.Any]
 
@@ -38,19 +41,17 @@ class Response:
 
     def __init__(
         self,
-        body:   Union[JSONType ,Any] = "",
+        body: Union[JSONType, Any] = "",
         status_code: int = 200,
         headers: Optional[Dict[str, str]] = None,
         content_type: str = "text/plain",
     ):
-        self.status_code :int = status_code
-        self._headers :typing.Dict[str,typing.Any] = {}
-        self._cookies: List[Tuple[str, str, Dict[str,Any]]] = []
+        self.status_code: int = status_code
+        self._headers: Dict[str, Any] = {}
+        self._cookies: List[Tuple[str, str, Dict[str, Any]]] = []
         
-        # Initialize headers
         self.headers = headers or {}
         
-        # Set body and content type
         if isinstance(body, dict):
             self._body = json.dumps(body).encode('utf-8')
             self.content_type = "application/json"
@@ -66,28 +67,12 @@ class Response:
         self.headers['content-length'] = str(len(self._body))
         self.headers['content-type'] = self.content_type
 
-    @property
-    def headers(self) -> Dict[str, str]:
-        """Get all headers including cookies."""
-        headers = self._headers.copy()
-        if self._cookies:
-            headers['set-cookie'] = [
-                self._serialize_cookie(key, value, options)
-                for key, value, options in self._cookies
-            ]
-        return headers
-
-    @headers.setter
-    def headers(self, headers: Dict[str, str]) -> None:
-        """Set headers with case-insensitive keys."""
-        self._headers = {k.lower(): v for k, v in headers.items()}
-
     def set_cookie(
         self,
         key: str,
-        value:Optional[Union[str , None]] ,
+        value: Optional[Union[str, None]],
         max_age: Optional[int] = None,
-        expires: Optional[Union[str, datetime,int]] = None,
+        expires: Optional[Union[str, datetime, int]] = None,
         path: Optional[str] = "/",
         domain: Optional[str] = None,
         secure: bool = False,
@@ -95,7 +80,7 @@ class Response:
         samesite: Optional[str] = None
     ) -> None:
         """Set a cookie with the given parameters."""
-        cookie_options :Dict[str,Any] = {}
+        cookie_options: Dict[str, Any] = {}
         
         if max_age is not None:
             cookie_options['max-age'] = str(max_age)
@@ -121,7 +106,7 @@ class Response:
         if samesite is not None:
             cookie_options['samesite'] = samesite
             
-        self._cookies.append((key, value, cookie_options)) #type: ignore
+        self._cookies.append((key, value, cookie_options))  # type: ignore
 
     def delete_cookie(self, key: str, path: str = "/", domain: Optional[str] = None) -> None:
         """Delete a cookie by setting its expiry to the past."""
@@ -136,7 +121,7 @@ class Response:
 
     def enable_caching(self, max_age: int = 3600, private: bool = True) -> None:
         """Enable caching with the specified max age (in seconds)."""
-        cache_control :List[str] = []
+        cache_control: List[str] = []
         if private:
             cache_control.append("private")
         else:
@@ -148,7 +133,7 @@ class Response:
         etag = self._generate_etag()
         self.headers["etag"] = etag
         
-        expires = datetime.utcnow() + timedelta(seconds=max_age) #type: ignore
+        expires = datetime.utcnow() + timedelta(seconds=max_age)  # type: ignore
         self.headers["expires"] = formatdate(expires.timestamp(), usegmt=True)
 
     def disable_caching(self) -> None:
@@ -161,11 +146,9 @@ class Response:
         """Make the response callable as an ASGI application."""
         self.status_code = 200 if scope["method"].lower() == "options" else self.status_code
 
-        headers :List[Sequence[str | bytes]] = []
+        headers: List[Sequence[Union[str, bytes]]] = []
         for k, v in self.headers.items():
-            
             if k == 'set-cookie':
-                # Handle multiple Set-Cookie headers
                 if isinstance(v, list):
                     for cookie in v:
                         headers.append([b'set-cookie', cookie.encode('utf-8')])
@@ -185,7 +168,7 @@ class Response:
             'body': self._body,
         })
 
-    def _serialize_cookie(self, key: str, value: str, options: Dict[str,Any]) -> str:
+    def _serialize_cookie(self, key: str, value: str, options: Dict[str, Any]) -> str:
         """Serialize a single cookie into a Set-Cookie header value."""
         cookie = f"{key}={value}"
         for opt_key, opt_value in options.items():
@@ -254,7 +237,8 @@ class HTMLResponse(Response):
 
 class FileResponse(Response):
     """
-    Response subclass for file content with streaming support.
+    Enhanced FileResponse class with AnyIO for asynchronous file streaming,
+    support for range requests, and multipart responses.
     """
     chunk_size = 64 * 1024  # 64KB chunks
 
@@ -269,31 +253,68 @@ class FileResponse(Response):
         self.path = Path(path)
         if not self.path.exists():
             raise FileNotFoundError(f"File not found: {path}")
-        
         if not self.path.is_file():
             raise ValueError(f"Path is not a file: {path}")
-            
+
         self.filename = filename or self.path.name
         self.content_disposition_type = content_disposition_type
         self.status_code = status_code
-        
-        self._cookies: List[Tuple[str, str, Dict[str,Any]]] = []
-        
-        self.headers = headers or {}
-        self._headers = {}
-        content_type, _ = mimetypes.guess_type(str(self.path))
 
-        self.content_type = content_type or 'application/octet-stream'
-        self.headers['content-type'] = self.content_type
+        self.headers = headers or {}
+        content_type, _ = mimetypes.guess_type(str(self.path))
+        self.headers['content-type'] = content_type or 'application/octet-stream'
         self.headers['content-disposition'] = f'{content_disposition_type}; filename="{self.filename}"'
-        
+        self.headers['accept-ranges'] = 'bytes'  # Indicate support for range requests
         self.headers['content-length'] = str(self.path.stat().st_size)
-        
-        
+
+        self._ranges: List[Tuple[int, int]] = []
+        self._multipart_boundary: Optional[str] = None
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """Stream the file in chunks."""
-        headers :List[Sequence[bytes]] = []
+        """Handle the ASGI response, including range requests."""
+        range_header = dict(scope.get('headers', {})).get('range')
+        if range_header:
+            self._handle_range_header(range_header)
+
+        await self._send_response(scope, receive, send)
+
+    def _handle_range_header(self, range_header: str) -> None:
+        """Parse and validate the Range header."""
+        file_size = self.path.stat().st_size
+        try:
+            unit, ranges = range_header.strip().split('=')
+            if unit != 'bytes':
+                raise ValueError("Only byte ranges are supported")
+
+            self._ranges = []
+            for range_str in ranges.split(','):
+                start, end = range_str.split('-')
+                start = int(start) if start else 0
+                end = int(end) if end else file_size - 1
+
+                if start < 0 or end >= file_size or start > end:
+                    raise ValueError("Invalid range")
+
+                self._ranges.append((start, end))
+
+            if len(self._ranges) == 1:
+                start, end = self._ranges[0]
+                self.headers['content-range'] = f'bytes {start}-{end}/{file_size}'
+                self.headers['content-length'] = str(end - start + 1)
+                self.status_code = 206 
+
+            elif len(self._ranges) > 1:
+                self._multipart_boundary = self._generate_multipart_boundary()
+                self.headers['content-type'] = f'multipart/byteranges; boundary={self._multipart_boundary}'
+                self.status_code = 206  
+
+        except ValueError as e:
+            self.headers['content-range'] = f'bytes */{file_size}'
+            self.status_code = 416  
+
+    async def _send_response(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """Send the file response, handling range requests and multipart responses."""
+        headers: List[Sequence[Union[str, bytes]]] = []
         for k, v in self.headers.items():
             if k == 'set-cookie':
                 if isinstance(v, list):
@@ -310,16 +331,95 @@ class FileResponse(Response):
             'headers': headers,
         })
 
-        with open(self.path, 'rb') as file:
-            more_body = True
-            while more_body:
-                chunk = file.read(self.chunk_size)
-                more_body = len(chunk) == self.chunk_size
+        if self.status_code == 416: 
+            await send({
+                'type': 'http.response.body',
+                'body': b'',
+            })
+            return
+
+        async with await anyio.open_file(self.path, 'rb') as file:
+            
+            if self._multipart_boundary:
+                for start, end in self._ranges:
+                    await self._send_multipart_chunk(file, start, end, send)
                 await send({
                     'type': 'http.response.body',
-                    'body': chunk,
-                    'more_body': more_body
+                    'body': f'--{self._multipart_boundary}--\r\n'.encode('utf-8'),
+                    'more_body': False,
                 })
+            elif self._ranges:
+                start, end = self._ranges[0]
+                await self._send_range(file, start, end, send) #type:ignore
+            else:
+                await self._send_full_file(file, send) #type:ignore
+
+    async def _send_full_file(self, file: AsyncIterator[bytes], send: Send) -> None:
+        """Send the entire file in chunks using AnyIO."""
+        while True:
+            chunk = await file.read(self.chunk_size) #type:ignore
+            if not chunk:
+                break
+            await send({
+                'type': 'http.response.body',
+                'body': chunk,
+                'more_body': True,
+            })
+        await send({
+            'type': 'http.response.body',
+            'body': b'',
+            'more_body': False,
+        })
+
+    async def _send_range(self, file: AsyncFile[bytes], start: int, end: int, send: Send) -> None:
+        """Send a single range of the file using AnyIO."""
+        await file.seek(start)
+        remaining = end - start + 1
+        while remaining > 0:
+            chunk_size = min(self.chunk_size, remaining)
+            chunk = await file.read(chunk_size)
+            if not chunk:
+                break
+            await send({
+                'type': 'http.response.body',
+                'body': chunk,
+                'more_body': True,
+            })
+            remaining -= len(chunk)
+        await send({
+            'type': 'http.response.body',
+            'body': b'',
+            'more_body': False,
+        })
+
+    async def _send_multipart_chunk(self, file: AsyncFile[bytes], start: int, end: int, send: Send) -> None:
+        """Send a multipart chunk for a range using AnyIO."""
+        await file.seek(start)
+        remaining = end - start + 1
+
+        boundary = f'--{self._multipart_boundary}\r\n'
+        headers = f'Content-Type: {self.headers["content-type"]}\r\nContent-Range: bytes {start}-{end}/{self.path.stat().st_size}\r\n\r\n'
+        await send({
+            'type': 'http.response.body',
+            'body': (boundary + headers).encode('utf-8'),
+            'more_body': True,
+        })
+
+        while remaining > 0:
+            chunk_size = min(self.chunk_size, remaining)
+            chunk = await file.read(chunk_size)
+            if not chunk:
+                break
+            await send({
+                'type': 'http.response.body',
+                'body': chunk,
+                'more_body': True,
+            })
+            remaining -= len(chunk)
+
+    def _generate_multipart_boundary(self) -> str:
+        """Generate a unique multipart boundary string."""
+        return f"boundary_{os.urandom(16).hex()}"
 
 
 class StreamingResponse(Response):
@@ -328,15 +428,15 @@ class StreamingResponse(Response):
     """
     def __init__(
         self,
-        content: typing.Iterator[Union[str, bytes]],
+        content: AsyncIterator[Union[str, bytes]],
         status_code: int = 200,
         headers: Optional[Dict[str, str]] = None,
         content_type: str = "text/plain",
     ):
         self.content_iterator = content
         self.status_code = status_code
-        self._headers = {}
-        self._cookies: List[Tuple[str, str, Dict[str,Any]]] = []
+        self._headers: Dict[str, Any] = {}
+        self._cookies: List[Tuple[str, str, Dict[str, Any]]] = []
         
         # Set headers
         self.headers = headers or {}
@@ -348,7 +448,7 @@ class StreamingResponse(Response):
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Stream the content."""
-        headers :List[Sequence[bytes | str]] = []
+        headers: List[Sequence[Union[str, bytes]]] = []
         for k, v in self.headers.items():
             if k == 'set-cookie':
                 if isinstance(v, list):
@@ -365,7 +465,7 @@ class StreamingResponse(Response):
             'headers': headers,
         })
 
-        for chunk in self.content_iterator:
+        async for chunk in self.content_iterator:
             if isinstance(chunk, str):
                 chunk = chunk.encode('utf-8')
             await send({
@@ -410,77 +510,78 @@ class NexiosResponse:
     """
     def __init__(self):
         self._status_code = 200
-        self._body :Optional[JSONType] = None
+        self._body: Optional[JSONType] = None
         self._content_type = "application/json"
-        self.headers :Dict[str,Any] = {}
-        self._response = None
-        self._cookies :List[Dict[str,Any]]= []
-        self._delete_cookies  :List[Dict[str,Any]] = []
+        self.headers: Dict[str, Any] = {}
+        self._response: Optional[Response] = None
+        self._cookies: List[Dict[str, Any]] = []
+        self._delete_cookies: List[Dict[str, Any]] = []
 
-    def send(self, content :Any, status_code:Optional[int]= None, headers :Dict[str,Any] = {}):
+    def send(self, content: Any, status_code: Optional[int] = None, headers: Dict[str, Any] = {}):
         """Send plain text or HTML content."""
-        self._status_code = status_code or self._status_code or 200 #type: ignore
+        self._status_code = status_code or self._status_code or 200  # type: ignore
         self.headers.update(headers)
         self._body = content
         self._content_type = "text/plain"
         return self
     
-    def text(self, content :JSONType, status_code :Optional[int] = None, headers :Dict[str,Any] = {}):
+    def text(self, content: JSONType, status_code: Optional[int] = None, headers: Dict[str, Any] = {}):
         """Send plain text or HTML content."""
-        self._status_code = status_code or self._status_code or 200 #type: ignore
+        self._status_code = status_code or self._status_code or 200  # type: ignore
         self.headers.update(headers)
         self._body = content
         self._content_type = "text/plain"
         return self
 
-    def json(self, data :Union[str, List[Any], Dict[str, Any]], status_code :Optional[int] = None,headers :Dict[str,Any] = {}):
+    def json(self, data: Union[str, List[Any], Dict[str, Any]], status_code: Optional[int] = None, headers: Dict[str, Any] = {}):
         """Send JSON response."""
-        self._status_code = status_code or self._status_code or 200 #type: ignore
+        self._status_code = status_code or self._status_code or 200  # type: ignore
         self.headers.update(headers)
 
         self._body = data
         self._content_type = "application/json"
         return self
-    def empty(self, status_code :Optional[int] =None,headers :Dict[str,Any] = {}):
-        self._status_code = status_code or self._status_code or 200 #type: ignore
+
+    def empty(self, status_code: Optional[int] = None, headers: Dict[str, Any] = {}):
+        """Send an empty response."""
+        self._status_code = status_code or self._status_code or 200  # type: ignore
         self.headers.update(headers)
 
         self._body = None
         self._content_type = "application/json"
         return self
         
-    def html(self, content :str, status_code :Optional[int] = None,headers :Dict[str,Any] = {}):
+    def html(self, content: str, status_code: Optional[int] = None, headers: Dict[str, Any] = {}):
         """Send HTML response."""
-        self._status_code = status_code or self._status_code or 200 #type: ignore
+        self._status_code = status_code or self._status_code or 200  # type: ignore
         self.headers.update(headers)
         
         self._body = content
         self._content_type = "text/html; charset=utf-8"
         return self
 
-    def file(self, path :str, filename :Optional[str]=None, content_disposition_type :str="attachment"):
+    def file(self, path: str, filename: Optional[str] = None, content_disposition_type: str = "attachment"):
         """Send file response."""
         self._response = FileResponse(
             path=path,
             filename=filename,
-            status_code=self._status_code, #type: ignore
+            status_code=self._status_code,  # type: ignore
             headers=self.headers,
             content_disposition_type=content_disposition_type,
-            
         )
         return self
 
-    def stream(self, iterator :Iterator[str  |bytes], content_type :str="text/plain"):
+    def stream(self, iterator: Generator[Union[str, bytes]], content_type: str = "text/plain"):
         """Send streaming response."""
         self._response = StreamingResponse(
-            content=iterator,
-            status_code=self._status_code, #type: ignore
+            content=iterator,  # type: ignore
+            status_code=self._status_code,
             headers=self.headers,
             content_type=content_type
         )
         return self
 
-    def redirect(self, url :str, status_code :int =302):
+    def redirect(self, url: str, status_code: int = 302):
         """Send redirect response."""
         self._response = RedirectResponse(
             url=url,
@@ -489,7 +590,7 @@ class NexiosResponse:
         )
         return self
 
-    def status(self, status_code :int):
+    def status(self, status_code: int):
         """Set response status code."""
         self._status_code = status_code
         return self
@@ -502,9 +603,9 @@ class NexiosResponse:
     def set_cookie(
         self,
         key: str,
-        value: str | None,
+        value: Optional[str],
         max_age: Optional[int] = None,
-        expires: Optional[Union[str, datetime,int]] = None,
+        expires: Optional[Union[str, datetime, int]] = None,
         path: str = "/",
         domain: Optional[str] = None,
         secure: bool = True,
@@ -537,7 +638,7 @@ class NexiosResponse:
         httponly: bool = False,
         samesite: Optional[str] = None
     ):
-        """Set a response cookie."""
+        """Delete a response cookie."""
         self._delete_cookies.append({
             'key': key,
             'value': value,
@@ -566,27 +667,29 @@ class NexiosResponse:
         else:
             self._response.disable_caching()
         return self
+
     def resp(
         self,
-        body:   Union[JSONType ,Any] = "",
+        body: Union[JSONType, Any] = "",
         status_code: int = 200,
         headers: Optional[Dict[str, str]] = None,
-        content_type: str = "text/plain",):
+        content_type: str = "text/plain",
+    ):
         """
         Provides access to the purest form of the response object.
-
-        This method returns the underlying response object without any additional processing or wrapping.
-        It allows direct access to the response instance, enabling advanced customization and manipulation
-        of the response properties, headers, cookies, and body.
         """
-        _resp = Response(body=body,status_code=status_code,headers=headers,content_type=content_type) 
+        _resp = Response(
+            body=body,
+            status_code=status_code,
+            headers=headers,
+            content_type=content_type
+        )
         self._response = _resp
-           
+        return self
 
-    def _get_base_response(self):
+    def _get_base_response(self) -> Response:
         """Get the appropriate response type based on content type."""
         if self._response is not None:
-            
             return self._response
 
         if self._content_type == "application/json":
@@ -618,15 +721,11 @@ class NexiosResponse:
 
         return self._response
 
-    async def __call__(self, scope :Scope, receive :Receive, send :Send):
+    async def __call__(self, scope: Scope, receive: Receive, send: Send):
         """Make the response ASGI-compatible."""
-        
         self._status_code = 200 if scope['method'].lower() == "options" else self._status_code
         response = self._get_base_response()
         await response(scope, receive, send)
         
     def __str__(self):
         return f"Response [{self._status_code} {self._body}]"
-
-
-
