@@ -38,7 +38,7 @@ class Response:
 
     def __init__(
         self,
-        body: JSONType = "",
+        body:   Union[JSONType ,Any] = "",
         status_code: int = 200,
         headers: Optional[Dict[str, str]] = None,
         content_type: str = "text/plain",
@@ -566,6 +566,22 @@ class NexiosResponse:
         else:
             self._response.disable_caching()
         return self
+    def resp(
+        self,
+        body:   Union[JSONType ,Any] = "",
+        status_code: int = 200,
+        headers: Optional[Dict[str, str]] = None,
+        content_type: str = "text/plain",):
+        """
+        Provides access to the purest form of the response object.
+
+        This method returns the underlying response object without any additional processing or wrapping.
+        It allows direct access to the response instance, enabling advanced customization and manipulation
+        of the response properties, headers, cookies, and body.
+        """
+        _resp = Response(body=body,status_code=status_code,headers=headers,content_type=content_type) 
+        self._response = _resp
+           
 
     def _get_base_response(self):
         """Get the appropriate response type based on content type."""
