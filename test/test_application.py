@@ -1,77 +1,75 @@
 from nexios import get_application,NexiosApp
-from nexios.routing import Routes,WebsocketRoutes
+from nexios.routing import Routes,Router
+from nexios.cbc import APIHandler
 import pytest
 from nexios.http import Request,Response
+from nexios.testing import Client
+app :NexiosApp = get_application()
+router = Router("/mounted")
+@app.get("/func/home")
+async def homepage(req: Request, res :Response):
+    
+    return res.text("Hello from nexios")
+class ClassBasedHandler(APIHandler):
+    
+    async def get(self, req:Request, res:Response):
+        return res.text("Hello from nexios")
+        
+        
+@router.get("/check")
+async def mounted_route_handler(req: Request, res :Response):
+    return res.text("Hello from nexios")
+
+@router.get("/hello/{name}")
+@app.get("/hello/{name}")
+async def route_prams(req:Request, res:Response):
+    name =  req.path_params.name #type: ignore
+    return res.text(f"hello, {name}")
+    
+app.add_route(Routes("/class/home",ClassBasedHandler()))
+app.mount_router(router=router)
+
+
+
 
 @pytest.fixture
-def app() -> NexiosApp:
-    return get_application()
+async def async_client():
+    async with  Client(app) as c:
+        yield c
+    
+async def test_func_route(async_client :Client):
+    response = await async_client.get("/func/home")
+    assert response.status_code == 200
+    assert response.text == "Hello from nexios"
+        
+async def test_class_route(async_client :Client):
+    response = await async_client.get("/class/home") 
+    assert response.status_code == 200
+    assert response.text == "Hello from nexios"
+    
 
-@pytest.mark.asyncio
-async def test_app_initialization(app):
-    assert app.server_error_handler is None
-    assert isinstance(app.routes, list)
-    assert isinstance(app.ws_routes, list)
-    assert isinstance(app.http_middlewares, list)
-    assert isinstance(app.ws_middlewares, list)
-    assert isinstance(app.startup_handlers, list)
-    assert isinstance(app.shutdown_handlers, list)
-    assert app.exceptions_handler is not None
+async def test_mounted_router(async_client: Client):
+    response = await async_client.get("/mounted/check")
+    assert response.status_code == 200
+    assert response.text == "Hello from nexios"
+    
+async def test_route_path_params(async_client :Client):
+    response = await async_client.get("/hello/dunamis")
+    assert response.status_code == 200
+    assert response.text == "hello, dunamis"
+    
 
-@pytest.mark.asyncio
-async def test_on_startup(app):
-    async def startup_handler():
-        pass
+async def test_mounted_route_path_params(async_client :Client):
+    response = await async_client.get("/mounted/hello/dunamis")
+    assert response.status_code == 200
+    assert response.text == "hello, dunamis"
+    
+async def test_405(async_client :Client):
+    response = await async_client.post("/func/home")
+    assert response.status_code == 405
+    
 
-    app.on_startup(startup_handler)
-    assert len(app.startup_handlers) == 1
-
-@pytest.mark.asyncio
-async def test_on_shutdown(app):
-    async def shutdown_handler():
-        pass
-
-    app.on_shutdown(shutdown_handler)
-    assert len(app.shutdown_handlers) == 1
-
-@pytest.mark.asyncio
-async def test_add_route(app):
-    def handler(request: Request, response: Response):
-        pass
-
-    app.add_route(Routes("/test", handler))
-    assert len(app.routes) == 1
-
-@pytest.mark.asyncio
-async def test_add_ws_route(app):
-    def handler(ws):
-        pass
-
-    app.add_ws_route(WebsocketRoutes("/ws", handler))
-    assert len(app.ws_routes) == 1
-
-@pytest.mark.asyncio
-async def test_add_middleware(app):
-    async def middleware(request: Request, response: Response, call_next):
-        pass
-
-    app.add_middleware(middleware)
-    assert len(app.http_middlewares) > 1
-
-@pytest.mark.asyncio
-async def test_add_ws_middleware(app):
-    async def ws_middleware(ws, call_next):
-        pass
-
-    app.add_ws_middleware(ws_middleware)
-    assert len(app.ws_middlewares) == 1
-
-@pytest.mark.asyncio
-async def test_route_decorator(app):
-    @app.route("/test")
-    async def handler(request: Request, response: Response):
-        pass
-
-    assert len(app.routes) == 1
-
+    
+        
+    
     

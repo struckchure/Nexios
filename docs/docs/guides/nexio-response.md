@@ -1,6 +1,6 @@
 # Nexio Response 
 
-`NexioResponse` is an object that represents the HTTP response sent from the server to the client in the Nexio framework. It allows for setting headers, cookies, status codes, and other response attributes.
+`NexiosResponse` is an object that represents the HTTP response sent from the server to the client in the Nexio framework. It allows for setting headers, cookies, status codes, and other response attributes.
 
 ## Core Methods
 

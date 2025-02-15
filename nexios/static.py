@@ -3,7 +3,7 @@ from pathlib import Path
 import os
 from typing import Union
 from nexios.http.request import Request
-from nexios.http.response import NexioResponse
+from nexios.http.response import NexiosResponse
 class StaticFilesHandler:
     
     def __init__(self, directory: Union[str, Path], url_prefix: str = "/static/"):
@@ -25,7 +25,7 @@ class StaticFilesHandler:
         except (ValueError, RuntimeError):
             return False
 
-    async def __call__(self, request :Request, response :NexioResponse, **kwargs):
+    async def __call__(self, request :Request, response :NexiosResponse, **kwargs):
         path = request.url.path
         if path.startswith("/"):
             path = path[1:]

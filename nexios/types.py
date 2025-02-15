@@ -3,7 +3,7 @@ from enum import Enum
 from typing import TypeAlias,Callable,Type,Awaitable,Any
 import typing
 from .http.request import Request
-from .http.response import NexioResponse,Response
+from .http.response import NexiosResponse,Response
 from .websockets import WebSocket
 class HTTPMethod(str, Enum):
     GET = "GET"
@@ -23,8 +23,8 @@ Receive = typing.Callable[[], typing.Awaitable[Message]]
 Send = typing.Callable[[Message], typing.Awaitable[None]]
     
 MiddlewareType: TypeAlias = Callable[
-    [Request, NexioResponse, Callable[..., Awaitable[None]]], 
-    Awaitable[NexioResponse | None]
+    [Request, NexiosResponse, Callable[..., Awaitable[None]]], 
+    Awaitable[NexiosResponse | None]
 ]
 WsMiddlewareType :TypeAlias = Callable[[Type[WebSocket],Type[Callable[...,Awaitable[Message]]]], Type[Send]]  
 

@@ -1,6 +1,6 @@
 from typing import List, Dict, Any,TypeVar
 from .http.request import Request
-from .http.response import NexioResponse
+from .http.response import NexiosResponse
 from .http.request import Request
 import typing
 from functools import wraps
@@ -33,7 +33,7 @@ class allowed_methods(RouteDecorator):
         async def wrapper(*args: List[Any], **kwargs: Dict[str, Any]) -> Any:
             *_, request, response = args  # Ensure request and response are last
             
-            if not isinstance(request, Request) or not isinstance(response, NexioResponse):
+            if not isinstance(request, Request) or not isinstance(response, NexiosResponse):
                 raise TypeError("Expected request and response as the last arguments")
 
             if request.method.upper() not in self.allowed_methods:

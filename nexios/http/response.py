@@ -404,7 +404,7 @@ class RedirectResponse(Response):
         )
 
 
-class NexioResponse:
+class NexiosResponse:
     """
     A wrapper class that provides a fluent interface for different response types.
     """

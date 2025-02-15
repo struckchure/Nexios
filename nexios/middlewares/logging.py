@@ -2,7 +2,7 @@ import traceback
 import logging
 import typing
 from nexios.http.request import Request
-from nexios.http.response import NexioResponse
+from nexios.http.response import NexiosResponse
 from .base import BaseMiddleware
 # Setting up a logger for middleware
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ class ErrorHandlerMiddleware(BaseMiddleware):
 
 
 
-    async def __call__(self, request: Request, response: NexioResponse, next_middleware: typing.Callable[...,typing.Awaitable[None]]) -> NexioResponse:
+    async def __call__(self, request: Request, response: NexiosResponse, next_middleware: typing.Callable[...,typing.Awaitable[None]]) -> NexiosResponse:
         """
         The core method of the middleware, which processes the request, handles the error, and processes the response.
         """

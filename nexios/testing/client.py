@@ -5,12 +5,12 @@ import typing
 from typing import Any,Dict,AsyncIterable,Iterable
 from .transport import NexiosAsyncTransport
 _RequestData = typing.Mapping[str, typing.Union[str, typing.Iterable[str], bytes]]
-from nexios.application import NexioApp
+from nexios.application import NexiosApp
 
 class Client(httpx.AsyncClient):
     def __init__(
         self,
-        app :NexioApp,
+        app :NexiosApp,
         root_path :str = "",
         client: tuple[str, int] = ("testclient", 5000),
         base_url: str = "http://testserver",

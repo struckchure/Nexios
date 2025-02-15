@@ -1,11 +1,11 @@
 
-## **`NexioResponse` Class**
-The `NexioResponse` class is a fluent interface for creating and customizing HTTP responses in a Nexio application. It supports various response types, including plain text, JSON, HTML, files, streaming, and redirects. It also provides methods for setting headers, cookies, and caching behavior.
+## **`NexiosResponse` Class**
+The `NexiosResponse` class is a fluent interface for creating and customizing HTTP responses in a Nexio application. It supports various response types, including plain text, JSON, HTML, files, streaming, and redirects. It also provides methods for setting headers, cookies, and caching behavior.
 
 ---
 <small>
 <i>
-The NexioResponse class is a fluent interface and abstraction layer that simplifies the creation and customization of HTTP responses in a Nexio application. Instead of directly instantiating specific response classes like Response, JSONResponse, FileResponse, etc., developers can use NexioResponse to handle all response types in a consistent and intuitive way.
+The NexiosResponse class is a fluent interface and abstraction layer that simplifies the creation and customization of HTTP responses in a Nexio application. Instead of directly instantiating specific response classes like Response, JSONResponse, FileResponse, etc., developers can use NexiosResponse to handle all response types in a consistent and intuitive way.
 </i>
 
 </small>

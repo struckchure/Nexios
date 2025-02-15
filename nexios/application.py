@@ -1,6 +1,6 @@
 from typing import Any, Callable, List, Union
 from .http.request import Request
-from .http.response import NexioResponse
+from .http.response import NexiosResponse
 from .types import HTTPMethod
 from .decorators import allowed_methods
 from .routing import Router, Routes, WSRouter, WebsocketRoutes
@@ -76,7 +76,7 @@ class NexiosApp:
             ),
         ] = [],
         server_error_handler: Annotated[
-            Optional[Awaitable[NexioResponse]],
+            Optional[Awaitable[NexiosResponse]],
             Doc(
                 """
                         A function in Nexios responsible for handling server-side exceptions by logging errors, reporting issues, or initiating recovery mechanisms. It prevents crashes by intercepting unexpected failures, ensuring the application remains stable and operational. This function provides a structured approach to error management, allowing developers to define custom handling strategies such as retrying failed requests, sending alerts, or gracefully degrading functionality. By centralizing error processing, it improves maintainability and observability, making debugging and monitoring more efficient. Additionally, it ensures that critical failures do not disrupt the entire system, allowing services to continue running while appropriately managing faults and failures."""
@@ -237,12 +237,12 @@ class NexiosApp:
     async def __execute_middleware_stack(
         self,
         request: Request,
-        response: NexioResponse,
+        response: NexiosResponse,
         handler: Optional[HandlerType] = None,# type: ignore
     ) -> Any:
         """Execute middleware stack including the handler as the last 'middleware'."""
 
-        async def default_handler(req: Request, res: NexioResponse):
+        async def default_handler(req: Request, res: NexiosResponse):
             return res.json({"error": "Not Found"}, status_code=404)
 
         handler: Optional[HandlerType] | None = handler or default_handler  # type: ignore
@@ -275,7 +275,7 @@ class NexiosApp:
         self, scope: Scope, receive: Receive, send: Send
     ) -> None:
         request = Request(scope, receive, send)
-        response = NexioResponse()
+        response = NexiosResponse()
         request.scope["config"] = self.config
 
         handler = None

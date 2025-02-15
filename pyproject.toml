@@ -49,3 +49,7 @@ pyjwt = "*"
 
 [tool.poetry.scripts]
 nexios = "nexios.cli.main:nexios"
+
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

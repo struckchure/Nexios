@@ -1,2 +1,2 @@
 from .request import Request
-from .response import NexioResponse as Response
+from .response import NexiosResponse as Response
