@@ -25,7 +25,7 @@ a = Router(prefix="/a")
 @app.get("/user")
 @a.get("/user")
 @auth(["jwt"])
-# @validate_request(UserSchema())
+@validate_request(UserSchema())
 async def create_user(request, response) -> None:
     return response.json({"text":"hello world"})
 

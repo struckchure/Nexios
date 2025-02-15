@@ -250,7 +250,7 @@ class Request(HTTPConnection):
         return self._body
 
     @property
-    async def json(self) -> JSONType:
+    async def json(self) -> typing.Union[JSONType , dict[str,typing.Any]]:
 
         if not hasattr(self, "_json"):
             _body = await self.body()
@@ -361,5 +361,5 @@ class Request(HTTPConnection):
     def user(self):
         return self.scope.get("user",None)
     @user.setter
-    def user(self, value):
+    def user(self, value :str):
         self.scope['user'] = value

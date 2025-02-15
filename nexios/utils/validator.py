@@ -2,6 +2,7 @@ from nexios.validator import ValidationError, Schema #type:ignore
 from functools import wraps
 from typing import Callable, Any, Optional, Awaitable
 from typing_extensions import Annotated
+from nexios.http import Request,Response
 
 def validate_request(
     schema: Annotated[Schema, "The schema instance for validation"], 
@@ -21,7 +22,7 @@ def validate_request(
     """
     def decorator(handler: Callable[[Any, Any, Any, Any], Awaitable[Any]]) -> Callable[[Any, Any, Any, Any], Awaitable[Any]]:
         @wraps(handler)
-        async def wrapper(request: Any, response: Any, *args: Any, **kwargs: Any) -> Any:
+        async def wrapper(request: Request, response: Response, *args: Any, **kwargs: Any) -> Any:
             """
             Validates the request data and attaches the validated data or validation error.
 
@@ -33,17 +34,17 @@ def validate_request(
                 Any: The result of the handler function.
             """
             try:
-                content_type = request.headers.get("Content-Type", "").lower()
+                content_type = request.content_type
                 
-                if "application/json" in content_type:
-                    data:dict[str,Any] = await request.json()
-                elif "multipart/form-data" in content_type or "application/x-www-form-urlencoded" in content_type:
-                    data = await request.form()
+                if "application/json" == content_type:
+                    data = await request.json
+                elif "multipart/form-data" == content_type or "application/x-www-form-urlencoded" == content_type:
+                    data = await request.form_data
                 else:
                     data = {}
 
-                request.validated_data = schema.load(data)
-                request.validation_error = None  
+                request.validated_data = schema.load(data) #type:ignore
+                request.validation_error = None   #type:ignore
             
             except ValidationError as err:
                 request.validation_error = err.messages # type: ignore 
