@@ -39,7 +39,7 @@ async def handle_exception(req, res, exc):
         res.json({"error": "An error occurred", "message": exc.detail})
 
 # Register exception handler
-app.add_exception_handler(handle_exception)
+app.add_exception_handler(Exception,handle_exception)
 ```
 This function ensures that all `HTTPException` responses are formatted consistently.
 
