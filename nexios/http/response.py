@@ -264,7 +264,7 @@ class FileResponse(Response):
         content_type, _ = mimetypes.guess_type(str(self.path))
         self.headers['content-type'] = content_type or 'application/octet-stream'
         self.headers['content-disposition'] = f'{content_disposition_type}; filename="{self.filename}"'
-        self.headers['accept-ranges'] = 'bytes'  # Indicate support for range requests
+        self.headers['accept-ranges'] = 'bytes'  
         self.headers['content-length'] = str(self.path.stat().st_size)
 
         self._ranges: List[Tuple[int, int]] = []
@@ -272,7 +272,9 @@ class FileResponse(Response):
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Handle the ASGI response, including range requests."""
+        
         range_header = dict(scope.get('headers', {})).get('range')
+        
         if range_header:
             self._handle_range_header(range_header)
 
@@ -308,7 +310,7 @@ class FileResponse(Response):
                 self.headers['content-type'] = f'multipart/byteranges; boundary={self._multipart_boundary}'
                 self.status_code = 206  
 
-        except ValueError as e:
+        except ValueError as _:
             self.headers['content-range'] = f'bytes */{file_size}'
             self.status_code = 416  
 
@@ -438,12 +440,10 @@ class StreamingResponse(Response):
         self._headers: Dict[str, Any] = {}
         self._cookies: List[Tuple[str, str, Dict[str, Any]]] = []
         
-        # Set headers
         self.headers = headers or {}
         self.content_type = content_type
         self.headers['content-type'] = self.content_type
         
-        # Streaming responses shouldn't have a content-length header
         self.headers.pop('content-length', None)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
