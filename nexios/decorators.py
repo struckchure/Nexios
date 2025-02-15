@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any,TypeVar
 from .http.request import Request
 from .http.response import NexioResponse
 from .http.request import Request
@@ -6,14 +6,14 @@ import typing
 from functools import wraps
 from .types import HandlerType
 
-
+F = TypeVar("F", bound=HandlerType)
 class RouteDecorator:
     """Base class for all route decorators"""
 
     def __init__(self, **kwargs: Dict[str, Any]):
         pass
 
-    async def __call__(self, handler: HandlerType) -> Any:
+    def __call__(self, handler: HandlerType) -> Any:
         raise NotImplementedError("Handler not set")
 
     def __get__(self, obj: typing.Any, objtype: typing.Any = None):
@@ -23,14 +23,19 @@ class RouteDecorator:
 
 
 class allowed_methods(RouteDecorator):
-    def __init__(self, methods: List[str]):
+    def __init__(self, methods: List[str]) -> None:
         super().__init__()
-        self.allowed_methods = [method.upper() for method in methods]
-        self.allowed_methods.extend(["OPTIONS"])
+        self.allowed_methods: List[str] = [method.upper() for method in methods]
+        self.allowed_methods.append("OPTIONS")
 
-    def __call__(self, handler: HandlerType) -> Any:
+    def __call__(self, handler: F) -> F:
         @wraps(handler)
-        async def wrapper(request: Request, response: NexioResponse):
+        async def wrapper(*args: List[Any], **kwargs: Dict[str, Any]) -> Any:
+            *_, request, response = args  # Ensure request and response are last
+            
+            if not isinstance(request, Request) or not isinstance(response, NexioResponse):
+                raise TypeError("Expected request and response as the last arguments")
+
             if request.method.upper() not in self.allowed_methods:
                 return response.json(
                     {
@@ -39,6 +44,7 @@ class allowed_methods(RouteDecorator):
                     },
                     status_code=405,
                 )
+
             return await handler(request, response)
 
-        return wrapper
+        return wrapper  # type: ignore

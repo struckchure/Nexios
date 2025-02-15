@@ -65,6 +65,6 @@ class JWTAuthBackend(AuthenticationBackend):
         if not user:
             return UnauthenticatedUser()
 
-        return user
+        return user,"jwt"
 
 

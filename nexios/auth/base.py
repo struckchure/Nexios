@@ -16,6 +16,9 @@ class AuthenticationError(Exception):
     pass
 
 
+class AuthCredentials:
+    def __init__(self, scopes: typing.Sequence[str] | None = None):
+        self.scopes = [] if scopes is None else list(scopes)
 class AuthenticationBackend:
     """
     Base class for authentication backends in Nexios.

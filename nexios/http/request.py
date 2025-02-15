@@ -210,7 +210,7 @@ class Request(HTTPConnection):
 
     @property
     def method(self) -> str:
-        return str(self.scope["method"])
+        return self.scope["method"]
 
     @property
     def receive(self):
@@ -362,4 +362,4 @@ class Request(HTTPConnection):
         return self.scope.get("user",None)
     @user.setter
     def user(self, value):
-        self._user = value 
+        self.scope['user'] = value

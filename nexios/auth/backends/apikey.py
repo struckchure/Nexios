@@ -83,4 +83,4 @@ class APIKeyAuthBackend(AuthenticationBackend):
         if not user:
             return UnauthenticatedUser()
 
-        return user
+        return user, "apikey"

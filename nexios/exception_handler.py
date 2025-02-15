@@ -4,6 +4,8 @@ from nexios.exceptions import HTTPException
 from nexios.http import Request,Response
 from nexios.types import ExceptionHandlerType
 from nexios.config import get_config
+import traceback
+from nexios.auth.exceptions import AuthenticationFailed,AuthErrorHandler
 def _lookup_exception_handler(exc_handlers :typing.Dict[typing.Any[int ,Exception],ExceptionHandlerType], exc: Exception) :
     
     for cls in type(exc).__mro__:
@@ -31,7 +33,7 @@ async def wrap_app_handling_exceptions(request :Request, response :Response, cal
             handler = _lookup_exception_handler(exception_handlers, exc)
             if not handler:
                 raise exc
-            raise
+            error = traceback.format_exc()
             return  await handler(request,response,exc)
         raise exc
        
@@ -41,7 +43,7 @@ class ExceptionMiddleware:
     def __init__(self ) -> None:
         self.debug = get_config().debug or False # TODO: We ought to handle 404 cases if debug is set.
         self._status_handlers:typing.Dict[int,ExceptionHandlerType]= {}
-        self._exception_handlers :typing.Dict[Exception,ExceptionHandlerType] = {HTTPException: self.http_exception} #type: ignore
+        self._exception_handlers :typing.Dict[Exception,ExceptionHandlerType] = {HTTPException: self.http_exception,AuthenticationFailed:AuthErrorHandler} #type: ignore
        
     def add_exception_handler(
         self,
@@ -56,7 +58,6 @@ class ExceptionMiddleware:
 
     async def __call__(self, request: Request,response :Response,call_next :typing.Callable[...,typing.Awaitable[None]],) -> Response:
 
-       
 
         return await wrap_app_handling_exceptions(
             request=request,

@@ -41,11 +41,8 @@ class SessionMiddleware(BaseMiddleware):
 
 
     async def process_response(self, request :Request , response :Response):
-        if not self.secret:
-            warnings.warn("`secret_key` is not set, `secret_key`  is required to use session",RuntimeWarning)
-        if not self.config:
-            warnings.warn("`Config for session not provided",RuntimeWarning)       
-            return
+        if not self.secret or not self.config:
+            return 
         if request.session.is_empty() and request.session.accessed:
             response.delete_cookie(
                 key= self.session_cookie_name
