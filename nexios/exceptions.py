@@ -15,7 +15,13 @@ class HTTPException(Exception):
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.status_code}, {self.detail!r})"
+    
+    
 
+
+class NotFoundException(HTTPException):
+    def __init__(self, detail: str | None = None, headers: typing.Dict[str, typing.Any] = {}) -> None:
+        super().__init__(status_code=404, detail=detail or "Not Found", headers=headers)
 
 class WebSocketException(Exception):
     def __init__(self, code: int, reason: str | None = None) -> None:

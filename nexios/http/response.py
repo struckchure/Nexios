@@ -512,13 +512,13 @@ class NexiosResponse:
     A wrapper class that provides a fluent interface for different response types.
     """
     def __init__(self):
-        self._status_code = self._response.status_code
         self._body: Optional[JSONType] = None
         self._content_type = "application/json"
         self.headers: Dict[str, Any] = {}
         self._response: Response = Response()
         self._cookies: List[Dict[str, Any]] = []
         self._delete_cookies: List[Dict[str, Any]] = []
+        self._status_code = self._response.status_code
 
     
     def text(self, content: JSONType, status_code:int = 200, headers: Dict[str, Any] = {}):

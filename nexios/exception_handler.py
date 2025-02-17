@@ -6,6 +6,8 @@ from nexios.types import ExceptionHandlerType
 from nexios.config import get_config
 import traceback
 from nexios.auth.exceptions import AuthenticationFailed,AuthErrorHandler
+from nexios.exceptions import NotFoundException
+from nexios.handlers.not_found import handle_404_error
 def _lookup_exception_handler(exc_handlers :typing.Dict[typing.Any[int ,Exception],ExceptionHandlerType], exc: Exception) :
     
     for cls in type(exc).__mro__:
@@ -43,8 +45,9 @@ class ExceptionMiddleware:
     def __init__(self ) -> None:
         self.debug = get_config().debug or False # TODO: We ought to handle 404 cases if debug is set.
         self._status_handlers:typing.Dict[int,ExceptionHandlerType]= {}
-        self._exception_handlers :typing.Dict[Exception,ExceptionHandlerType] = {HTTPException: self.http_exception,AuthenticationFailed:AuthErrorHandler} #type: ignore
-       
+        self._exception_handlers :typing.Dict[Exception,ExceptionHandlerType] = {HTTPException: self.http_exception, #type: ignore
+                                                                                 AuthenticationFailed:AuthErrorHandler,
+                                                                                 NotFoundException:handle_404_error}
     def add_exception_handler(
         self,
         exc_class_or_status_code: int | type[Exception],

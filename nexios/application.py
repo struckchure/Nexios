@@ -11,6 +11,7 @@ from .exception_handler import ExceptionMiddleware
 from typing_extensions import Doc, Annotated  # type:ignore
 from nexios.config import MakeConfig
 from typing import Awaitable, Optional
+from nexios.exceptions import NotFoundException
 from .types import (
     MiddlewareType,
     Scope,
@@ -243,7 +244,7 @@ class NexiosApp:
         """Execute middleware stack including the handler as the last 'middleware'."""
 
         async def default_handler(req: Request, res: NexiosResponse):
-            return res.json({"error": "Not Found"}, status_code=404)
+           raise NotFoundException
 
         handler: Optional[HandlerType] | None = handler or default_handler  # type: ignore
         stack: List[MiddlewareType] = [
