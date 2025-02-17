@@ -105,7 +105,7 @@ class CORSMiddleware(BaseMiddleware):
 
             return False
         return True
-    async def preflight_response(self, request: Request, response: Response) -> typing.Any:
+    async def preflight_response(self, request: Request, response: Response) -> Any:
         origin = request.headers.get("origin")
         requested_method = request.headers.get("access-control-request-method")
         requested_headers = request.headers.get("access-control-request-headers")
@@ -141,7 +141,7 @@ class CORSMiddleware(BaseMiddleware):
                             print(f"Preflight request denied: Header '{header}' is not allowed.")
                         return response.json(self.get_error_message("disallowed_header"), status_code=self.custom_error_status)
                 headers["Access-Control-Allow-Headers"] = requested_headers
-        return response.json("OK", status_code=200, headers=headers)
+        return response.json("OK", status_code=201, headers=headers)
 
     def get_error_message(self, error_type: str) -> str:
         return self.custom_error_messages.get(error_type, "CORS request denied.")
