@@ -147,7 +147,7 @@ class JWTAuthBackend(AuthenticationBackend):
 
         auth_header = request.headers.get("Authorization")
         if not auth_header or not auth_header.startswith("Bearer "):
-            response.headers["WWW-Authenticate"] = 'Bearer realm="Access to the API"'
+            response.header("WWW-Authenticate",'Bearer realm="Access to the API"')
             return None
 
         token = auth_header.split(" ")[1]

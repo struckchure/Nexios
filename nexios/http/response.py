@@ -71,7 +71,7 @@ class Response:
         keys = [h[0] for h in raw_headers]
         populate_content_length = b"content-length" not in keys
         populate_content_type = b"content-type" not in keys
-        body = getattr(self, "body", None)
+        body = getattr(self, "_body", None)
         if (
             body is not None
             and populate_content_length
@@ -258,7 +258,7 @@ class FileResponse(Response):
         filename: Optional[str] = None,
         status_code: int = 200,
         headers: Optional[Dict[str, str]] = None,
-        content_disposition_type: str = "attachment",
+        content_disposition_type: str = "inline",
     ):
         super().__init__()
         self.path = Path(path)
@@ -504,7 +504,6 @@ class NexiosResponse:
     def __init__(self):
         self._body: Optional[JSONType] = None
         self._content_type = "application/json"
-        self.headers: Dict[str, Any] = {}
         self._response: Response = Response()
         self._cookies: List[Dict[str, Any]] = []
         self._status_code = self._response.status_code
@@ -549,13 +548,13 @@ class NexiosResponse:
         )
         return self
 
-    def file(self, path: str, filename: Optional[str] = None, content_disposition_type: str = "attachment"):
+    def file(self, path: str, filename: Optional[str] = None, content_disposition_type: str = "inline"):
         """Send file response."""
         self._response = FileResponse(
             path=path,
             filename=filename,
             status_code=self._status_code,  # type: ignore
-            headers=self.headers,
+            headers=self._response.headers,
             content_disposition_type=content_disposition_type,
         )
         return self
@@ -565,7 +564,7 @@ class NexiosResponse:
         self._response = StreamingResponse(
             content=iterator,  # type: ignore
             status_code=self._status_code,
-            headers=self.headers,
+            headers=self._response.headers,
             content_type=content_type
         )
         return self
@@ -575,7 +574,7 @@ class NexiosResponse:
         self._response = RedirectResponse(
             url=url,
             status_code=status_code,
-            headers=self.headers
+            headers=self._response.headers
         )
         return self
 
@@ -668,6 +667,8 @@ class NexiosResponse:
         """Make the response ASGI-compatible."""
         response = self._response
         await response(scope, receive, send)
+
+       
         
     def __str__(self):
-        return f"Response [{self._status_code} {self._body}]"
+        return f"Response [{self._status_code} {self._body}]" 

@@ -71,13 +71,13 @@ class CORSMiddleware(BaseMiddleware):
         origin = request.origin
 
         if origin and self.is_allowed_origin(origin):
-            response.headers["Access-Control-Allow-Origin"] = origin
+            response.header("Access-Control-Allow-Origin",origin)
 
             if self.allow_credentials:
-                response.headers["Access-Control-Allow-Credentials"] = "true"
+                response.header("Access-Control-Allow-Credentials","true")
 
         if self.expose_headers:
-            response.headers["Access-Control-Expose-Headers"] = ", ".join(self.expose_headers)
+            response.header("Access-Control-Expose-Headers",  ", ".join(self.expose_headers))
 
     def is_allowed_origin(self, origin: str | None) -> bool:
         if origin in self.blacklist_origins:
@@ -129,7 +129,6 @@ class CORSMiddleware(BaseMiddleware):
 
                 return response.json(self.get_error_message("disallowed_method"), status_code=self.custom_error_status)
 
-        # Handle headers
         if requested_headers:
             requested_header_list = [h.strip().lower() for h in requested_headers.split(",")]
             if "*" in self.allow_headers:

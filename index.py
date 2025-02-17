@@ -11,9 +11,11 @@ from nexios.auth.backends.jwt import JWTAuthBackend
 from nexios.config import MakeConfig
 config = MakeConfig({
     "secret_key":"th-key",
-    # "session":{
+    "cors":{
+        "allow_origins" : ["*"],
+        "debug":True
         
-    # }
+    }
 })
 app = get_application(config=config)
 app.add_middleware(AuthenticationMiddleware(
@@ -44,9 +46,13 @@ a = Router(prefix="/a")
 async def create_user(request, response) -> None:
     print(request.session)
     # request.session.set_session("heloo","hi")
-    response.headers['x-token'] = "babaric"
-    res = response.file("C:\\Users\\dunamix\\Documents\\Nexios\\nexios\\http\\response.py")
+    # response.headers['x-token'] = "babaric"
+    res = response.file("C:/Users/dunamix/Downloads/Untitled video - Made with Clipchamp.mp4")
     response.set_cookie("a",19)
     response.set_cookie("a","b")
+
+@app.route("/new")
+async def create_new(request, response) -> None:
+    return response.json({"hello":"world"})
 
 app.mount_router(a)

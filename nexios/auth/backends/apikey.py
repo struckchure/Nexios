@@ -75,7 +75,7 @@ class APIKeyAuthBackend(AuthenticationBackend):
         # Retrieve the API key from the request headers
         api_key = request.headers.get(self.header_name)
         if not api_key:
-            response.headers["WWW-Authenticate"] = 'APIKey realm="Access to the API"'
+            response.header("WWW-Authenticate", 'APIKey realm="Access to the API"')
             return None
 
         # Authenticate the API key using the provided function

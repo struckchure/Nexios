@@ -118,7 +118,7 @@ async def add_header_middleware(request,response, call_next):
     response = await call_next()
 
     # Modify the response by adding a custom header
-    response.headers["X-Custom-Header"] = "Modified by Middleware"
+    response.header("X-Custom-Header", "Modified by Middleware")
 
     return response
 ```
