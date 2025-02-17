@@ -14,6 +14,7 @@ from anyio import AsyncFile
 import http.cookies
 from email.utils import format_datetime, formatdate
 from datetime import datetime, timezone
+from urllib.parse import quote
 Scope = typing.MutableMapping[str, typing.Any]
 Message = typing.MutableMapping[str, typing.Any]
 
@@ -174,16 +175,6 @@ class Response:
             'body': self._body,
         })
 
-    def _serialize_cookie(self, key: str, value: str, options: Dict[str, Any]) -> str:
-        """Serialize a single cookie into a Set-Cookie header value."""
-        cookie = f"{key}={value}"
-        for opt_key, opt_value in options.items():
-            if isinstance(opt_value, bool):
-                if opt_value:
-                    cookie += f"; {opt_key}"
-            else:
-                cookie += f"; {opt_key}={opt_value}"
-        return cookie
 
     def _generate_etag(self) -> str:
         """Generate an ETag for the response content."""
@@ -492,13 +483,12 @@ class RedirectResponse(Response):
         self,
         url: str,
         status_code: int = 302,
-        headers: Optional[Dict[str, str]] = None,
+        headers: Dict[str, str] = {},
     ):
         if not 300 <= status_code < 400:
             raise ValueError("Status code must be a valid redirect status")
             
-        headers = headers or {}
-        headers['location'] = str(url)
+        headers["location"] = quote(str(url), safe=":/%#?=@[]!$&'()*+,;")
         
         super().__init__(
             body="",
@@ -676,9 +666,7 @@ class NexiosResponse:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
         """Make the response ASGI-compatible."""
-        extra_headers = [(k.lower().encode("latin-1"), v.encode("latin-1")) for k, v in self.headers.items()]
         response = self._response
-        response._headers.extend(extra_headers) #type:ignore
         await response(scope, receive, send)
         
     def __str__(self):
