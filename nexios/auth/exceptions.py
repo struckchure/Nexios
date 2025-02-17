@@ -1,7 +1,8 @@
 from nexios.exceptions import HTTPException
 from typing import Dict, Any, Optional
 from typing_extensions import TypeAlias
-from nexios.http import Request, Response
+from nexios.http import Request
+from nexios.http.response import NexiosResponse
 
 HeadersType: TypeAlias = Dict[str, Any]  # Alias for better readability
 
@@ -34,7 +35,7 @@ class AuthenticationFailed(AuthException):
 
 
 
-async def AuthErrorHandler(req: Request, res: Response, exc: HTTPException) -> Any:
+async def AuthErrorHandler(req: Request, res: NexiosResponse, exc: HTTPException) -> Any:
     """
     Handle authentication exceptions and return a JSON response.
 

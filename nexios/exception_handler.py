@@ -14,7 +14,7 @@ def _lookup_exception_handler(exc_handlers :typing.Dict[typing.Any[int ,Exceptio
         if cls in exc_handlers: #type: ignore
             return exc_handlers[cls]
     return None
-async def wrap_app_handling_exceptions(request :Request, response :Response, call_next :typing.Callable[...,typing.Awaitable[None]], exception_handlers :typing.Dict[Exception,ExceptionHandlerType], status_handlers:typing.Dict[int ,ExceptionHandlerType] ) -> typing.Any:
+async def wrap_app_handling_exceptions(request :Request, response :Response, call_next :typing.Callable[...,typing.Awaitable[None]], exception_handlers :typing.Dict[type[Exception],ExceptionHandlerType], status_handlers:typing.Dict[int ,ExceptionHandlerType] ) -> typing.Any:
    
     try:
         exception_handlers, status_handlers =  exception_handlers, status_handlers
@@ -45,9 +45,9 @@ class ExceptionMiddleware:
     def __init__(self ) -> None:
         self.debug = get_config().debug or False # TODO: We ought to handle 404 cases if debug is set.
         self._status_handlers:typing.Dict[int,ExceptionHandlerType]= {}
-        self._exception_handlers :typing.Dict[Exception,ExceptionHandlerType] = {HTTPException: self.http_exception, #type: ignore
-                                                                                 AuthenticationFailed:AuthErrorHandler,
-                                                                                 NotFoundException:handle_404_error}
+        self._exception_handlers :dict[type[Exception],ExceptionHandlerType] = {HTTPException: self.http_exception, #type:ignore[dict-item]
+                                                                                 AuthenticationFailed:AuthErrorHandler, #type:ignore[dict-item]
+                                                                                 NotFoundException:handle_404_error} #type:ignore[dict-item]
     def add_exception_handler(
         self,
         exc_class_or_status_code: int | type[Exception],
@@ -72,7 +72,7 @@ class ExceptionMiddleware:
             
         )
 
-    async def http_exception(self, request: Request,response:Response, exc: HTTPException):
+    async def http_exception(self, request: Request,response:Response, exc: HTTPException) -> typing.Any :
         assert isinstance(exc, HTTPException)
         if exc.status_code in {204, 304}: #type:ignore
             return response.empty(status_code=exc.status_code, headers=exc.headers)

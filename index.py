@@ -45,7 +45,7 @@ async def create_user(request, response) -> None:
     print(request.session)
     # request.session.set_session("heloo","hi")
     response.headers['x-token'] = "babaric"
-    res = response.json({"text":"hello world"})
+    res = response.file("C:\\Users\\dunamix\\Documents\\Nexios\\nexios\\http\\response.py")
     response.set_cookie("a",19)
     response.set_cookie("a","b")
 

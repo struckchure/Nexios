@@ -517,8 +517,8 @@ class NexiosResponse:
         self.headers: Dict[str, Any] = {}
         self._response: Response = Response()
         self._cookies: List[Dict[str, Any]] = []
-        self._delete_cookies: List[Dict[str, Any]] = []
         self._status_code = self._response.status_code
+        self._delete_cookies: List[Dict[str, Any]] = []
 
     
     def text(self, content: JSONType, status_code:int = 200, headers: Dict[str, Any] = {}):
