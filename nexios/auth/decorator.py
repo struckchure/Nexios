@@ -3,7 +3,6 @@ import typing
 from .exceptions import AuthenticationFailed
 from nexios.http import Request, Response
 
-
 class auth(RouteDecorator):
     
     def __init__(self, scopes :typing.List[str]):

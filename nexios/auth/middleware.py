@@ -72,7 +72,10 @@ class AuthenticationMiddleware(BaseMiddleware):
             user: BaseUser = await self.backend.authenticate(request, response)  # type:ignore
 
         if user is None:  # type:ignore
-            request.user = UnauthenticatedUser()
+            request.scope["user"] = UnauthenticatedUser(), "no-auth"
+            await call_next()
+            
+            return
 
         request.scope["user"] = user
         await call_next()

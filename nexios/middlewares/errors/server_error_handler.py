@@ -173,16 +173,16 @@ class ServerErrorMiddleware(BaseMiddleware):
         
             
     def error_response(self,res :Response):
-        return res.send("Internal Server Error",status_code=500)
+        return res.text("Internal Server Error",status_code=500)
     
     
     def get_debug_response(self, request :Request, response :Response, exc :Exception) -> Response:
         accept = request.headers.get("accept", "")
         if "text/html" in accept:
-            content = self.generate_html(exc)
+            content :str= self.generate_html(exc)
             return response.html(content, status_code=500)
         content = self.generate_plain_text(exc)
-        return response.send(content, status_code=500)
+        return response.text(content, status_code=500)
     def format_line(self, index: int, line: str, frame_lineno: int, frame_index: int) -> str:
         values:typing.Dict[str,typing.Any] = {
             # HTML escape - line could contain < or >

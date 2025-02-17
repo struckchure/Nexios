@@ -39,11 +39,13 @@ async def send_header_response(req: Request, res :Response):
     return res.json(None, headers=headers) #type:ignore
 
 
+    
+
+
 @app.get("/response/files")
 async def send_file_response(req: Request, res :Response):
     res.file("C:/Users/dunamix/Documents/Nexios/test/static/example.txt")
     
-
 @pytest.fixture
 async def async_client():
     async with  Client(app,log_requests=True) as c:
@@ -90,3 +92,5 @@ async def test_file_response(async_client :Client):
     expected_disposition = 'attachment; filename="example.txt"'
     assert response.headers["content-disposition"] == expected_disposition
     assert "content-length" in response.headers
+    
+    

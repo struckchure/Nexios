@@ -50,7 +50,7 @@ class CommonMiddleware(BaseMiddleware):
             Response,
             Doc("The response object that is modified before being sent."),
         ],
-    ) -> Response:
+    ) -> None:
         """
         Process the outgoing response and add common security headers.
 
@@ -65,7 +65,7 @@ class CommonMiddleware(BaseMiddleware):
         Returns:
             Response: The modified response with additional headers.
         """
-        response.headers["Content-Type"] = "application/json"
+        # response.headers["Content-Type"] = "application/json"
 
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
@@ -79,4 +79,3 @@ class CommonMiddleware(BaseMiddleware):
         if request.user_agent:
             response.headers["X-User-Agent"] = request.user_agent
 
-        return response

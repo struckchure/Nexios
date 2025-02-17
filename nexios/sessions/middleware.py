@@ -14,8 +14,8 @@ class SessionMiddleware(BaseMiddleware):
         if not self.secret:
             warnings.warn("`secret_key` is not set, `secret_key`  is required to use session",RuntimeWarning)
             return await call_next()
-        if not self.config:
-            warnings.warn("`Config for session not provided",RuntimeWarning)       
+        # if not self.config:
+        #     warnings.warn("`Config for session not provided",RuntimeWarning)       
             await call_next()
             return
         if self.config:
@@ -33,7 +33,11 @@ class SessionMiddleware(BaseMiddleware):
         else:
             manager_config  = "cookies"
 
-        manager :BaseSessionInterface = self.config.manager or managers.get(manager_config,SignedSessionManager)
+        if self.config:
+            self.config.manager
+            manager :type[BaseSessionInterface] = managers.get(manager_config,SignedSessionManager)
+        else:
+            manager = SignedSessionManager
         session :typing.Type[BaseSessionInterface] = manager(session_key=request.cookies.get(session_cookie_name)) #type:ignore
         await session.load() #type: ignore
         request.scope['session'] = session
@@ -41,7 +45,7 @@ class SessionMiddleware(BaseMiddleware):
 
 
     async def process_response(self, request :Request , response :Response):
-        if not self.secret or not self.config:
+        if not self.secret :
             return 
         if request.session.is_empty() and request.session.accessed:
             response.delete_cookie(
@@ -66,3 +70,4 @@ class SessionMiddleware(BaseMiddleware):
                 expires=request.session.get_expiration_time()
 
             )
+            # print(response._response._cookies)

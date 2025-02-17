@@ -39,7 +39,7 @@ def validate_request(
                 if "application/json" == content_type:
                     data = await request.json
                 elif "multipart/form-data" == content_type or "application/x-www-form-urlencoded" == content_type:
-                    data = await request.form_data
+                    data :Any = await request.form_data
                 else:
                     data = {}
 

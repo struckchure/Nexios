@@ -25,7 +25,7 @@ class CSRFMiddleware(BaseMiddleware):
         self.cookie_domain = app_config.csrf_cookie_domain
         self.cookie_secure =   app_config.csrf_cookie_secure or False
         self.cookie_httponly = app_config.csrf_cookie_httponly or True
-        self.cookie_samesite = app_config.csrf_cookie_samesite or "Lax"
+        self.cookie_samesite :typing.Literal["lax","none","strict"]= app_config.csrf_cookie_samesite or "lax"
         self.header_name = app_config.csrf_header_name or "X-CSRFToken"
 
     async def process_request(self, request: Request, response: Response, call_next : typing.Callable[..., typing.Awaitable[typing.Any]]):
@@ -46,14 +46,14 @@ class CSRFMiddleware(BaseMiddleware):
         ):
             submitted_csrf_token = request.headers.get(self.header_name)
             if not csrf_cookie:
-                return response.send("CSRF token missing from cookies", status_code=403)
+                return response.text("CSRF token missing from cookies", status_code=403)
 
             if not submitted_csrf_token:
-                return response.send("CSRF token missing from headers", status_code=403)
+                return response.text("CSRF token missing from headers", status_code=403)
 
             if not self._csrf_tokens_match(csrf_cookie, submitted_csrf_token):
-                return response.send("CSRF token incorrect", status_code=403)
-        response.set_cookie(self.cookie_name,value=None,expires=0)
+                return response.text("CSRF token incorrect", status_code=403)
+        response.delete_cookie(self.cookie_name)
         await call_next()
 
     async def process_response(self, request: Request, response: Response):
