@@ -1,17 +1,11 @@
 [build-system]
-
-requires = ['setuptools>=42']
-build-backend = 'setuptools.build_meta'
-
-
-[tool.setuptools]
-include-package-data = true
-package-data = {"nexios" = ["*.py"]}
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "nexios"
-version = "2.0.11"
-description = "Nexio is a modern, high-performance ASGI web framework for Python."
+version = "2.0.12"
+description = "Nexios is a modern, high-performance ASGI web framework for Python."
 authors = ["Chidebele Dunamis <techwithdunamix@example.com>"]
 license = "MIT"
 homepage = "https://github.com/techwithdunamix/nexios"
@@ -35,7 +29,6 @@ keywords = [
     "websocket"
 ]
 
-
 [tool.poetry.dependencies]
 python = ">=3.9"
 uvicorn = "*"
@@ -46,10 +39,8 @@ itsdangerous = "*"
 python-multipart = "*"
 pyjwt = "*"
 
-
 [tool.poetry.scripts]
 nexios = "nexios.cli.main:nexios"
-
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

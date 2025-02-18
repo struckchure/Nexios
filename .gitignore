@@ -10,3 +10,4 @@ dist/
 .env
 .mypy_cache/
 docs/site
+.tox/

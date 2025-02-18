@@ -44,7 +44,7 @@ async def send_header_response(req: Request, res :Response):
 
 @app.get("/response/files")
 async def send_file_response(req: Request, res :Response):
-    res.file("C:/Users/dunamix/Documents/Nexios/test/static/example.txt")
+    res.file("C:/Users/dunamix/Documents/Nexios/test/static/example.txt",content_disposition_type="attachment")
     
 @pytest.fixture
 async def async_client():

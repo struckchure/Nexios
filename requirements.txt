@@ -14,3 +14,4 @@ poetry
 #testing
 mypy
 pre-commit
+pytest

@@ -559,7 +559,7 @@ class NexiosResponse:
         )
         return self
 
-    def stream(self, iterator: Generator[Union[str, bytes]], content_type: str = "text/plain"):
+    def stream(self, iterator: Generator[Union[str, bytes],Any, Any], content_type: str = "text/plain"):
         """Send streaming response."""
         self._response = StreamingResponse(
             content=iterator,  # type: ignore
