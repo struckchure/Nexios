@@ -521,6 +521,7 @@ class NexiosResponse:
              indent: Optional[int] = None,
                 ensure_ascii: bool = True,):
         """Send JSON response."""
+        header_store = self._response._headers.copy() # type: ignore[reportPrivateUsage]
         self._response = JSONResponse(
             content=data,
             status_code=status_code,
@@ -528,28 +529,38 @@ class NexiosResponse:
             indent=indent,
             ensure_ascii=ensure_ascii
         )
-        return self._response
+        self._response._headers.extend(header_store)   # type: ignore[reportPrivateUsage]
+
+        return self
     def empty(self, status_code:int = 200, headers: Dict[str, Any] = {}):
         """Send an empty response."""
+        header_store = self._response._headers.copy() # type: ignore[reportPrivateUsage]
+        
         self._response = Response(
             status_code=status_code,
             headers=headers
         )
+        self._response._headers.extend(header_store) # type: ignore[reportPrivateUsage]
+        
         return self._response
         
     def html(self, content: str, status_code: int = 200, headers: Dict[str, Any] = {}):
         """Send HTML response."""
         
-        
+        header_store = self._response._headers.copy() # type: ignore[reportPrivateUsage]
         self._response = HTMLResponse(
             content=content,
             status_code=status_code,
             headers=headers
         )
+        self._response._headers.extend(header_store) # type: ignore[reportPrivateUsage]
+        
         return self
 
     def file(self, path: str, filename: Optional[str] = None, content_disposition_type: str = "inline"):
         """Send file response."""
+        header_store = self._response._headers.copy() # type: ignore[reportPrivateUsage]
+        
         self._response = FileResponse(
             path=path,
             filename=filename,
@@ -557,25 +568,35 @@ class NexiosResponse:
             headers=self._response.headers,
             content_disposition_type=content_disposition_type,
         )
+        self._response._headers.extend(header_store) # type: ignore[reportPrivateUsage]
+        
         return self
 
     def stream(self, iterator: Generator[Union[str, bytes],Any, Any], content_type: str = "text/plain"):
         """Send streaming response."""
+        header_store = self._response._headers.copy() # type: ignore[reportPrivateUsage]
+        
         self._response = StreamingResponse(
             content=iterator,  # type: ignore
             status_code=self._status_code,
             headers=self._response.headers,
             content_type=content_type
         )
+        self._response._headers.extend(header_store) # type: ignore[reportPrivateUsage]
+        
         return self
 
     def redirect(self, url: str, status_code: int = 302):
         """Send redirect response."""
+        header_store = self._response._headers.copy() # type: ignore[reportPrivateUsage]
+        
         self._response = RedirectResponse(
             url=url,
             status_code=status_code,
             headers=self._response.headers
         )
+        self._response._headers.extend(header_store) # type: ignore[reportPrivateUsage]
+        
         return self
 
     def status(self, status_code: int):

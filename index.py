@@ -53,6 +53,8 @@ async def create_user(request, response) -> None:
 
 @app.route("/new")
 async def create_new(request, response) -> None:
-    return response.json({"hello":"world"})
+    response.set_cookie("a","b")
+    response.header("aa","bb")
+    response.json({"hello":"world"})
 
 app.mount_router(a)
