@@ -39,7 +39,7 @@ python-multipart = "0.0.6"
 pyjwt = "2.7.0"
 typing-extensions = "4.12.2"
 
-[poetry.group.dev.dependencies]
+[tool.poetry.group.dev.dependencies]
 mypy = "^0.910"
 pytest = "~=6.2.5"
 mkdocs = "^1.2.3"
