@@ -25,7 +25,7 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Install Dependencies (Including Dev Dependencies)
-        run: poetry install --with dev
+        run: poetry install --dev
 
       - name: Run mypy
         run: poetry run mypy nexios
