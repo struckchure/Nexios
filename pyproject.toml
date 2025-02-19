@@ -49,6 +49,8 @@ mkdocs-material = "*"
 mkdocs-git-revision-date-localized-plugin = "*"
 mkdocs-multirepo-plugin = "*"
 pymdown-extensions = "*"
+typing-extensions = "4.12.2"
+
 
 
 

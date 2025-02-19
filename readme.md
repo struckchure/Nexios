@@ -10,9 +10,9 @@
 
 ### 🌟 The lightweight, blazing-fast Python framework you've been waiting for!  
 
-[![GitHub stars](https://img.shields.io/github/stars/TechWithDunamix/Nexios?style=for-the-badge)](https://github.com/TechWithDunamix/Nexios/stargazers)  
+[![GitHub stars](https://github.com/nexios-labs/Nexios?style=for-the-badge)](https://github.com/TechWithDunamix/Nexios/stargazers)  
 [![PyPI Downloads](https://img.shields.io/pypi/dm/nexios?style=for-the-badge)](https://pypi.org/project/nexios/)  
-[![Documentation](https://img.shields.io/badge/Docs-Read%20Now-blue?style=for-the-badge)](https://your-docs-url.com/)  
+[![Documentation](https://img.shields.io/badge/Docs-Read%20Now-blue?style=for-the-badge)](https://nexios-labs.github.io/Nexios/)  
 
 ## ⚡ What is Nexios?  
 Think **FastAPI meets Express.js** but with its own **swagger**! 🎩 Nexios is a modern Python framework designed to help you **build, deploy, and scale** applications **effortlessly**.  
