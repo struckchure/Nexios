@@ -2,7 +2,7 @@ site_name: Nexios
 site_description: A modern backend framework for building scalable and efficient web applications.
 site_author: Dunamis
 site_url: https://nexios.example.com
-repo_url: https://github.com/techwithdunamix/nexios
+repo_url: https://github.com/nexios-labs/Nexios
 
 # Theme Configuration
 theme:

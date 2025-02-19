@@ -39,13 +39,12 @@ python-multipart = "0.0.6"
 pyjwt = "2.7.0"
 typing-extensions = "4.12.2"
 
-[tool.poetry.dev-dependencies]
+[poetry.group.dev.dependencies]
 mypy = "^0.910"
 pytest = "~=6.2.5"
 mkdocs = "^1.2.3"
 coverage = "^6.3"
 httpx = "^0.23.3"
-mkdocs = "*"
 mkdocs-material = "*"
 mkdocs-git-revision-date-localized-plugin = "*"
 mkdocs-multirepo-plugin = "*"
