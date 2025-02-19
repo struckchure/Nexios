@@ -29,6 +29,8 @@ class allowed_methods(RouteDecorator):
         self.allowed_methods.append("OPTIONS")
 
     def __call__(self, handler: F) -> F:
+        if getattr(handler, "_is_wrapped", False):  
+            return handler 
         @wraps(handler)
         async def wrapper(*args: List[Any], **kwargs: Dict[str, Any]) -> Any:
             *_, request, response = args  # Ensure request and response are last
@@ -45,6 +47,6 @@ class allowed_methods(RouteDecorator):
                     status_code=405,
                 )
 
-            return await handler(request, response)
-
+            return await handler(*args, **kwargs)
+        wrapper._is_wrapped = True  # type: ignore
         return wrapper  # type: ignore
