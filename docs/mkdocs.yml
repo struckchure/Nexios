@@ -77,16 +77,9 @@ plugins:
   - search
   - minify:
       minify_html: true
-  - rss:
-      match_path: blog/posts/.*
-      date_from_meta:
-        as_creation: date
-      categories:
-        - categories
-        - tags
+  
   - glightbox
-  - awesome-pages  # For advanced navigation functionality
-
+  - awesome-pages  
 # Markdown Extensions
 markdown_extensions:
   - admonition

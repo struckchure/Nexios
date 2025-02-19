@@ -2,12 +2,11 @@ env/
 .vscode/
 build/
 nexios.egg-info/
-app.py
 __pycache__/
-*.pyc
 index.py
 dist/
 .env
 .mypy_cache/
 docs/site
 .tox/
+dev/
