@@ -246,7 +246,7 @@ class NexiosApp:
         async def default_handler(req: Request, res: NexiosResponse):
            raise NotFoundException
 
-        handler: Optional[HandlerType] | None = handler or default_handler  # type: ignore
+        handler: Optional[HandlerType] = handler or default_handler  # type: ignore
         stack: List[MiddlewareType] = [
             *self.http_middlewares.copy(),
             self.exceptions_handler,

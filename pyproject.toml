@@ -1,7 +1,7 @@
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
+include = ["nexios/py.typed"]
 [tool.poetry]
 name = "nexios"
 version = "2.0.13"
@@ -30,14 +30,16 @@ keywords = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9"
-uvicorn = "*"
-asgiref = "*"
-anyio = "*"
-aiofiles = "*"
-itsdangerous = "*"
-python-multipart = "*"
-pyjwt = "*"
+python = ">=3.10"
+uvicorn = "0.22.0"
+asgiref = "3.7.2"
+anyio = "4.3.0"
+aiofiles = "23.2.1"
+itsdangerous = "2.1.2"
+python-multipart = "0.0.6"
+pyjwt = "2.7.0"
+typing-extensions = "4.12.2"
+
 
 [tool.poetry.scripts]
 nexios = "nexios.cli.main:nexios"

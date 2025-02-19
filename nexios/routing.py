@@ -1,4 +1,4 @@
-from typing import Any, List, Optional, Pattern,Dict,TypeVar,Tuple,Callable
+from typing import Any, List, Optional, Pattern,Dict,TypeVar,Tuple,Callable,Union
 from dataclasses import dataclass
 import re
 import warnings
@@ -107,7 +107,7 @@ class Routes:
         self.route_type = self.route_info.route_type
         self.router_middleware = None
     
-    def match(self, path: str) ->Dict[str,Any] | None:
+    def match(self, path: str) -> Optional[Dict[str,Any]] :
         """
         Match a path against this route's pattern and return captured parameters
         """
@@ -453,7 +453,7 @@ class WebsocketRoutes:
         assert callable(handler), "Route handler must be callable"
         self.raw_path = path
         self.handler:WsHandlerType = handler
-        self.middleware :WsMiddlewareType | None = middleware
+        self.middleware  = middleware
         self.route_info = RouteBuilder.create_pattern(path)
         self.pattern = self.route_info.pattern
         self.param_names = self.route_info.param_names
@@ -470,14 +470,14 @@ class WebsocketRoutes:
         return None
     
     
-    def __call__(self) -> Tuple[Pattern[str],WsHandlerType,WsMiddlewareType | None]:
+    def __call__(self) -> Tuple[Pattern[str],WsHandlerType,Union[WsMiddlewareType,None] ]:
         """Return the route components for registration"""
         return self.pattern, self.handler, self.middleware
     
     def __repr__(self) -> str:
         return f"<WSRoute {self.raw_path}>"
     
-    async def execute_middleware_stack(self, ws :"WebsocketRoutes", **kwargs :Dict[str,Any]) -> WsMiddlewareType | None:
+    async def execute_middleware_stack(self, ws :"WebsocketRoutes", **kwargs :Dict[str,Any]) -> Union[WsMiddlewareType , None]:
         """
         Executes WebSocket middleware stack after route matching.
         """
@@ -554,7 +554,7 @@ class WSRouter(BaseRouter):
     def ws_route(
         self, 
         path: Annotated[str, Doc("The WebSocket route path. Must be a valid URL pattern.")]
-    ) -> WsHandlerType | Any:
+    ) -> Union[WsHandlerType , Any]:
         """
         Registers a WebSocket route.
 

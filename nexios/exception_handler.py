@@ -50,7 +50,7 @@ class ExceptionMiddleware:
                                                                                  NotFoundException:handle_404_error} #type:ignore[dict-item]
     def add_exception_handler(
         self,
-        exc_class_or_status_code: int | type[Exception],
+        exc_class_or_status_code: typing.Union[int , type[Exception]],
         handler: ExceptionHandlerType,
     ) -> None:
         if isinstance(exc_class_or_status_code, int):
