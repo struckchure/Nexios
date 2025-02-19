@@ -9,6 +9,17 @@ from nexios.auth.base import BaseUser
 from nexios.auth.middleware import AuthenticationMiddleware
 from nexios.auth.backends.jwt import JWTAuthBackend
 from nexios.config import MakeConfig
+
+from nexios.pagination import (
+    ListDataHandler,
+    PageNumberPagination,
+    Paginator,
+    PaginatedResponse,
+    AsyncDataHandler,
+    AsyncPaginator,
+    InvalidPageError,
+    paginate
+)
 config = MakeConfig({
     "secret_key":"th-key",
     "cors":{
@@ -39,10 +50,12 @@ class UserSchema(Schema):
     name = fields.Str(required=True)
     email = fields.Email(required=True)
 a = Router(prefix="/a")
+fake_items = [{"id": i, "name": f"Item {i}"} for i in range(1, 101)]
 @app.get("/user")
 # @a.get("/user")
 @auth(["jwt"])
 # @validate_request(UserSchema())
+
 async def create_user(request, response) -> None:
     print(request.session)
     # request.session.set_session("heloo","hi")
@@ -53,8 +66,7 @@ async def create_user(request, response) -> None:
 
 @app.route("/new")
 async def create_new(request, response) -> None:
-    response.set_cookie("a","b")
-    response.header("aa","bb")
-    response.json({"hello":"world"})
-
+    
+    return response.json(paginate(fake_items, request))
+    
 app.mount_router(a)
