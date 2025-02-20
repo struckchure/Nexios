@@ -87,7 +87,7 @@ async def test_response_with_header(async_client :Client):
     
 
 async def test_file_response(async_client :Client):
-    response = await async_client.get("/response/files",headers={"Range":"bytes=1000-1499"})
+    response = await async_client.get("/response/files")
     assert response.status_code == 200
     expected_disposition = 'attachment; filename="example.txt"'
     assert response.headers["content-disposition"] == expected_disposition
@@ -96,7 +96,8 @@ async def test_file_response(async_client :Client):
 
 
 async def test_file_response_range(async_client: Client):
-    response = await async_client.get("/response/files", headers={"Range": "bytes=0-1"})
+    response = await async_client.get("/response/files", headers={"Range": "bytes=12-19"})
     assert response.status_code == 206
-    # assert response.headers["content-length"] == "17"
+    assert response.headers["content-length"] == "8"
+    print(response.status_code)
     print(response.headers)

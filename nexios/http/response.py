@@ -282,9 +282,9 @@ class FileResponse(Response):
 
         self.headers = headers or {}
         content_type, _ = mimetypes.guess_type(str(self.path))
-        self.headers['content-type'] = content_type or 'application/octet-stream'
-        self.headers['content-disposition'] = f'{content_disposition_type}; filename="{self.filename}"'
-        self.headers['accept-ranges'] = 'bytes'          
+        self.header('content-type', content_type or 'application/octet-stream')
+        self.header('content-disposition' ,f'{content_disposition_type}; filename="{self.filename}"')
+        self.header('accept-ranges','bytes')         
 
         self._ranges: List[Tuple[int, int]] = []
         self._multipart_boundary: Optional[str] = None
@@ -299,6 +299,7 @@ class FileResponse(Response):
         self.headers.setdefault("etag", etag)
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Handle the ASGI response, including range requests."""
+        
         try:
             stat_result = await anyio.to_thread.run_sync(os.stat, self.path)
             self.set_stat_headers(stat_result)
