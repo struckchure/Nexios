@@ -74,7 +74,7 @@ def after_request(
                 return response
             if log_level:
                 print(
-                    f"[{log_level}] After Request: {req.method} {req.url} - Status: {response._status_code}"
+                    f"[{log_level}] After Request: {req.method} {req.url} - Status: {response._status_code}" #type:ignore
                 )  # type: ignore
             if func:
                 await func(req, response)
@@ -98,7 +98,7 @@ def analytics(func: HandlerType) -> HandlerType:
         response = await func(*args, **kwargs)
         elapsed_time = time.time() - start_time
         print(
-            f"Analytics: {req.method} {req.url} - {response._status_code} in {elapsed_time:.2f}s"
+            f"Analytics: {req.method} {req.url} - {response._status_code} in {elapsed_time:.2f}s" #type:ignore
         )  # type:ignore
         return response
 

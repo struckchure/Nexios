@@ -104,7 +104,7 @@ class BaseMiddleware:
         Returns:
             Response: The HTTP response object returned by the next middleware or handler.
         """
-        return await call_next(request)
+        return await call_next()
 
     async def process_response(
         self,
