@@ -72,7 +72,6 @@ def create_logger(
     logger = getLogger(logger_name)
     logger.setLevel(log_level)
 
-    # Default console handler
     console_handler = StreamHandler(sys.stderr)
     console_handler.setFormatter(
         Formatter("[%(asctime)s] %(levelname)s in %(module)s: %(message)s")
@@ -80,7 +79,6 @@ def create_logger(
 
     handlers: Tuple[Handler, ...] = (console_handler,)
 
-    # Optional file handler
     if log_file:
         file_handler = RotatingFileHandler(log_file, maxBytes=max_bytes, backupCount=backup_count)
         file_handler.setFormatter(
@@ -95,6 +93,4 @@ def create_logger(
     return logger
 
 
-# Example usage:
-logger = create_logger(log_level=INFO, log_file="logs/nexios.log")
-logger.info("Advanced Nexios logging initialized!")
+

@@ -2,7 +2,6 @@ from .application import NexiosApp
 from .sessions.middleware import SessionMiddleware
 from .middlewares.common import CommonMiddleware
 from .middlewares.csrf import CSRFMiddleware
-from .middlewares.logging import LoggingMiddleware
 from .config.base import MakeConfig
 from .config import set_config, DEFAULT_CONFIG  
 from .routing import Router  # type:ignore
@@ -75,7 +74,6 @@ def get_application(
             CORSMiddleware(),
             SessionMiddleware(),
             CSRFMiddleware(),
-            LoggingMiddleware(),
             *middlewares,
         ],
         config=config,

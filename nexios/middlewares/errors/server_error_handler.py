@@ -3,6 +3,8 @@ from nexios.http import Request,Response
 from nexios.config import get_config
 import traceback,html,sys,inspect,typing
 from nexios.types import HandlerType
+from nexios.logging import DEBUG,create_logger
+logger = create_logger(__name__,log_level=DEBUG)
 STYLES = """
 body {
     font-family: Arial, sans-serif;
@@ -168,7 +170,7 @@ class ServerErrorMiddleware(BaseMiddleware):
                 response = self.error_response(response)
             
             err = traceback.format_exc()
-            print(err)
+            logger.error(err)
             return response
         
             
