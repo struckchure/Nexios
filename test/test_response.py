@@ -46,7 +46,7 @@ async def send_header_response(req: Request, res :Response):
 async def send_file_response(req: Request, res :Response):
     res.file("C:/Users/dunamix/Documents/Nexios/test/static/example.txt",content_disposition_type="attachment")
     
-@pytest.fixture
+@pytest.fixture(autouse=True)
 async def async_client():
     async with  Client(app,log_requests=True) as c:
         yield c 
@@ -93,4 +93,10 @@ async def test_file_response(async_client :Client):
     assert response.headers["content-disposition"] == expected_disposition
     assert "content-length" in response.headers
     
-    
+
+
+async def test_file_response_range(async_client: Client):
+    response = await async_client.get("/response/files", headers={"Range": "bytes=0-1"})
+    assert response.status_code == 206
+    # assert response.headers["content-length"] == "17"
+    print(response.headers)
