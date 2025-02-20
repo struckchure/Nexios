@@ -2,7 +2,7 @@ from .base import MakeConfig
 _global_config = None
 
 
-def set_config(config):
+def set_config(config :MakeConfig) -> None:
     global _global_config
     _global_config = config
 
