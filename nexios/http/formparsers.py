@@ -33,14 +33,14 @@ class FormMessage(Enum):
 
 @dataclass
 class MultipartPart:
-    content_disposition: bytes | None = None
+    content_disposition: typing.Optional[bytes] = None
     field_name: str = ""
     data: bytearray = field(default_factory=bytearray)
-    file: UploadedFile | None = None
+    file: typing.Optional[UploadedFile] = None
     item_headers: list[tuple[bytes, bytes]] = field(default_factory=list)
 
 
-def _user_safe_decode(src: bytes | bytearray, codec: str) -> str:
+def _user_safe_decode(src: typing.Union[bytes , bytearray], codec: str) -> str:
     try:
         return src.decode(codec)
     except (UnicodeDecodeError, LookupError):
@@ -94,7 +94,7 @@ class FormParser:
         field_name = b""
         field_value = b""
 
-        items: list[tuple[str, str | UploadedFile]] = []
+        items: list[tuple[str, typing.Union[str , UploadedFile]]] = []
 
         # Feed the parser with data from the request.
         async for chunk in self.stream:
@@ -129,15 +129,15 @@ class MultiPartParser:
         headers: Headers,
         stream: typing.AsyncGenerator[bytes, None],
         *,
-        max_files: int | float = 1000,
-        max_fields: int | float = 1000,
+        max_files: typing.Union[int , float] = 1000,
+        max_fields:  typing.Union[int , float] = 1000,
     ) -> None:
         assert multipart is not None, "The `python-multipart` library must be installed to use form parsing."
         self.headers = headers
         self.stream = stream
         self.max_files = max_files
         self.max_fields = max_fields
-        self.items: list[tuple[str, str | UploadedFile]] = []
+        self.items: list[tuple[str, typing.Union[str , UploadedFile]]] = []
         self._current_files = 0
         self._current_fields = 0
         self._current_partial_header_name: bytes = b""

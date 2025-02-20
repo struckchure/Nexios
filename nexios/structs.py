@@ -688,9 +688,9 @@ class UploadedFile:
         self,
         file: typing.BinaryIO,
         *,
-        size: int | None = None,
-        filename: str | None = None,
-        headers: Headers | None = None,
+        size: typing.Optional[int] = None,
+        filename: typing.Optional[str] = None,
+        headers: typing.Optional[Headers] = None,
     ) -> None:
         self.filename = filename
         self.file = file
@@ -698,7 +698,7 @@ class UploadedFile:
         self.headers = headers or Headers()
 
     @property
-    def content_type(self) -> str | None:
+    def content_type(self) -> typing.Union[str, None]:
         return self.headers.get("content-type", None)
 
     @property
@@ -746,8 +746,8 @@ class FormData(ImmutableMultiDict[str, typing.Union[UploadedFile, str]]):
 
     def __init__(
         self,
-        *args: FormData | typing.Mapping[str, str | UploadedFile] | list[tuple[str, str | UploadedFile]],
-        **kwargs: str | UploadedFile,
+        *args: typing.Union[FormData , typing.Mapping[str, typing.Union[str , UploadedFile]] , list[tuple[str, typing.Union[str , UploadedFile]]]],
+        **kwargs: typing.Union[str , UploadedFile],
     ) -> None:
         super().__init__(*args, **kwargs)
 

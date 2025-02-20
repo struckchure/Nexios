@@ -24,11 +24,11 @@ Send = typing.Callable[[Message], typing.Awaitable[None]]
     
 MiddlewareType: TypeAlias = Callable[
     [Request, NexiosResponse, Callable[..., Awaitable[None]]], 
-    Awaitable[NexiosResponse | None]
+    Awaitable[typing.Union[NexiosResponse , None]]
 ]
 WsMiddlewareType :TypeAlias = Callable[[Type[WebSocket],Type[Callable[...,Awaitable[Message]]]], Type[Send]]  
 
-WsHandlerType = Callable[..., Awaitable[Send | Message]]
+WsHandlerType = Callable[..., Awaitable[typing.Union[Send , Message]]]
 HandlerType = Callable[..., Awaitable[Any]]
 ExceptionHandlerType = Callable[[Request,Response,Exception],typing.Coroutine[Any,Any,Any]]
 
