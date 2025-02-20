@@ -2,16 +2,17 @@ from .application import NexiosApp
 from .sessions.middleware import SessionMiddleware
 from .middlewares.common import CommonMiddleware
 from .middlewares.csrf import CSRFMiddleware
+from .middlewares.logging import LoggingMiddleware
 from .config.base import MakeConfig
-from .config import set_config, DEFAULT_CONFIG  # type:ignore
+from .config import set_config, DEFAULT_CONFIG  
 from .routing import Router  # type:ignore
 from nexios.middlewares.errors.server_error_handler import ServerErrorMiddleware
 from .middlewares.cors import CORSMiddleware
-from .middlewares.base import BaseMiddleware  # type:ignore
 from typing import Sequence, Optional
-from .application import NexiosApp  # type:ignore
+from .application import NexiosApp 
+
 from .types import MiddlewareType, ExceptionHandlerType
-from typing_extensions import Doc, Annotated  # type:ignore
+from typing_extensions import Doc, Annotated  
 
 
 def get_application(
@@ -74,6 +75,7 @@ def get_application(
             CORSMiddleware(),
             SessionMiddleware(),
             CSRFMiddleware(),
+            LoggingMiddleware(),
             *middlewares,
         ],
         config=config,
