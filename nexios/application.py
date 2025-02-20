@@ -1,3 +1,4 @@
+import re
 from typing import Any, Callable, List, Union
 from .http.request import Request
 from .http.response import NexiosResponse
@@ -233,7 +234,20 @@ class NexiosApp:
                 await send({"type": "lifespan.shutdown.failed", "message": str(e)})
 
     def __normalize_path(self, path: str) -> str:
-        return path.rstrip("/").lower().replace("//", "/")
+        options :Dict[str,Any]= self.config.to_dict() #type:ignore
+
+        if path == "/":
+            return "/"
+
+        if options.get("remove_double_slashes", True):  
+            path = re.sub(r'/+', '/', path)  
+        if options.get("lowercase", True):  
+            path = path.lower()
+
+        if options.get("append_slash", False) and not path.endswith("/"):  
+            path += "/"
+
+        return path.rstrip("/")  
 
     async def __execute_middleware_stack(
         self,
@@ -246,7 +260,7 @@ class NexiosApp:
         async def default_handler(req: Request, res: NexiosResponse):
            raise NotFoundException
 
-        handler: Optional[HandlerType] | None = handler or default_handler  # type: ignore
+        handler: Optional[HandlerType] = handler or default_handler  # type: ignore
         stack: List[MiddlewareType] = [
             *self.http_middlewares.copy(),
             self.exceptions_handler,
@@ -280,7 +294,6 @@ class NexiosApp:
         request.scope["config"] = self.config
 
         handler = None
-
         for route in self.routes:
             url = self.__normalize_path(request.url.path)
             match = route.pattern.match(url)

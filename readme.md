@@ -10,12 +10,12 @@
 
 ### 🌟 The lightweight, blazing-fast Python framework you've been waiting for!  
 
-[![GitHub stars](https://img.shields.io/github/stars/TechWithDunamix/Nexios?style=for-the-badge)](https://github.com/TechWithDunamix/Nexios/stargazers)  
+[![GitHub stars](https://github.com/nexios-labs/Nexios?style=for-the-badge)](https://github.com/nexios-labs/Nexios)  
 [![PyPI Downloads](https://img.shields.io/pypi/dm/nexios?style=for-the-badge)](https://pypi.org/project/nexios/)  
-[![Documentation](https://img.shields.io/badge/Docs-Read%20Now-blue?style=for-the-badge)](https://your-docs-url.com/)  
+[![Documentation](https://img.shields.io/badge/Docs-Read%20Now-blue?style=for-the-badge)](https://nexios-labs.github.io/Nexios/)  
 
 ## ⚡ What is Nexios?  
-Think **FastAPI meets Express.js** but with its own **swagger**! 🎩 Nexios is a modern Python framework designed to help you **build, deploy, and scale** applications **effortlessly**.  
+Think **FastAPI meets Express.js** but with its own **swagger**!  Nexios is a modern Python framework designed to help you **build, deploy, and scale** applications **effortlessly**.  
 
 ✅ **Super lightweight** – No unnecessary bloat!  
 ✅ **Crazy fast** 🚀 – Like, seriously!  
@@ -63,12 +63,12 @@ async def get_users(request,response):
 | Best For | APIs & Full Apps | APIs | Full-stack Web Apps | Small Apps |
 
 ## 📖 Read the Full Documentation  
-👉  <a href="https://techwithdunamix.github.io/Nexios/">https://techwithdunamix.github.io/Nexios/</a>
+👉  <a href="https://github.com/nexios-labs/Nexios/">https://github.com/nexios-labs/Nexios</a>
 
 ## ⭐ Star Nexios on GitHub!  
 If you love **Nexios**, show some ❤️ by **starring** the repo!  
 
-🔗 [**GitHub Repo**](https://github.com/TechWithDunamix/Nexios)  
+🔗 [**GitHub Repo**](https://github.com/nexios-labs/Nexios)  
 
 ---
 

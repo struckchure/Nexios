@@ -1,7 +1,7 @@
 from nexios.http import response, request
 from nexios.http.response import NexiosResponse
 from nexios.types import HandlerType
-from typing import Any
+from typing import Any,Union
 
 
 class APIHandler:
@@ -27,7 +27,7 @@ class APIHandler:
         self, request: request.Request, response: response.NexiosResponse
     ) -> Any:
         method = request.method.lower()
-        handler: HandlerType | None = getattr(self, method, None)
+        handler: Union[HandlerType, None] = getattr(self, method, None)
         if not callable(handler):
             return response.text("Method not allowed", status_code=405)
 
