@@ -2,9 +2,8 @@ import re
 from typing import Any, Callable, List, Union
 from .http.request import Request
 from .http.response import NexiosResponse
-from .types import HTTPMethod
 from .decorators import allowed_methods
-from .routing import Router, Routes, WSRouter, WebsocketRoutes
+from .routing import Router, WSRouter, WebsocketRoutes
 from .structs import RouteParam
 from .websockets import get_websocket_session, WebSocket
 import traceback, typing
@@ -21,7 +20,6 @@ from .types import (
     WsMiddlewareType,
     Message,
     HandlerType,
-    WsHandlerType,
 )
 
 allowed_methods_default = ["get", "post", "delete", "put", "patch", "options"]
@@ -56,7 +54,7 @@ def validate_params(
     return True, []
 
 
-class NexiosApp:
+class NexiosApp(Router):
     def __init__(
         self,
         config: Annotated[
@@ -87,7 +85,8 @@ class NexiosApp:
     ):
         self.config = config
         self.server_error_handler = None
-        self.routes: List[Routes] = []
+        super().__init__()
+        self.ws_router = WSRouter()
         self.ws_routes: List[WebsocketRoutes] = []
         self.http_middlewares: List[MiddlewareType] = middlewares or []
         self.ws_middlewares: List[WsMiddlewareType] = []
@@ -324,138 +323,7 @@ class NexiosApp:
         await response.get_response()(scope, receive, send)
         return
 
-    def route(
-        self,
-        path: Annotated[
-            str, Doc("The URL pattern for the route. Must be a valid string path.")
-        ],
-        methods: Annotated[
-            List[Union[str, HTTPMethod]],
-            Doc(
-                "A list of allowed HTTP methods (e.g., ['GET', 'POST']). Defaults to all methods."
-            ),
-        ] = allowed_methods_default,
-        validator: Annotated[
-            Optional[Dict[str, Any]],
-            Doc("An dict to validate request parameters before calling the handler."),
-        ] = None,
-    ) -> Callable[..., Any]:
-        """
-        Registers a route with the specified HTTP methods and an optional validator.
-
-        This decorator allows developers to define HTTP routes for the application by specifying
-        the URL path, allowed methods, and an optional parameter validator. It ensures that the
-        handler only responds to the defined HTTP methods.
-
-
-
-        Example:
-            ```python
-
-            @app.route("/users", methods=["GET"])
-            async def get_users(request, response):
-                response.json({"users": ["Alice", "Bob"]})
-
-            @app.route("/users", methods=["POST"])
-            async def create_user(request, response):
-                response.json({"message": "User created"}, status_code=201)
-            ```
-        """
-
-        def decorator(handler: HandlerType) -> HandlerType:  # type: ignore
-            _handler: HandlerType = allowed_methods(methods)(
-                handler
-            )  # type :ignore[no-reder]
-            self.add_route(Routes(path, _handler, methods=methods, validator=validator))
-            return _handler
-
-        return decorator
-
-    def ws_route(
-        self,
-        path: Annotated[
-            str, Doc("The WebSocket route path. Must be a valid URL pattern.")
-        ],
-    ) -> Callable[..., WsHandlerType]:
-        """
-        Registers a WebSocket route.
-
-        This decorator is used to define WebSocket routes in the application, allowing handlers
-        to manage WebSocket connections. When a WebSocket client connects to the given path,
-        the specified handler function will be executed.
-
-        Returns:
-            Callable: The original WebSocket handler function.
-
-        Example:
-            ```python
-
-            @app.ws_route("/ws/chat")
-            async def chat_handler(websocket):
-                await websocket.accept()
-                while True:
-                    message = await websocket.receive_text()
-                    await websocket.send_text(f"Echo: {message}")
-            ```
-        """
-
-        def decorator(handler: WsHandlerType) -> WsHandlerType:
-            self.add_ws_route(WebsocketRoutes(path, handler))
-            return handler
-
-        return decorator
-
-    def add_ws_route(
-        self,
-        route: Annotated[
-            WebsocketRoutes,
-            Doc("An instance of the Routes class representing a WebSocket route."),
-        ],
-    ) -> None:
-        """
-        Adds a WebSocket route to the application.
-
-        This method registers a WebSocket route, allowing the application to handle WebSocket connections.
-
-        Args:
-            route (Routes): The WebSocket route configuration.
-
-        Returns:
-            None
-
-        Example:
-            ```python
-            route = Routes("/ws/chat", chat_handler)
-            app.add_ws_route(route)
-            ```
-        """
-        self.ws_routes.append(route)
-
-    def add_route(
-        self,
-        route: Annotated[
-            Routes, Doc("An instance of the Routes class representing an HTTP route.")
-        ],
-    ) -> None:
-        """
-        Adds an HTTP route to the application.
-
-        This method registers an HTTP route, allowing the application to handle requests for a specific URL path.
-
-        Args:
-            route (Routes): The HTTP route configuration.
-
-        Returns:
-            None
-
-        Example:
-            ```python
-            route = Routes("/home", home_handler, methods=["GET", "POST"])
-            app.add_route(route)
-            ```
-        """
-        self.routes.append(route)
-
+    
     def add_middleware(
         self,
         middleware: Annotated[
@@ -490,7 +358,29 @@ class NexiosApp:
         """
         if callable(middleware):
             self.http_middlewares.append(middleware)
+    
+    def add_ws_route(
+        self, 
+        route: Annotated[WebsocketRoutes, Doc("An instance of the Routes class representing a WebSocket route.")]
+    ) -> None:
+        """
+        Adds a WebSocket route to the application.
 
+        This method registers a WebSocket route, allowing the application to handle WebSocket connections.
+
+        Args:
+            route (Routes): The WebSocket route configuration.
+
+        Returns:
+            None
+
+        Example:
+            ```python
+            route = Routes("/ws/chat", chat_handler)
+            app.add_ws_route(route)
+            ```
+        """
+        self.ws_routes.append(route)
     def mount_router(
         self,
         router: Annotated[
@@ -556,6 +446,7 @@ class NexiosApp:
             app.mount_ws_router(chat_router)  # Mounts the user routes into the main app
             ```
         """
+        
         for route in router.get_routes():
             self.add_ws_route(route)
 
