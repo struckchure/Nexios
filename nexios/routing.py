@@ -126,9 +126,9 @@ class Routes:
     def __repr__(self) -> str:
         return f"<Route {self.raw_path} methods={self.methods}>"
 class Router(BaseRouter):
-    def __init__(self, prefix: Optional[str] = None):
+    def __init__(self, prefix: Optional[str] = None, routes :Optional[List[Routes]] = None):
         self.prefix = prefix or ""
-        self.routes: List[Routes] = []
+        self.routes: List[Routes] =  list(routes) if routes else []
         self.middlewares: List[MiddlewareType] = []
         
         if self.prefix and not self.prefix.startswith("/"):
