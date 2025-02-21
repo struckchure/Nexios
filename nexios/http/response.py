@@ -15,6 +15,10 @@ import http.cookies
 from email.utils import format_datetime, formatdate
 from datetime import datetime, timezone
 from urllib.parse import quote
+import hashlib
+import anyio.to_thread
+from nexios.structs import Headers
+import stat
 Scope = typing.MutableMapping[str, typing.Any]
 Message = typing.MutableMapping[str, typing.Any]
 
@@ -23,6 +27,14 @@ Send = typing.Callable[[Message], typing.Awaitable[None]]
 
 JSONType = Union[str, int, float, bool, None, Dict[str, Any], List[Any]]
 
+class MalformedRangeHeader(Exception):
+    def __init__(self, content: str = "Malformed range header.") -> None:
+        self.content = content
+
+
+class RangeNotSatisfiable(Exception):
+    def __init__(self, max_size: int) -> None:
+        self.max_size = max_size
 
 class Response:
     """
@@ -260,41 +272,54 @@ class FileResponse(Response):
         headers: Optional[Dict[str, str]] = None,
         content_disposition_type: str = "inline",
     ):
-        super().__init__()
+        super().__init__(headers=headers)
         self.path = Path(path)
-        if not self.path.exists():
-            raise FileNotFoundError(f"File not found: {path}")
-        if not self.path.is_file():
-            raise ValueError(f"Path is not a file: {path}")
-
         self.filename = filename or self.path.name
         self.content_disposition_type = content_disposition_type
         self.status_code = status_code
 
         self.headers = headers or {}
         content_type, _ = mimetypes.guess_type(str(self.path))
-        self.headers['content-type'] = content_type or 'application/octet-stream'
-        self.headers['content-disposition'] = f'{content_disposition_type}; filename="{self.filename}"'
-        self.headers['accept-ranges'] = 'bytes'  
-        self.headers['content-length'] = str(self.path.stat().st_size)
+        self.header('content-type', content_type or 'application/octet-stream')
+        self.header('content-disposition' ,f'{content_disposition_type}; filename="{self.filename}"')
+        self.header('accept-ranges','bytes')         
 
         self._ranges: List[Tuple[int, int]] = []
         self._multipart_boundary: Optional[str] = None
+    def set_stat_headers(self, stat_result: os.stat_result) -> None:
+        content_length = str(stat_result.st_size)
+        last_modified = formatdate(stat_result.st_mtime, usegmt=True)
+        etag_base = str(stat_result.st_mtime) + "-" + str(stat_result.st_size)
+        etag = f'"{hashlib.md5(etag_base.encode(), usedforsecurity=False).hexdigest()}"'
 
+        self.headers.setdefault("content-length", content_length)
+        self.headers.setdefault("last-modified", last_modified)
+        self.headers.setdefault("etag", etag)
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Handle the ASGI response, including range requests."""
         
-        self._init_headers()
-        range_header = dict(scope.get('headers', {})).get('range')
+        try:
+            stat_result = await anyio.to_thread.run_sync(os.stat, self.path)
+            self.set_stat_headers(stat_result)
+        except FileNotFoundError:
+            raise RuntimeError(f"File at path {self.path} does not exist.")
+        else:
+            mode = stat_result.st_mode
+            if not stat.S_ISREG(mode):
+                raise RuntimeError(f"File at path {self.path} is not a file.")
         
+        
+        range_header = Headers(scope=scope).get("Range")
         if range_header:
             self._handle_range_header(range_header)
 
         await self._send_response(scope, receive, send)
+  
 
     def _handle_range_header(self, range_header: str) -> None:
         """Parse and validate the Range header."""
         file_size = self.path.stat().st_size
+        
         try:
             unit, ranges = range_header.strip().split('=')
             if unit != 'bytes':
@@ -315,23 +340,24 @@ class FileResponse(Response):
 
             if len(self._ranges) == 1:
                 start, end = self._ranges[0]
-                self.headers['content-range'] = f'bytes {start}-{end}/{file_size}'
-                self.headers['content-length'] = str(end - start + 1)
-                self.status_code = 206 
-
+                content_length = end - start + 1
+                self.header('content-range', f'bytes {start}-{end}/{file_size}')
+                self.header('content-length', str(content_length))
+                self.status_code = 206
             elif len(self._ranges) > 1:
+                
                 self._multipart_boundary = self._generate_multipart_boundary()
-                self.headers['content-type'] = f'multipart/byteranges; boundary={self._multipart_boundary}'
+                self.header('content-type',f'multipart/byteranges; boundary={self._multipart_boundary}')
                 self.status_code = 206  
 
-        except ValueError as _:
-            self.headers['content-range'] = f'bytes */{file_size}'
+        except ValueError as _: 
+         
+            self.header('content-range',f'bytes */{file_size}')
             self.status_code = 416  
 
     async def _send_response(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Send the file response, handling range requests and multipart responses."""
-      
-
+       
         await send({
             'type': 'http.response.start',
             'status': self.status_code,
@@ -382,6 +408,8 @@ class FileResponse(Response):
         """Send a single range of the file using AnyIO."""
         await file.seek(start)
         remaining = end - start + 1
+        self.header('content-length',str(remaining))
+        
         while remaining > 0:
             chunk_size = min(self.chunk_size, remaining)
             chunk = await file.read(chunk_size)
@@ -397,6 +425,7 @@ class FileResponse(Response):
             'type': 'http.response.body',
             'body': b'',
             'more_body': False,
+            
         })
 
     async def _send_multipart_chunk(self, file: AsyncFile[bytes], start: int, end: int, send: Send) -> None:
@@ -405,7 +434,8 @@ class FileResponse(Response):
         remaining = end - start + 1
 
         boundary = f'--{self._multipart_boundary}\r\n'
-        headers = f'Content-Type: {self.headers["content-type"]}\r\nContent-Range: bytes {start}-{end}/{self.path.stat().st_size}\r\n\r\n'
+        header = next((value for key, value in self._headers if key == b"content-type"), None)
+        headers = f'Content-Type: {header}\r\nContent-Range: bytes {start}-{end}/{self.path.stat().st_size}\r\n\r\n'
         await send({
             'type': 'http.response.body',
             'body': (boundary + headers).encode('utf-8'),
@@ -440,7 +470,7 @@ class StreamingResponse(Response):
         headers: Optional[Dict[str, str]] = None,
         content_type: str = "text/plain",
     ):
-        super().__init__()
+        super().__init__(headers=headers)
         
         self.content_iterator = content
         self.status_code = status_code
@@ -508,11 +538,16 @@ class NexiosResponse:
         self._cookies: List[Dict[str, Any]] = []
         self._status_code = self._response.status_code
         self._delete_cookies: List[Dict[str, Any]] = []
+        self.headers = {}
 
     
     def text(self, content: JSONType, status_code:int = 200, headers: Dict[str, Any] = {}):
         """Send plain text or HTML content."""
+        header_store = self._response._headers.copy() # type: ignore[reportPrivateUsage]
+        
         self._response = PlainTextResponse(body=content, status_code=status_code,headers=headers)
+        self._response._headers.extend(header_store)   # type: ignore[reportPrivateUsage]
+        
         return self
 
     def json(self, data: Union[str, List[Any], 
@@ -686,6 +721,7 @@ class NexiosResponse:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
         """Make the response ASGI-compatible."""
+        
         response = self._response
         await response(scope, receive, send)
 
