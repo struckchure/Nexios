@@ -5,8 +5,9 @@ import warnings
 from enum import Enum
 from nexios.types import MiddlewareType,WsMiddlewareType,HandlerType,WsHandlerType
 from nexios.decorators import allowed_methods
+from nexios.validator import Schema
 from typing_extensions import Doc,Annotated #type: ignore
-
+from nexios.structs import URLPath
 T = TypeVar("T")
 allowed_methods_default = ['get','post','delete','put','patch','options']
 
@@ -88,45 +89,259 @@ class BaseRouter:
         raise NotImplementedError("Not implemented")
 
 class Routes:
+    """
+    Encapsulates all routing information for an API endpoint, including path handling,
+    validation, OpenAPI documentation, and request processing.
+
+    Attributes:
+        raw_path: The original URL path string provided during initialization.
+        pattern: Compiled regex pattern for path matching.
+        handler: Callable that processes incoming requests.
+        methods: List of allowed HTTP methods for this endpoint.
+        validator: Request parameter validation rules.
+        request_schema: Schema for request body documentation.
+        response_schema: Schema for response documentation.
+        deprecated: Deprecation status indicator.
+        tags: OpenAPI documentation tags.
+        description: Endpoint functionality details.
+        summary: Concise endpoint purpose.
+    """
+
     def __init__(
         self,
-        path: str,
-        handler: Optional[HandlerType],
-        methods: Optional[List[str]] = None,
-        validator :Optional[Dict[str,type]]= None
+        path: Annotated[
+            str, 
+            Doc("""
+            URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.
+            Examples:
+            - '/users' (static path)
+            - '/posts/{id}' (path parameter)
+            - '/files/{filepath:.*}' (regex-matched path parameter)
+            """)
+        ],
+        handler: Annotated[
+            Optional[HandlerType], 
+            Doc("""
+            Callable responsible for processing requests to this endpoint. Can be:
+            - A regular function
+            - An async function
+            - A class method
+            - Any object implementing __call__
+
+            The handler should accept a request object and return a response object.
+            Example: def user_handler(request: Request) -> Response: ...
+            """)
+        ],
+        methods: Annotated[
+            Optional[List[str]], 
+            Doc("""
+            HTTP methods allowed for this endpoint. Common methods include:
+            - GET: Retrieve resources
+            - POST: Create resources
+            - PUT: Update resources
+            - DELETE: Remove resources
+            - PATCH: Partial updates
+
+            Defaults to ['GET'] if not specified. Use uppercase method names.
+            """)
+        ] = None,
+        name :Optional[str] = None,
+        validator: Annotated[
+            Optional[Dict[str, Any]], 
+            Doc("""
+            Validation rules for route parameters. Structure:
+           
+            Example:
+            {
+                'user_id': int
+                
+            }
+            """)
+        ] = None,
+        request_schema: Annotated[
+            Optional[Schema], 
+            Doc("""
+            Schema definition for the request body using nexios.validator.Schema.
+            Used for OpenAPI documentation generation and automatic validation if enabled.
+            
+            Example:
+            class UserCreateSchema(Schema):
+                name: str
+                email: Email
+                age: Optional[int]
+            """)
+        ] = None,
+        response_schema: Annotated[
+            Optional[Schema], 
+            Doc("""
+            Schema definition for successful responses (HTTP 2xx status codes).
+            Used to generate OpenAPI response documentation.
+
+            Example:
+            class UserResponse(Schema):
+                id: UUID
+                created_at: datetime
+                profile: UserProfileSchema
+            """)
+        ] = None,
+        deprecated: Annotated[
+            Optional[bool], 
+            Doc("""
+            Marks endpoint as deprecated in API documentation when True.
+            Clients should see warning when using deprecated endpoints.
+            """)
+        ] = None,
+        tags: Annotated[
+            Optional[List[str]], 
+            Doc("""
+            Organizational tags for API documentation grouping. Tags are case-sensitive.
+            Example: ['Authentication', 'User Management', 'Reporting']
+            """)
+        ] = None,
+        description: Annotated[
+            Optional[str], 
+            Doc("""
+            Detailed endpoint documentation in Markdown format. Should explain:
+            - Endpoint functionality
+            - Required permissions
+            - Special requirements
+            - Error scenarios
+            - Example use cases
+
+            Example:
+            \"\"\"
+            ## User Registration Endpoint
+            Creates new user accounts with email verification.
+            
+            **Permissions**: Public access
+            
+            **Request Body Requirements:**
+            - Password must be at least 8 characters
+            - Email must be unique
+            
+            **Returns**: 201 Created with verification token
+            \"\"\"
+            """)
+        ] = None,
+        summary: Annotated[
+            Optional[str], 
+            Doc("""
+            Concise one-line description for API documentation listings.
+            Example: "Creates new user account with email verification"
+            """)
+        ] = None,
+        
+        **kwargs :Dict[str,Any]
     ):
+        """
+        Initialize a route configuration with endpoint details.
+
+        Args:
+            path: URL path pattern with optional parameters.
+            handler: Request processing function/method.
+            methods: Allowed HTTP methods (default: ['GET']).
+            validator: Multi-layer request validation rules.
+            request_schema: Request body structure definition.
+            response_schema: Success response structure definition.
+            deprecated: Deprecation marker.
+            tags: Documentation categories.
+            description: Comprehensive endpoint documentation.
+            summary: Brief endpoint description.
+
+        Raises:
+            AssertionError: If handler is not callable.
+        """
         assert callable(handler), "Route handler must be callable"
-        self.validator = validator
+        
         self.raw_path = path
         self.handler = handler
-        self.methods = methods or  allowed_methods_default
-        self.route_info  = RouteBuilder.create_pattern(path)
-        self.pattern :Pattern[str] = self.route_info.pattern
+        self.methods = methods or allowed_methods_default
+        self.name = name
+        self.validator = validator
+        self.request_schema = request_schema
+        self.response_schema = response_schema
+        self.deprecated = deprecated
+        self.tags = tags
+        self.description = description
+        self.summary = summary
+        
+        self.route_info = RouteBuilder.create_pattern(path)
+        self.pattern: Pattern[str] = self.route_info.pattern
         self.param_names = self.route_info.param_names
         self.route_type = self.route_info.route_type
         self.router_middleware = None
         
-   
-    
-    def match(self, path: str) -> Optional[Dict[str,Any]] :
+
+    def match(self, path: str) -> re.Match[str] | None:
         """
-        Match a path against this route's pattern and return captured parameters
+        Match a path against this route's pattern and return captured parameters.
+
+        Args:
+            path: The URL path to match.
+
+        Returns:
+            Optional[Dict[str, Any]]: A dictionary of captured parameters if the path matches,
+            otherwise None.
         """
         match = self.pattern.match(path)
         if match:
-            return match.groupdict()
+            return match
         return None
     
-    
-    def __call__(self) -> Tuple[Pattern[str],HandlerType]:
-        """Return the route components for registration"""
+    def url_path_for(self, name: str, **path_params: Any) -> URLPath:
+        """
+        Generate a URL path for the route with the given name and parameters.
+
+        Args:
+            name: The name of the route.
+            path_params: A dictionary of path parameters to substitute into the route's path.
+
+        Returns:
+            str: The generated URL path.
+
+        Raises:
+            ValueError: If the route name does not match or if required parameters are missing.
+        """
+        if name != self.name:
+            raise ValueError(f"Route name '{name}' does not match the current route name '{self.name}'.")
+
+        required_params = set(self.param_names)
+        provided_params = set(path_params.keys())
+        if required_params != provided_params:
+            missing_params = required_params - provided_params
+            extra_params = provided_params - required_params
+            raise ValueError(
+                f"Missing parameters: {missing_params}. Extra parameters: {extra_params}."
+            )
+
+        path = self.raw_path
+        for param_name, param_value in path_params.items():
+            param_value = str(param_value)
+            path = path.replace(f"{{{param_name}}}", param_value)
+
+        return URLPath(path = path,protocol="http")
+  
+    def __call__(self) -> Tuple[Pattern[str], HandlerType]:
+        """
+        Return the route components for registration.
+
+        Returns:
+            Tuple[Pattern[str], HandlerType]: The compiled regex pattern and the handler.
+        """
         return self.pattern, self.handler
-    
+
     def __repr__(self) -> str:
+        """
+        Return a string representation of the route.
+
+        Returns:
+            str: A string describing the route.
+        """
         return f"<Route {self.raw_path} methods={self.methods}>"
 class Router(BaseRouter):
     def __init__(self, prefix: Optional[str] = None, routes :Optional[List[Routes]] = None):
         self.prefix = prefix or ""
+        self.prefix.rstrip("/")
         self.routes: List[Routes] =  list(routes) if routes else []
         self.middlewares: List[MiddlewareType] = []
         
@@ -136,7 +351,8 @@ class Router(BaseRouter):
     
     def add_route(
         self, 
-        route: Annotated[Routes, Doc("An instance of the Routes class representing an HTTP route.")]
+        route: Annotated[Routes, 
+                         Doc("An instance of the Routes class representing an HTTP route.")]
     ) -> None:
         """
         Adds an HTTP route to the application.
@@ -155,8 +371,15 @@ class Router(BaseRouter):
             app.add_route(route)
             ```
         """
-        _route = Routes(f"{self.prefix}{route.raw_path}",handler=route.handler,methods=route.methods,validator=route.validator)
-        self.routes.append(_route)
+            
+        route.raw_path = f"{self.prefix}{route.raw_path}"
+    
+        route.route_info = RouteBuilder.create_pattern(route.raw_path)
+        route.pattern = route.route_info.pattern
+        route.param_names = route.route_info.param_names
+        route.route_type = route.route_info.route_type
+        
+        self.routes.append(route)
     
     def add_middleware(self, middleware: MiddlewareType) -> None:
         """Add middleware to the router"""
@@ -183,16 +406,52 @@ class Router(BaseRouter):
         self.routes.extend(router.get_routes())
 
     def get(
-        self, 
-        route: Annotated[
-            str, 
-            Doc("The route definition including the path and handler function.")
-        ], 
+        self,
+        path: Annotated[
+            str,
+            Doc("The URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.")
+        ],
+        handler: Annotated[
+            Optional[HandlerType],
+            Doc("Callable responsible for processing requests to this endpoint.")
+        ] = None,
+        name: Annotated[
+            Optional[str],
+            Doc("A unique name for the route.")
+        ] = None,
         validator: Annotated[
-            Optional[Dict[str,Any]], 
-            Doc("An dict to validate request parameters before calling the handler.")
-        ] = None
-    ) ->Callable[...,Any]:
+            Optional[Dict[str, Any]],
+            Doc("Validation rules for route parameters.")
+        ] = None,
+        request_schema: Annotated[
+            Optional[Schema],
+            Doc("Schema definition for the request body.")
+        ] = None,
+        response_schema: Annotated[
+            Optional[Schema],
+            Doc("Schema definition for successful responses.")
+        ] = None,
+        deprecated: Annotated[
+            Optional[bool],
+            Doc("Marks endpoint as deprecated in API documentation when True.")
+        ] = None,
+        tags: Annotated[
+            Optional[List[str]],
+            Doc("Organizational tags for API documentation grouping.")
+        ] = None,
+        description: Annotated[
+            Optional[str],
+            Doc("Detailed endpoint documentation in Markdown format.")
+        ] = None,
+        summary: Annotated[
+            Optional[str],
+            Doc("Concise one-line description for API documentation listings.")
+        ] = None,
+        **kwargs: Annotated[
+            Dict[str, Any],
+            Doc("Additional arguments to pass to the Routes class.")
+        ]
+    ) -> Callable[..., Any]:
         """
         Registers a GET route.
 
@@ -213,20 +472,67 @@ class Router(BaseRouter):
                 return response.json({"users": ["Alice", "Bob"]})
             ```
         """
-        return self.route(route, methods=["GET"], validator=validator)
+        return self.route(path=f"{path}", 
+                           handler=handler, 
+                           methods=["GET"], 
+                           validator=validator,
+                           name=name,
+                            request_schema=request_schema,
+                            response_schema=response_schema,
+                            deprecated=deprecated,
+                            tags=tags,
+                            description=description,
+                            summary=summary,
+                            **kwargs)
 
 
     def post(
-        self, 
-        route: Annotated[
-            str, 
-            Doc("The route definition including the path and handler function.")
-        ], 
+        self,
+        path: Annotated[
+            str,
+            Doc("The URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.")
+        ],
+        handler: Annotated[
+            Optional[HandlerType],
+            Doc("Callable responsible for processing requests to this endpoint.")
+        ] = None,
+        name: Annotated[
+            Optional[str],
+            Doc("A unique name for the route.")
+        ] = None,
         validator: Annotated[
-            Optional[Dict[str,Any]], 
-            Doc("An dict to validate request parameters before calling the handler.")
-        ] = None
-    ) ->  Callable[...,Any]:
+            Optional[Dict[str, Any]],
+            Doc("Validation rules for route parameters.")
+        ] = None,
+        request_schema: Annotated[
+            Optional[Schema],
+            Doc("Schema definition for the request body.")
+        ] = None,
+        response_schema: Annotated[
+            Optional[Schema],
+            Doc("Schema definition for successful responses.")
+        ] = None,
+        deprecated: Annotated[
+            Optional[bool],
+            Doc("Marks endpoint as deprecated in API documentation when True.")
+        ] = None,
+        tags: Annotated[
+            Optional[List[str]],
+            Doc("Organizational tags for API documentation grouping.")
+        ] = None,
+        description: Annotated[
+            Optional[str],
+            Doc("Detailed endpoint documentation in Markdown format.")
+        ] = None,
+        summary: Annotated[
+            Optional[str],
+            Doc("Concise one-line description for API documentation listings.")
+        ] = None,
+        **kwargs: Annotated[
+            Dict[str, Any],
+            Doc("Additional arguments to pass to the Routes class.")
+        ]
+    ) -> Callable[..., Any]:
         """
         Registers a POST route.
 
@@ -247,20 +553,67 @@ class Router(BaseRouter):
                 return response.json({"message": "User created"})
             ```
         """
-        return self.route(route, methods=["POST"], validator=validator)
+        return self.route(path=f"{path}", 
+                           handler=handler, 
+                           methods=["POST"], 
+                           validator=validator,
+                           name=name,
+                            request_schema=request_schema,
+                            response_schema=response_schema,
+                            deprecated=deprecated,
+                            tags=tags,
+                            description=description,
+                            summary=summary,
+                            **kwargs)
 
 
     def delete(
-        self, 
-        route: Annotated[
-            str, 
-            Doc("The route definition including the path and handler function.")
-        ], 
+        self,
+        path: Annotated[
+            str,
+            Doc("The URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.")
+        ],
+        handler: Annotated[
+            Optional[HandlerType],
+            Doc("Callable responsible for processing requests to this endpoint.")
+        ] = None,
+        name: Annotated[
+            Optional[str],
+            Doc("A unique name for the route.")
+        ] = None,
         validator: Annotated[
-            Optional[Dict[str,Any]], 
-            Doc("An dict to validate request parameters before calling the handler.")
-        ] = None
-    ) ->  Callable[...,Any]:
+            Optional[Dict[str, Any]],
+            Doc("Validation rules for route parameters.")
+        ] = None,
+        request_schema: Annotated[
+            Optional[Schema],
+            Doc("Schema definition for the request body.")
+        ] = None,
+        response_schema: Annotated[
+            Optional[Schema],
+            Doc("Schema definition for successful responses.")
+        ] = None,
+        deprecated: Annotated[
+            Optional[bool],
+            Doc("Marks endpoint as deprecated in API documentation when True.")
+        ] = None,
+        tags: Annotated[
+            Optional[List[str]],
+            Doc("Organizational tags for API documentation grouping.")
+        ] = None,
+        description: Annotated[
+            Optional[str],
+            Doc("Detailed endpoint documentation in Markdown format.")
+        ] = None,
+        summary: Annotated[
+            Optional[str],
+            Doc("Concise one-line description for API documentation listings.")
+        ] = None,
+        **kwargs: Annotated[
+            Dict[str, Any],
+            Doc("Additional arguments to pass to the Routes class.")
+        ]
+    ) -> Callable[..., Any]:
         """
         Registers a DELETE route.
 
@@ -282,20 +635,67 @@ class Router(BaseRouter):
                 return responsejson({"message": f"User {user_id} deleted"})
             ```
         """
-        return self.route(route, methods=["DELETE"], validator=validator)
+        return self.route(path=f"{path}", 
+                           handler=handler, 
+                           methods=["DELETE"], 
+                           validator=validator,
+                           name=name,
+                            request_schema=request_schema,
+                            response_schema=response_schema,
+                            deprecated=deprecated,
+                            tags=tags,
+                            description=description,
+                            summary=summary,
+                            **kwargs)
 
 
     def put(
-        self, 
-        route: Annotated[
-            str, 
-            Doc("The route definition including the path and handler function.")
-        ], 
+        self,
+        path: Annotated[
+            str,
+            Doc("The URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.")
+        ],
+        handler: Annotated[
+            Optional[HandlerType],
+            Doc("Callable responsible for processing requests to this endpoint.")
+        ] = None,
+        name: Annotated[
+            Optional[str],
+            Doc("A unique name for the route.")
+        ] = None,
         validator: Annotated[
-            Optional[Dict[str,Any]], 
-            Doc("An dict to validate request parameters before calling the handler.")
-        ] = None
-    ) ->  Callable[...,Any]:
+            Optional[Dict[str, Any]],
+            Doc("Validation rules for route parameters.")
+        ] = None,
+        request_schema: Annotated[
+            Optional[Schema],
+            Doc("Schema definition for the request body.")
+        ] = None,
+        response_schema: Annotated[
+            Optional[Schema],
+            Doc("Schema definition for successful responses.")
+        ] = None,
+        deprecated: Annotated[
+            Optional[bool],
+            Doc("Marks endpoint as deprecated in API documentation when True.")
+        ] = None,
+        tags: Annotated[
+            Optional[List[str]],
+            Doc("Organizational tags for API documentation grouping.")
+        ] = None,
+        description: Annotated[
+            Optional[str],
+            Doc("Detailed endpoint documentation in Markdown format.")
+        ] = None,
+        summary: Annotated[
+            Optional[str],
+            Doc("Concise one-line description for API documentation listings.")
+        ] = None,
+        **kwargs: Annotated[
+            Dict[str, Any],
+            Doc("Additional arguments to pass to the Routes class.")
+        ]
+    ) -> Callable[..., Any]:
         """
         Registers a PUT route.
 
@@ -316,20 +716,66 @@ class Router(BaseRouter):
                 user_id = request.path_params.user_id
                 return responsejson({"message": f"User {user_id} updated"})
         """
-        return self.route(route, methods=["PUT"], validator=validator)
-
+        return self.route(path=f"{path}", 
+                           handler=handler, 
+                           methods=["PUT"], 
+                           validator=validator,
+                           name=name,
+                            request_schema=request_schema,
+                            response_schema=response_schema,
+                            deprecated=deprecated,
+                            tags=tags,
+                            description=description,
+                            summary=summary,
+                            **kwargs)
 
     def patch(
-        self, 
-        route: Annotated[
-            str, 
-            Doc("The route definition including the path and handler function.")
-        ], 
+        self,
+        path: Annotated[
+            str,
+            Doc("The URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.")
+        ],
+        handler: Annotated[
+            Optional[HandlerType],
+            Doc("Callable responsible for processing requests to this endpoint.")
+        ] = None,
+        name: Annotated[
+            Optional[str],
+            Doc("A unique name for the route.")
+        ] = None,
         validator: Annotated[
-            Optional[Dict[str,Any]], 
-            Doc("An dict to validate request parameters before calling the handler.")
-        ] = None
-    ) -> Callable[...,Any]:
+            Optional[Dict[str, Any]],
+            Doc("Validation rules for route parameters.")
+        ] = None,
+        request_schema: Annotated[
+            Optional[Schema],
+            Doc("Schema definition for the request body.")
+        ] = None,
+        response_schema: Annotated[
+            Optional[Schema],
+            Doc("Schema definition for successful responses.")
+        ] = None,
+        deprecated: Annotated[
+            Optional[bool],
+            Doc("Marks endpoint as deprecated in API documentation when True.")
+        ] = None,
+        tags: Annotated[
+            Optional[List[str]],
+            Doc("Organizational tags for API documentation grouping.")
+        ] = None,
+        description: Annotated[
+            Optional[str],
+            Doc("Detailed endpoint documentation in Markdown format.")
+        ] = None,
+        summary: Annotated[
+            Optional[str],
+            Doc("Concise one-line description for API documentation listings.")
+        ] = None,
+        **kwargs: Annotated[
+            Dict[str, Any],
+            Doc("Additional arguments to pass to the Routes class.")
+        ]
+    ) -> Callable[..., Any]:
         """
         Registers a PATCH route.
 
@@ -352,20 +798,67 @@ class Router(BaseRouter):
                 return respoonse.json({"message": f"User {user_id} partially updated"})
             ```
         """
-        return self.route(route, methods=["PATCH"], validator=validator)
+        return self.route(path=f"{path}", 
+                           handler=handler, 
+                           methods=["PATCH"], 
+                           validator=validator,
+                           name=name,
+                            request_schema=request_schema,
+                            response_schema=response_schema,
+                            deprecated=deprecated,
+                            tags=tags,
+                            description=description,
+                            summary=summary,
+                            **kwargs)
 
 
     def options(
-        self, 
-        route: Annotated[
-            str, 
-            Doc("The route definition including the path and handler function.")
-        ], 
+        self,
+        path: Annotated[
+            str,
+            Doc("The URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.")
+        ],
+        handler: Annotated[
+            Optional[HandlerType],
+            Doc("Callable responsible for processing requests to this endpoint.")
+        ] = None,
+        name: Annotated[
+            Optional[str],
+            Doc("A unique name for the route.")
+        ] = None,
         validator: Annotated[
-            Optional[Dict[str,Any]], 
-            Doc("An dict to validate request parameters before calling the handler.")
-        ] = None
-    ) ->  Callable[...,Any]:
+            Optional[Dict[str, Any]],
+            Doc("Validation rules for route parameters.")
+        ] = None,
+        request_schema: Annotated[
+            Optional[Schema],
+            Doc("Schema definition for the request body.")
+        ] = None,
+        response_schema: Annotated[
+            Optional[Schema],
+            Doc("Schema definition for successful responses.")
+        ] = None,
+        deprecated: Annotated[
+            Optional[bool],
+            Doc("Marks endpoint as deprecated in API documentation when True.")
+        ] = None,
+        tags: Annotated[
+            Optional[List[str]],
+            Doc("Organizational tags for API documentation grouping.")
+        ] = None,
+        description: Annotated[
+            Optional[str],
+            Doc("Detailed endpoint documentation in Markdown format.")
+        ] = None,
+        summary: Annotated[
+            Optional[str],
+            Doc("Concise one-line description for API documentation listings.")
+        ] = None,
+        **kwargs: Annotated[
+            Dict[str, Any],
+            Doc("Additional arguments to pass to the Routes class.")
+        ]
+    ) -> Callable[..., Any]:
         """
         Registers an OPTIONS route.
 
@@ -390,24 +883,132 @@ class Router(BaseRouter):
                 })
             ```
         """
-        return self.route(route, methods=["OPTIONS"], validator=validator)
+        return self.route(path=f"{path}", 
+                           handler=handler, 
+                           methods=["OPTIONS"], 
+                           validator=validator,
+                           name=name,
+                            request_schema=request_schema,
+                            response_schema=response_schema,
+                            deprecated=deprecated,
+                            tags=tags,
+                            description=description,
+                            summary=summary,
+                            **kwargs)
 
 
 
-   
-            
+    def head(
+        self,
+        path: Annotated[
+            str,
+            Doc("The URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.")
+        ],
+        handler: Annotated[
+            Optional[HandlerType],
+            Doc("Callable responsible for processing requests to this endpoint.")
+        ] = None,
+        name: Annotated[
+            Optional[str],
+            Doc("A unique name for the route.")
+        ] = None,
+        validator: Annotated[
+            Optional[Dict[str, Any]],
+            Doc("Validation rules for route parameters.")
+        ] = None,
+        request_schema: Annotated[
+            Optional[Schema],
+            Doc("Schema definition for the request body.")
+        ] = None,
+        response_schema: Annotated[
+            Optional[Schema],
+            Doc("Schema definition for successful responses.")
+        ] = None,
+        deprecated: Annotated[
+            Optional[bool],
+            Doc("Marks endpoint as deprecated in API documentation when True.")
+        ] = None,
+        tags: Annotated[
+            Optional[List[str]],
+            Doc("Organizational tags for API documentation grouping.")
+        ] = None,
+        description: Annotated[
+            Optional[str],
+            Doc("Detailed endpoint documentation in Markdown format.")
+        ] = None,
+        summary: Annotated[
+            Optional[str],
+            Doc("Concise one-line description for API documentation listings.")
+        ] = None,
+        **kwargs: Annotated[
+            Dict[str, Any],
+            Doc("Additional arguments to pass to the Routes class.")
+        ]
+    ) -> Callable[..., Any]:
+        
+         return self.route(path=f"{path}", 
+                           handler=handler, 
+                           methods=["HEAD"], 
+                           validator=validator,
+                           name=name,
+                            request_schema=request_schema,
+                            response_schema=response_schema,
+                            deprecated=deprecated,
+                            tags=tags,
+                            description=description,
+                            summary=summary,
+                            **kwargs)
     
     def route(
         self,
-        path: Annotated[str, Doc("The URL pattern for the route. Must be a valid string path.")], 
+        path: Annotated[
+            str,
+            Doc("The URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.")
+        ],
+        handler: Annotated[
+            Optional[HandlerType],
+            Doc("Callable responsible for processing requests to this endpoint.")
+        ] = None,
         methods: Annotated[
-            List[str], 
-            Doc("A list of allowed HTTP methods (e.g., ['GET', 'POST']). Defaults to all methods.")
+            List[str],
+            Doc(f"HTTP methods allowed for this endpoint. Defaults to {allowed_methods_default}.")
         ] = allowed_methods_default,
+        name: Annotated[
+            Optional[str],
+            Doc("A unique name for the route.")
+        ] = None,
         validator: Annotated[
-            Optional[Dict[str,Any]], 
-            Doc("An dict to validate request parameters before calling the handler.")
-        ] = None
+            Optional[Dict[str, Any]],
+            Doc("Validation rules for route parameters.")
+        ] = None,
+        request_schema: Annotated[
+            Optional[Schema],
+            Doc("Schema definition for the request body.")
+        ] = None,
+        response_schema: Annotated[
+            Optional[Schema],
+            Doc("Schema definition for successful responses.")
+        ] = None,
+        deprecated: Annotated[
+            Optional[bool],
+            Doc("Marks endpoint as deprecated in API documentation when True.")
+        ] = None,
+        tags: Annotated[
+            Optional[List[str]],
+            Doc("Organizational tags for API documentation grouping.")
+        ] = None,
+        description: Annotated[
+            Optional[str],
+            Doc("Detailed endpoint documentation in Markdown format.")
+        ] = None,
+        summary: Annotated[
+            Optional[str],
+            Doc("Concise one-line description for API documentation listings.")
+        ] = None,
+        **kwargs: Annotated[
+            Dict[str, Any],
+            Doc("Additional arguments to pass to the Routes class.")
+        ]
     ) -> Callable[...,Any]:
         """
         Registers a route with the specified HTTP methods and an optional validator.
@@ -432,11 +1033,41 @@ class Router(BaseRouter):
         """
         def decorator(handler: HandlerType) -> HandlerType: #type: ignore
             _handler:HandlerType = allowed_methods(methods)(handler)  
-            route = Routes(f"{path}", _handler, methods=methods, validator=validator)
+            route = Routes(path=f"{path}", 
+                           handler=_handler, 
+                           methods=methods, validator=validator,
+                           name=name,
+                            request_schema=request_schema,
+                            response_schema=response_schema,
+                            deprecated=deprecated,
+                            tags=tags,
+                            description=description,
+                            summary=summary,
+                            **kwargs
+                           )
             self.add_route(route)
             return _handler  
         return decorator  
     
+    
+    def url_for(self, name: str, **path_params: Any) -> URLPath:
+        """
+        Generate a URL path for the route with the given name and parameters.
+
+        Args:
+            name: The name of the route.
+            path_params: A dictionary of path parameters to substitute into the route's path.
+
+        Returns:
+            str: The generated URL path.
+
+        Raises:
+            ValueError: If the route name does not match or if required parameters are missing.
+        """
+        for route in self.routes:
+            if route.name == name:
+                return route.url_path_for(name, **path_params)
+        raise ValueError(f"Route name '{name}' not found in router.")
     def __repr__(self) -> str:
         return f"<Router prefix='{self.prefix}' routes={len(self.routes)}>"
 
