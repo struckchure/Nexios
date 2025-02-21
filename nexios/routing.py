@@ -3,7 +3,6 @@ from dataclasses import dataclass
 import re
 import warnings
 from enum import Enum
-
 from nexios.types import MiddlewareType,WsMiddlewareType,HandlerType,WsHandlerType
 from nexios.decorators import allowed_methods
 from typing_extensions import Doc,Annotated #type: ignore
