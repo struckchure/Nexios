@@ -271,7 +271,7 @@ class NexiosApp:
 
         index = -1
 
-        async def next_middleware():
+        async def next_middleware() -> None:
             nonlocal index
             index += 1
 
@@ -279,12 +279,13 @@ class NexiosApp:
                 middleware = stack[index]
 
                 if index == len(stack) - 1:
-                    await middleware(request, response)  # type:ignore
+                    
+                    return await middleware(request, response)  # type:ignore
                 else:
                     await middleware(request, response, next_middleware)
                 return
 
-        await next_middleware()
+        return await next_middleware()
 
     async def __handle_http_request(
         self, scope: Scope, receive: Receive, send: Send
@@ -310,15 +311,17 @@ class NexiosApp:
 
                 if route.router_middleware and len(route.router_middleware) > 0:
                     self.http_middlewares.extend(route.router_middleware)
-                handler = lambda req, res: route.handler(req, res)  # type: ignore
-
+                   
+                def handler_wrapper(req: Request, res: NexiosResponse):
+                    return route.handler(req, res)
+                handler = handler_wrapper
                 break
         await self.__execute_middleware_stack(request, response, handler)  # type: ignore
 
         if handler:
             [self.http_middlewares.remove(x) for x in route.router_middleware or []]  # type: ignore
 
-        await response(scope, receive, send)
+        await response.get_response()(scope, receive, send)
         return
 
     def route(

@@ -719,13 +719,16 @@ class NexiosResponse:
 
    
 
-    async def __call__(self, scope: Scope, receive: Receive, send: Send):
+    def get_response(self) -> Response:
         """Make the response ASGI-compatible."""
         
         response = self._response
-        await response(scope, receive, send)
+        return response
 
        
         
     def __str__(self):
         return f"Response [{self._status_code} {self._body}]" 
+    
+    
+    

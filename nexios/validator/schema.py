@@ -1217,6 +1217,17 @@ class Schema(base.SchemaABC, metaclass=SchemaMeta):
                 else:
                     data = processor(data, many=many, **kwargs)
         return data
+    
+    
+    def schema(self):
+        openapi_schema = {"type": "object", "properties": {}}
+        for field_name, field in self._declared_fields.items():
+            
+            openapi_schema["properties"][field_name] = {
+                "type": field.__class__.__name__.lower(),
+                "description": field.metadata.get("description", ""),
+            }
+        return openapi_schema
 
 
 BaseSchema = Schema  # for backwards compatibility
