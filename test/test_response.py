@@ -3,6 +3,8 @@ import pytest
 from nexios.http import Request,Response
 from nexios.testing import Client
 import anyio
+import datetime as dt
+import time
 app :NexiosApp = get_application()
 @app.get("/response/text")
 async def send_text_response(req: Request, res :Response):
@@ -45,6 +47,22 @@ async def send_header_response(req: Request, res :Response):
 @app.get("/response/files")
 async def send_file_response(req: Request, res :Response):
     res.file("C:/Users/dunamix/Documents/Nexios/test/static/example.txt",content_disposition_type="attachment")
+    
+    
+@app.get("/response/cookies")
+async def send_cookie_response(req: Request, res :Response):
+    res.set_cookie(
+            "mycookie", 
+            "myvalue",
+            max_age=10,
+            expires=10,
+            path="/",
+            domain="localhost",
+            secure=True,
+            httponly=True,
+            samesite="none",
+        )
+    res.text("cookie set")
     
 @pytest.fixture(autouse=True)
 async def async_client():
@@ -99,5 +117,18 @@ async def test_file_response_range(async_client: Client):
     response = await async_client.get("/response/files", headers={"Range": "bytes=12-19"})
     assert response.status_code == 206
     assert response.headers["content-length"] == "8"
-    print(response.status_code)
-    print(response.headers)
+    
+    
+
+
+
+
+async def test_set_cookies(async_client :Client, monkeypatch :pytest.MonkeyPatch):
+    mocked_now = dt.datetime(2037, 1, 22, 12, 0, 0, tzinfo=dt.timezone.utc)
+    monkeypatch.setattr(time, "time", lambda: mocked_now.timestamp())
+    response = await async_client.get("/response/cookies")
+    assert response.text == "cookie set"
+    assert (
+        response.headers["set-cookie"] == "mycookie=myvalue; Domain=localhost; expires=Thu, 22 Jan 2037 12:00:10 GMT; "
+        "HttpOnly; Max-Age=10; Path=/; SameSite=none; Secure"
+    )

@@ -9,7 +9,6 @@ import mimetypes
 import typing
 import os
 import anyio
-import re
 from typing import AsyncIterator
 from anyio import AsyncFile
 import http.cookies
@@ -37,7 +36,6 @@ class RangeNotSatisfiable(Exception):
     def __init__(self, max_size: int) -> None:
         self.max_size = max_size
 
-_RANGE_PATTERN = re.compile(r"(\d*)-(\d*)")
 class Response:
     """
     Base ASGI-compatible Response class with support for cookies, caching, and custom headers.
@@ -274,7 +272,7 @@ class FileResponse(Response):
         headers: Optional[Dict[str, str]] = None,
         content_disposition_type: str = "inline",
     ):
-        super().__init__()
+        super().__init__(headers=headers)
         self.path = Path(path)
         self.filename = filename or self.path.name
         self.content_disposition_type = content_disposition_type
@@ -472,7 +470,7 @@ class StreamingResponse(Response):
         headers: Optional[Dict[str, str]] = None,
         content_type: str = "text/plain",
     ):
-        super().__init__()
+        super().__init__(headers=headers)
         
         self.content_iterator = content
         self.status_code = status_code
@@ -540,11 +538,16 @@ class NexiosResponse:
         self._cookies: List[Dict[str, Any]] = []
         self._status_code = self._response.status_code
         self._delete_cookies: List[Dict[str, Any]] = []
+        self.headers = {}
 
     
     def text(self, content: JSONType, status_code:int = 200, headers: Dict[str, Any] = {}):
         """Send plain text or HTML content."""
+        header_store = self._response._headers.copy() # type: ignore[reportPrivateUsage]
+        
         self._response = PlainTextResponse(body=content, status_code=status_code,headers=headers)
+        self._response._headers.extend(header_store)   # type: ignore[reportPrivateUsage]
+        
         return self
 
     def json(self, data: Union[str, List[Any], 
@@ -718,6 +721,7 @@ class NexiosResponse:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send):
         """Make the response ASGI-compatible."""
+        
         response = self._response
         await response(scope, receive, send)
 
