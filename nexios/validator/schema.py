@@ -1219,7 +1219,7 @@ class Schema(base.SchemaABC, metaclass=SchemaMeta):
         return data
     
     
-    def schema(self):
+    def schema(self) -> typing.Dict[str, typing.Any]:
         openapi_schema = {"type": "object", "properties": {}}
         for field_name, field in self._declared_fields.items():
             

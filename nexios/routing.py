@@ -259,7 +259,7 @@ class Routes:
         self.name = name
         self.validator = validator
         self.request_schema = request_schema
-        self.response_schema = response_schema
+        self.response_schema :Optional[Schema]= response_schema
         self.deprecated = deprecated
         self.tags = tags
         self.description = description

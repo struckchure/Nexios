@@ -412,7 +412,7 @@ class NexiosApp(Router):
             app.mount_router(user_router)  # Mounts the user routes into the main app
             ```
         """
-        for route in router.get_routes():
+        for route in router.routes:
             self.add_route(route)
 
     def mount_ws_router(
