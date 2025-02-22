@@ -8,6 +8,7 @@ from nexios.decorators import allowed_methods
 from nexios.validator import Schema
 from typing_extensions import Doc,Annotated #type: ignore
 from nexios.structs import URLPath
+from nexios.http import Request,Response
 T = TypeVar("T")
 allowed_methods_default = ['get','post','delete','put','patch','options']
 
@@ -146,18 +147,8 @@ class Routes:
             """)
         ] = None,
         name :Optional[str] = None,
-        validator: Annotated[
-            Optional[Dict[str, Any]], 
-            Doc("""
-            Validation rules for route parameters. Structure:
-           
-            Example:
-            {
-                'user_id': int
-                
-            }
-            """)
-        ] = None,
+        path_params: Annotated[Optional[Schema], Doc("Validation rules for path parameters.")] = None,
+        query_params: Annotated[Optional[Schema], Doc("Validation rules for query parameters.")] = None,
         request_schema: Annotated[
             Optional[Schema], 
             Doc("""
@@ -257,7 +248,8 @@ class Routes:
         self.handler = handler
         self.methods = methods or allowed_methods_default
         self.name = name
-        self.validator = validator
+        self.path_params = path_params
+        self.query_params = query_params
         self.request_schema = request_schema
         self.response_schema :Optional[Schema]= response_schema
         self.deprecated = deprecated
@@ -320,6 +312,38 @@ class Routes:
             path = path.replace(f"{{{param_name}}}", param_value)
 
         return URLPath(path = path,protocol="http")
+    
+    
+    
+    async def handle(self, request: Request, response: Response) -> Any:
+        """
+        Process an incoming request using the route's handler.
+
+        Args:
+            request: The incoming HTTP request object.
+            response: The outgoing HTTP response object.
+
+        Returns:
+            Response: The processed HTTP response object.
+        """
+        _error :Dict[str,Dict[str,Any]] = {"path": {},
+                  "query": {}
+        }
+        def error_handler(request :Request, response :Response):
+            return response.json(_error, status_code=422)
+       
+        if self.path_params:
+            _error['path'] = self.path_params.validate(dict(request.path_params))
+            
+        if self.query_params:
+            _error['query'] = self.query_params.validate(request.query_params)
+            
+        if any(_error.values()):
+            return  error_handler(request,response)
+        
+        return await self.handler(request, response)
+            
+           
   
     def __call__(self) -> Tuple[Pattern[str], HandlerType]:
         """
@@ -386,24 +410,11 @@ class Router(BaseRouter):
         if callable(middleware):
             self.middlewares.append(middleware)
     
-    def get_routes(self) -> List["Routes"]:
-        """Get all routes with their patterns, handlers, and middleware"""
-        routes :List[Routes] = []
-        for route in self.routes:
-            route_ = Routes(
-                path=route.raw_path, 
-                handler=route.handler, 
-                methods=route.methods,
-                validator=route.validator)
-            setattr(route_,"router_middleware",self.middlewares)
-            
-            routes.append(route_)
-        return routes
 
 
     def mount_router(self, router :"Router") -> None:
         """Mount a router and all its routes to the application"""
-        self.routes.extend(router.get_routes())
+        self.routes.extend(router.routes)
 
     def get(
         self,
@@ -411,18 +422,12 @@ class Router(BaseRouter):
             str,
             Doc("The URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.")
         ],
-        handler: Annotated[
-            Optional[HandlerType],
-            Doc("Callable responsible for processing requests to this endpoint.")
-        ] = None,
         name: Annotated[
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        validator: Annotated[
-            Optional[Dict[str, Any]],
-            Doc("Validation rules for route parameters.")
-        ] = None,
+        path_params: Annotated[Optional[Schema], Doc("Validation rules for path parameters.")] = None,
+        query_params: Annotated[Optional[Schema], Doc("Validation rules for query parameters.")] = None,
         request_schema: Annotated[
             Optional[Schema],
             Doc("Schema definition for the request body.")
@@ -473,9 +478,9 @@ class Router(BaseRouter):
             ```
         """
         return self.route(path=f"{path}", 
-                           handler=handler, 
                            methods=["GET"], 
-                           validator=validator,
+                           query_params=query_params,
+                           path_params=path_params,
                            name=name,
                             request_schema=request_schema,
                             response_schema=response_schema,
@@ -492,18 +497,12 @@ class Router(BaseRouter):
             str,
             Doc("The URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.")
         ],
-        handler: Annotated[
-            Optional[HandlerType],
-            Doc("Callable responsible for processing requests to this endpoint.")
-        ] = None,
         name: Annotated[
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        validator: Annotated[
-            Optional[Dict[str, Any]],
-            Doc("Validation rules for route parameters.")
-        ] = None,
+        path_params: Annotated[Optional[Schema], Doc("Validation rules for path parameters.")] = None,
+        query_params: Annotated[Optional[Schema], Doc("Validation rules for query parameters.")] = None,
         request_schema: Annotated[
             Optional[Schema],
             Doc("Schema definition for the request body.")
@@ -554,9 +553,9 @@ class Router(BaseRouter):
             ```
         """
         return self.route(path=f"{path}", 
-                           handler=handler, 
                            methods=["POST"], 
-                           validator=validator,
+                            query_params=query_params,
+                            path_params=path_params,
                            name=name,
                             request_schema=request_schema,
                             response_schema=response_schema,
@@ -573,18 +572,12 @@ class Router(BaseRouter):
             str,
             Doc("The URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.")
         ],
-        handler: Annotated[
-            Optional[HandlerType],
-            Doc("Callable responsible for processing requests to this endpoint.")
-        ] = None,
         name: Annotated[
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        validator: Annotated[
-            Optional[Dict[str, Any]],
-            Doc("Validation rules for route parameters.")
-        ] = None,
+        path_params: Annotated[Optional[Schema], Doc("Validation rules for path parameters.")] = None,
+        query_params: Annotated[Optional[Schema], Doc("Validation rules for query parameters.")] = None,
         request_schema: Annotated[
             Optional[Schema],
             Doc("Schema definition for the request body.")
@@ -636,9 +629,10 @@ class Router(BaseRouter):
             ```
         """
         return self.route(path=f"{path}", 
-                           handler=handler, 
                            methods=["DELETE"], 
-                           validator=validator,
+                            query_params=query_params,
+                             path_params=path_params,
+                           
                            name=name,
                             request_schema=request_schema,
                             response_schema=response_schema,
@@ -655,18 +649,12 @@ class Router(BaseRouter):
             str,
             Doc("The URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.")
         ],
-        handler: Annotated[
-            Optional[HandlerType],
-            Doc("Callable responsible for processing requests to this endpoint.")
-        ] = None,
         name: Annotated[
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        validator: Annotated[
-            Optional[Dict[str, Any]],
-            Doc("Validation rules for route parameters.")
-        ] = None,
+        path_params: Annotated[Optional[Schema], Doc("Validation rules for path parameters.")] = None,
+        query_params: Annotated[Optional[Schema], Doc("Validation rules for query parameters.")] = None,
         request_schema: Annotated[
             Optional[Schema],
             Doc("Schema definition for the request body.")
@@ -717,9 +705,9 @@ class Router(BaseRouter):
                 return responsejson({"message": f"User {user_id} updated"})
         """
         return self.route(path=f"{path}", 
-                           handler=handler, 
                            methods=["PUT"], 
-                           validator=validator,
+                            query_params=query_params,
+                             path_params=path_params,
                            name=name,
                             request_schema=request_schema,
                             response_schema=response_schema,
@@ -735,18 +723,12 @@ class Router(BaseRouter):
             str,
             Doc("The URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.")
         ],
-        handler: Annotated[
-            Optional[HandlerType],
-            Doc("Callable responsible for processing requests to this endpoint.")
-        ] = None,
         name: Annotated[
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        validator: Annotated[
-            Optional[Dict[str, Any]],
-            Doc("Validation rules for route parameters.")
-        ] = None,
+        path_params: Annotated[Optional[Schema], Doc("Validation rules for path parameters.")] = None,
+        query_params: Annotated[Optional[Schema], Doc("Validation rules for query parameters.")] = None,
         request_schema: Annotated[
             Optional[Schema],
             Doc("Schema definition for the request body.")
@@ -799,9 +781,9 @@ class Router(BaseRouter):
             ```
         """
         return self.route(path=f"{path}", 
-                           handler=handler, 
                            methods=["PATCH"], 
-                           validator=validator,
+                            query_params=query_params,
+                             path_params=path_params,
                            name=name,
                             request_schema=request_schema,
                             response_schema=response_schema,
@@ -826,10 +808,8 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        validator: Annotated[
-            Optional[Dict[str, Any]],
-            Doc("Validation rules for route parameters.")
-        ] = None,
+        path_params: Annotated[Optional[Schema], Doc("Validation rules for path parameters.")] = None,
+        query_params: Annotated[Optional[Schema], Doc("Validation rules for query parameters.")] = None,
         request_schema: Annotated[
             Optional[Schema],
             Doc("Schema definition for the request body.")
@@ -884,9 +864,10 @@ class Router(BaseRouter):
             ```
         """
         return self.route(path=f"{path}", 
-                           handler=handler, 
+                    
                            methods=["OPTIONS"], 
-                           validator=validator,
+                            query_params=query_params,
+                             path_params=path_params,
                            name=name,
                             request_schema=request_schema,
                             response_schema=response_schema,
@@ -912,10 +893,8 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        validator: Annotated[
-            Optional[Dict[str, Any]],
-            Doc("Validation rules for route parameters.")
-        ] = None,
+        path_params: Annotated[Optional[Schema], Doc("Validation rules for path parameters.")] = None,
+        query_params: Annotated[Optional[Schema], Doc("Validation rules for query parameters.")] = None,
         request_schema: Annotated[
             Optional[Schema],
             Doc("Schema definition for the request body.")
@@ -947,9 +926,9 @@ class Router(BaseRouter):
     ) -> Callable[..., Any]:
         
          return self.route(path=f"{path}", 
-                           handler=handler, 
                            methods=["HEAD"], 
-                           validator=validator,
+                            query_params=query_params,
+                             path_params=path_params,
                            name=name,
                             request_schema=request_schema,
                             response_schema=response_schema,
@@ -965,10 +944,6 @@ class Router(BaseRouter):
             str,
             Doc("The URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.")
         ],
-        handler: Annotated[
-            Optional[HandlerType],
-            Doc("Callable responsible for processing requests to this endpoint.")
-        ] = None,
         methods: Annotated[
             List[str],
             Doc(f"HTTP methods allowed for this endpoint. Defaults to {allowed_methods_default}.")
@@ -977,10 +952,8 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        validator: Annotated[
-            Optional[Dict[str, Any]],
-            Doc("Validation rules for route parameters.")
-        ] = None,
+        path_params: Annotated[Optional[Schema], Doc("Validation rules for path parameters.")] = None,
+        query_params: Annotated[Optional[Schema], Doc("Validation rules for query parameters.")] = None,
         request_schema: Annotated[
             Optional[Schema],
             Doc("Schema definition for the request body.")
@@ -1035,7 +1008,9 @@ class Router(BaseRouter):
             _handler:HandlerType = allowed_methods(methods)(handler)  
             route = Routes(path=f"{path}", 
                            handler=_handler, 
-                           methods=methods, validator=validator,
+                           methods=methods, 
+                            query_params=query_params,
+                             path_params=path_params,
                            name=name,
                             request_schema=request_schema,
                             response_schema=response_schema,

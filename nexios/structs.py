@@ -676,6 +676,9 @@ class RouteParam:
 
     def __call__(self, *args: Any, **kwds: Any) ->  Dict[str, Any]:
         return self.data
+    
+    def __dict__(self) -> Dict[str, Any]: #type:ignore
+        return self.data
 
 
 class UploadedFile:

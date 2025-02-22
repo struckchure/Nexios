@@ -29,30 +29,6 @@ from typing import Dict, Any
 AppType = typing.TypeVar("AppType", bound="NexiosApp")
 
 
-def validate_params(
-    params: Dict[str, Any], param_types: Dict[str, type]
-) -> typing.Tuple[bool, List[str]]:
-    errors: List[str] = []
-    for param, expected_type in param_types.items():
-        try:
-            _param = expected_type(params[param])
-        except Exception as _:
-            raise ValueError(
-                "Cannot validate path parameters for a route that has none."
-            )
-
-        if param not in params:
-            errors.append(f"Missing parameter: {param}")
-
-        elif not isinstance(_param, expected_type):
-            errors.append(
-                f"Parameter '{param}' should be of type {expected_type.__name__}. Got {type(params[param]).__name__}."
-            )
-
-    if errors:
-        return False, errors
-    return True, []
-
 
 class NexiosApp(Router):
     def __init__(
@@ -300,19 +276,15 @@ class NexiosApp(Router):
             if match:
                 route.handler = allowed_methods(route.methods)(route.handler)
                 route_kwargs = match.groupdict()
-                handler_validator = getattr(route, "validator", None)
-                if handler_validator:
-                    is_valid, errors = validate_params(route_kwargs, handler_validator)
-                    if not is_valid:
-                        response.json({"error": errors}, status_code=422)
-                        break
+            
+               
                 scope["route_params"] = RouteParam(route_kwargs)
 
                 if route.router_middleware and len(route.router_middleware) > 0:
                     self.http_middlewares.extend(route.router_middleware)
                    
                 def handler_wrapper(req: Request, res: NexiosResponse):
-                    return route.handler(req, res)
+                    return route.handle(req, res)
                 handler = handler_wrapper
                 break
         await self.__execute_middleware_stack(request, response, handler)  # type: ignore
