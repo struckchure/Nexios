@@ -1,7 +1,7 @@
 
 from functools import wraps, lru_cache
 import asyncio
-import time, re
+import time
 from typing import Callable, Optional, Awaitable, List, Any, Dict
 from nexios.http import Request, Response
 
@@ -117,27 +117,6 @@ def cache_response(max_size: int = 128):
     return decorator
 
 
-def maintenance_mode(is_maintenance: bool = True):
-    """
-    A decorator to restrict access during maintenance.
-
-    :param is_maintenance: Boolean to enable or disable maintenance mode.
-    """
-
-    def decorator(handler: HandlerType) -> HandlerType:
-        @wraps(handler)
-        async def wrapper(*args: List[Any], **kwargs: Dict[str, Any]):
-            res: Response = args[-1]  # type: ignore
-            if is_maintenance:
-                return res.json(
-                    {"error": "Service unavailable due to maintenance"}, status_code=503
-                )  # type: ignore #TODO:ad custom handler
-            return await handler(*args, **kwargs)
-
-        return wrapper
-
-    return decorator
-
 
 def request_timeout(timeout: int):
     """
@@ -160,65 +139,3 @@ def request_timeout(timeout: int):
     return decorator
 
 
-def capture_request_metadata(log_func: Callable[..., Awaitable[Response]]) -> None:
-    """
-    A decorator to log request metadata for analysis.
-
-    :param log_func: A function to handle the metadata.
-    """
-
-    def decorator(handler: HandlerType) -> HandlerType:
-        @wraps(handler)
-        async def wrapper(*args: List[Any], **kwargs: Dict[str, Any]):
-            req: Request = args[-2]  # type:ignore
-            metadata: Dict[str, Any] = {
-                "method": req.method,
-                "url": str(req.url),
-                "headers": dict(req.headers),
-                "client_ip": req.client.host,  # type:ignore
-            }
-            log_func(metadata)
-            return await handler(*args, **kwargs)
-
-        return wrapper
-
-    return decorator  # type:ignore
-
-
-def use_for_route(route: str) -> None:
-    if route.endswith("/*"):
-        route = route[:-2]
-        route = f"^{route}/.*$"
-    else:
-        route = f"^{route}$"
-
-    def decorator(func: HandlerType) -> HandlerType:
-        @wraps(func)
-        async def wrapper_func(
-            request: Request,
-            response: Response,
-            call_next: Callable[..., Awaitable[Response]],
-        ):
-            if re.match(route, request.url.path):
-                return await func(request, response, call_next)
-            else:
-                return await call_next()
-
-        @wraps(func)
-        async def wrapper_klass(
-            self: Any,
-            request: Request,
-            response: Response,
-            call_next: Callable[..., Awaitable[Response]],
-        ):
-            if re.match(route, request.url.path):
-                return await func(self, request, response, call_next)
-            else:
-                return await call_next()
-
-        if func.__name__ == "__call__":
-            return wrapper_klass
-        else:
-            return wrapper_func
-
-    return decorator  # type:ignore
