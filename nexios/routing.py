@@ -5,10 +5,10 @@ import warnings
 from enum import Enum
 from nexios.types import MiddlewareType,WsMiddlewareType,HandlerType,WsHandlerType
 from nexios.decorators import allowed_methods
-from nexios.validator import Schema #type: ignore
 from typing_extensions import Doc,Annotated #type: ignore
 from nexios.structs import URLPath
 from nexios.http import Request,Response
+from pydantic import BaseModel as Schema,ValidationError
 T = TypeVar("T")
 allowed_methods_default = ['get','post','delete','put','patch','options']
 
@@ -147,10 +147,10 @@ class Routes:
             """)
         ] = None,
         name :Optional[str] = None,
-        path_params: Annotated[Optional[Schema], Doc("Validation rules for path parameters.")] = None,
-        query_params: Annotated[Optional[Schema], Doc("Validation rules for query parameters.")] = None,
+        path_params: Annotated[Optional[type[Schema]], Doc("Validation rules for path parameters.")] = None,
+        query_params: Annotated[Optional[type[Schema]], Doc("Validation rules for query parameters.")] = None,
         request_schema: Annotated[
-            Optional[Schema], 
+            Optional[type[Schema]], 
             Doc("""
             Schema definition for the request body using nexios.validator.Schema.
             Used for OpenAPI documentation generation and automatic validation if enabled.
@@ -163,7 +163,7 @@ class Routes:
             """)
         ] = None,
         response_schema: Annotated[
-            Optional[Schema], 
+            Optional[type[Schema]], 
             Doc("""
             Schema definition for successful responses (HTTP 2xx status codes).
             Used to generate OpenAPI response documentation.
@@ -251,7 +251,7 @@ class Routes:
         self.path_params = path_params
         self.query_params = query_params
         self.request_schema = request_schema
-        self.response_schema :Optional[Schema]= response_schema
+        self.response_schema :Optional[type[Schema]]= response_schema
         self.deprecated = deprecated
         self.tags = tags
         self.description = description
@@ -326,17 +326,24 @@ class Routes:
         Returns:
             Response: The processed HTTP response object.
         """
-        _error :Dict[str,Dict[str,Any]] = {"path": {},
+        _error :Any = {"path": {},
                   "query": {}
         }
         def error_handler(request :Request, response :Response):
             return response.json(_error, status_code=422)
        
         if self.path_params:
-            _error['path'] = self.path_params.validate(dict(request.path_params))
-            
+            try:
+                self.path_params(**request.path_params)
+            except ValidationError as e:
+                _error["path"] = e.errors()
+
+        # Validate query parameters
         if self.query_params:
-            _error['query'] = self.query_params.validate(request.query_params)
+            try:
+                self.query_params(**request.query_params)
+            except ValidationError as e:
+                _error["query"] = e.errors()
             
         if any(_error.values()):
             return  error_handler(request,response)
@@ -426,14 +433,14 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        path_params: Annotated[Optional[Schema], Doc("Validation rules for path parameters.")] = None,
-        query_params: Annotated[Optional[Schema], Doc("Validation rules for query parameters.")] = None,
+        path_params: Annotated[Optional[type[Schema]], Doc("Validation rules for path parameters.")] = None,
+        query_params: Annotated[Optional[type[Schema]], Doc("Validation rules for query parameters.")] = None,
         request_schema: Annotated[
-            Optional[Schema],
+            Optional[type[Schema]],
             Doc("Schema definition for the request body.")
         ] = None,
         response_schema: Annotated[
-            Optional[Schema],
+            Optional[type[Schema]],
             Doc("Schema definition for successful responses.")
         ] = None,
         deprecated: Annotated[
@@ -501,14 +508,14 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        path_params: Annotated[Optional[Schema], Doc("Validation rules for path parameters.")] = None,
-        query_params: Annotated[Optional[Schema], Doc("Validation rules for query parameters.")] = None,
+        path_params: Annotated[Optional[type[Schema]], Doc("Validation rules for path parameters.")] = None,
+        query_params: Annotated[Optional[type[Schema]], Doc("Validation rules for query parameters.")] = None,
         request_schema: Annotated[
-            Optional[Schema],
+            Optional[type[Schema]],
             Doc("Schema definition for the request body.")
         ] = None,
         response_schema: Annotated[
-            Optional[Schema],
+            Optional[type[Schema]],
             Doc("Schema definition for successful responses.")
         ] = None,
         deprecated: Annotated[
@@ -576,14 +583,14 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        path_params: Annotated[Optional[Schema], Doc("Validation rules for path parameters.")] = None,
-        query_params: Annotated[Optional[Schema], Doc("Validation rules for query parameters.")] = None,
+        path_params: Annotated[Optional[type[Schema]], Doc("Validation rules for path parameters.")] = None,
+        query_params: Annotated[Optional[type[Schema]], Doc("Validation rules for query parameters.")] = None,
         request_schema: Annotated[
-            Optional[Schema],
+            Optional[type[Schema]],
             Doc("Schema definition for the request body.")
         ] = None,
         response_schema: Annotated[
-            Optional[Schema],
+            Optional[type[Schema]],
             Doc("Schema definition for successful responses.")
         ] = None,
         deprecated: Annotated[
@@ -653,14 +660,14 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        path_params: Annotated[Optional[Schema], Doc("Validation rules for path parameters.")] = None,
-        query_params: Annotated[Optional[Schema], Doc("Validation rules for query parameters.")] = None,
+        path_params: Annotated[Optional[type[Schema]], Doc("Validation rules for path parameters.")] = None,
+        query_params: Annotated[Optional[type[Schema]], Doc("Validation rules for query parameters.")] = None,
         request_schema: Annotated[
-            Optional[Schema],
+            Optional[type[Schema]],
             Doc("Schema definition for the request body.")
         ] = None,
         response_schema: Annotated[
-            Optional[Schema],
+            Optional[type[Schema]],
             Doc("Schema definition for successful responses.")
         ] = None,
         deprecated: Annotated[
@@ -727,14 +734,14 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        path_params: Annotated[Optional[Schema], Doc("Validation rules for path parameters.")] = None,
-        query_params: Annotated[Optional[Schema], Doc("Validation rules for query parameters.")] = None,
+        path_params: Annotated[Optional[type[Schema]], Doc("Validation rules for path parameters.")] = None,
+        query_params: Annotated[Optional[type[Schema]], Doc("Validation rules for query parameters.")] = None,
         request_schema: Annotated[
-            Optional[Schema],
+            Optional[type[Schema]],
             Doc("Schema definition for the request body.")
         ] = None,
         response_schema: Annotated[
-            Optional[Schema],
+            Optional[type[Schema]],
             Doc("Schema definition for successful responses.")
         ] = None,
         deprecated: Annotated[
@@ -808,14 +815,14 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        path_params: Annotated[Optional[Schema], Doc("Validation rules for path parameters.")] = None,
-        query_params: Annotated[Optional[Schema], Doc("Validation rules for query parameters.")] = None,
+        path_params: Annotated[Optional[type[Schema]], Doc("Validation rules for path parameters.")] = None,
+        query_params: Annotated[Optional[type[Schema]], Doc("Validation rules for query parameters.")] = None,
         request_schema: Annotated[
-            Optional[Schema],
+            Optional[type[Schema]],
             Doc("Schema definition for the request body.")
         ] = None,
         response_schema: Annotated[
-            Optional[Schema],
+            Optional[type[Schema]],
             Doc("Schema definition for successful responses.")
         ] = None,
         deprecated: Annotated[
@@ -893,14 +900,14 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        path_params: Annotated[Optional[Schema], Doc("Validation rules for path parameters.")] = None,
-        query_params: Annotated[Optional[Schema], Doc("Validation rules for query parameters.")] = None,
+        path_params: Annotated[Optional[type[Schema]], Doc("Validation rules for path parameters.")] = None,
+        query_params: Annotated[Optional[type[Schema]], Doc("Validation rules for query parameters.")] = None,
         request_schema: Annotated[
-            Optional[Schema],
+            Optional[type[Schema]],
             Doc("Schema definition for the request body.")
         ] = None,
         response_schema: Annotated[
-            Optional[Schema],
+            Optional[type[Schema]],
             Doc("Schema definition for successful responses.")
         ] = None,
         deprecated: Annotated[
@@ -952,14 +959,14 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        path_params: Annotated[Optional[Schema], Doc("Validation rules for path parameters.")] = None,
-        query_params: Annotated[Optional[Schema], Doc("Validation rules for query parameters.")] = None,
+        path_params: Annotated[Optional[type[Schema]], Doc("Validation rules for path parameters.")] = None,
+        query_params: Annotated[Optional[type[Schema]], Doc("Validation rules for query parameters.")] = None,
         request_schema: Annotated[
-            Optional[Schema],
+            Optional[type[Schema]],
             Doc("Schema definition for the request body.")
         ] = None,
         response_schema: Annotated[
-            Optional[Schema],
+            Optional[type[Schema]],
             Doc("Schema definition for successful responses.")
         ] = None,
         deprecated: Annotated[
