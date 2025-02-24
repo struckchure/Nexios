@@ -5,7 +5,7 @@ import warnings
 from enum import Enum
 from nexios.types import MiddlewareType,WsMiddlewareType,HandlerType,WsHandlerType
 from nexios.decorators import allowed_methods
-from nexios.validator import Schema
+from nexios.validator import Schema #type: ignore
 from typing_extensions import Doc,Annotated #type: ignore
 from nexios.structs import URLPath
 from nexios.http import Request,Response

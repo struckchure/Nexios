@@ -435,7 +435,7 @@ class FileResponse(Response):
 
         boundary = f'--{self._multipart_boundary}\r\n'
         header = next((value for key, value in self._headers if key == b"content-type"), None)
-        headers = f'Content-Type: {header}\r\nContent-Range: bytes {start}-{end}/{self.path.stat().st_size}\r\n\r\n'
+        headers = f'Content-Type: {header}\r\nContent-Range: bytes {start}-{end}/{self.path.stat().st_size}\r\n\r\n' #type:ignore[str-bytes-safe]
         await send({
             'type': 'http.response.body',
             'body': (boundary + headers).encode('utf-8'),
