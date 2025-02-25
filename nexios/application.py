@@ -71,6 +71,8 @@ class NexiosApp(Router):
         self.exceptions_handler: Any[ExceptionMiddleware, None] = (
             server_error_handler or ExceptionMiddleware()
         )
+        
+    
 
     def on_startup(self, handler: Callable[[], Awaitable[None]]) -> None:
         """
