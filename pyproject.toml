@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 include = ["nexios/py.typed"]
 [tool.poetry]
 name = "nexios"
-version = "2.1.0b1"
+version = "2.1.0b2"
 description = "Nexios is a modern, high-performance ASGI web framework for Python."
 authors = ["Chidebele Dunamis <techwithdunamix@example.com>"]
 license = "MIT"
