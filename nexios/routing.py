@@ -320,6 +320,7 @@ class Router(BaseRouter):
     def mount_router(self, router :"Router") -> None:
         """Mount a router and all its routes to the application"""
         self.routes.extend(router.routes)
+        self.middlewares.extend(router.middlewares)
 
     def get(
         self,
