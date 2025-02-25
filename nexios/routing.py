@@ -8,7 +8,6 @@ from nexios.decorators import allowed_methods
 from typing_extensions import Doc,Annotated #type: ignore
 from nexios.structs import URLPath
 from nexios.http import Request,Response
-from pydantic import BaseModel as Schema,ValidationError
 T = TypeVar("T")
 allowed_methods_default = ['get','post','delete','put','patch','options']
 
@@ -147,81 +146,7 @@ class Routes:
             """)
         ] = None,
         name :Optional[str] = None,
-        path_params: Annotated[Optional[type[Schema]], Doc("Validation rules for path parameters.")] = None,
-        query_params: Annotated[Optional[type[Schema]], Doc("Validation rules for query parameters.")] = None,
-        request_schema: Annotated[
-            Optional[type[Schema]], 
-            Doc("""
-            Schema definition for the request body using nexios.validator.Schema.
-            Used for OpenAPI documentation generation and automatic validation if enabled.
-            
-            Example:
-            class UserCreateSchema(Schema):
-                name: str
-                email: Email
-                age: Optional[int]
-            """)
-        ] = None,
-        response_schema: Annotated[
-            Optional[type[Schema]], 
-            Doc("""
-            Schema definition for successful responses (HTTP 2xx status codes).
-            Used to generate OpenAPI response documentation.
-
-            Example:
-            class UserResponse(Schema):
-                id: UUID
-                created_at: datetime
-                profile: UserProfileSchema
-            """)
-        ] = None,
-        deprecated: Annotated[
-            Optional[bool], 
-            Doc("""
-            Marks endpoint as deprecated in API documentation when True.
-            Clients should see warning when using deprecated endpoints.
-            """)
-        ] = None,
-        tags: Annotated[
-            Optional[List[str]], 
-            Doc("""
-            Organizational tags for API documentation grouping. Tags are case-sensitive.
-            Example: ['Authentication', 'User Management', 'Reporting']
-            """)
-        ] = None,
-        description: Annotated[
-            Optional[str], 
-            Doc("""
-            Detailed endpoint documentation in Markdown format. Should explain:
-            - Endpoint functionality
-            - Required permissions
-            - Special requirements
-            - Error scenarios
-            - Example use cases
-
-            Example:
-            \"\"\"
-            ## User Registration Endpoint
-            Creates new user accounts with email verification.
-            
-            **Permissions**: Public access
-            
-            **Request Body Requirements:**
-            - Password must be at least 8 characters
-            - Email must be unique
-            
-            **Returns**: 201 Created with verification token
-            \"\"\"
-            """)
-        ] = None,
-        summary: Annotated[
-            Optional[str], 
-            Doc("""
-            Concise one-line description for API documentation listings.
-            Example: "Creates new user account with email verification"
-            """)
-        ] = None,
-        
+       
         **kwargs :Dict[str,Any]
     ):
         """
@@ -248,14 +173,7 @@ class Routes:
         self.handler = handler
         self.methods = methods or allowed_methods_default
         self.name = name
-        self.path_params = path_params
-        self.query_params = query_params
-        self.request_schema = request_schema
-        self.response_schema :Optional[type[Schema]]= response_schema
-        self.deprecated = deprecated
-        self.tags = tags
-        self.description = description
-        self.summary = summary
+       
         
         self.route_info = RouteBuilder.create_pattern(path)
         self.pattern: Pattern[str] = self.route_info.pattern
@@ -326,27 +244,7 @@ class Routes:
         Returns:
             Response: The processed HTTP response object.
         """
-        _error :Any = {"path": {},
-                  "query": {}
-        }
-        def error_handler(request :Request, response :Response):
-            return response.json(_error, status_code=422)
        
-        if self.path_params:
-            try:
-                self.path_params(**request.path_params)
-            except ValidationError as e:
-                _error["path"] = e.errors()
-
-        # Validate query parameters
-        if self.query_params:
-            try:
-                self.query_params(**request.query_params)
-            except ValidationError as e:
-                _error["query"] = e.errors()
-            
-        if any(_error.values()):
-            return  error_handler(request,response)
         
         return await self.handler(request, response)
             
@@ -433,32 +331,7 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        path_params: Annotated[Optional[type[Schema]], Doc("Validation rules for path parameters.")] = None,
-        query_params: Annotated[Optional[type[Schema]], Doc("Validation rules for query parameters.")] = None,
-        request_schema: Annotated[
-            Optional[type[Schema]],
-            Doc("Schema definition for the request body.")
-        ] = None,
-        response_schema: Annotated[
-            Optional[type[Schema]],
-            Doc("Schema definition for successful responses.")
-        ] = None,
-        deprecated: Annotated[
-            Optional[bool],
-            Doc("Marks endpoint as deprecated in API documentation when True.")
-        ] = None,
-        tags: Annotated[
-            Optional[List[str]],
-            Doc("Organizational tags for API documentation grouping.")
-        ] = None,
-        description: Annotated[
-            Optional[str],
-            Doc("Detailed endpoint documentation in Markdown format.")
-        ] = None,
-        summary: Annotated[
-            Optional[str],
-            Doc("Concise one-line description for API documentation listings.")
-        ] = None,
+       
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("Additional arguments to pass to the Routes class.")
@@ -486,15 +359,7 @@ class Router(BaseRouter):
         """
         return self.route(path=f"{path}", 
                            methods=["GET"], 
-                           query_params=query_params,
-                           path_params=path_params,
                            name=name,
-                            request_schema=request_schema,
-                            response_schema=response_schema,
-                            deprecated=deprecated,
-                            tags=tags,
-                            description=description,
-                            summary=summary,
                             **kwargs)
 
 
@@ -508,32 +373,7 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        path_params: Annotated[Optional[type[Schema]], Doc("Validation rules for path parameters.")] = None,
-        query_params: Annotated[Optional[type[Schema]], Doc("Validation rules for query parameters.")] = None,
-        request_schema: Annotated[
-            Optional[type[Schema]],
-            Doc("Schema definition for the request body.")
-        ] = None,
-        response_schema: Annotated[
-            Optional[type[Schema]],
-            Doc("Schema definition for successful responses.")
-        ] = None,
-        deprecated: Annotated[
-            Optional[bool],
-            Doc("Marks endpoint as deprecated in API documentation when True.")
-        ] = None,
-        tags: Annotated[
-            Optional[List[str]],
-            Doc("Organizational tags for API documentation grouping.")
-        ] = None,
-        description: Annotated[
-            Optional[str],
-            Doc("Detailed endpoint documentation in Markdown format.")
-        ] = None,
-        summary: Annotated[
-            Optional[str],
-            Doc("Concise one-line description for API documentation listings.")
-        ] = None,
+       
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("Additional arguments to pass to the Routes class.")
@@ -561,15 +401,7 @@ class Router(BaseRouter):
         """
         return self.route(path=f"{path}", 
                            methods=["POST"], 
-                            query_params=query_params,
-                            path_params=path_params,
                            name=name,
-                            request_schema=request_schema,
-                            response_schema=response_schema,
-                            deprecated=deprecated,
-                            tags=tags,
-                            description=description,
-                            summary=summary,
                             **kwargs)
 
 
@@ -583,32 +415,7 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        path_params: Annotated[Optional[type[Schema]], Doc("Validation rules for path parameters.")] = None,
-        query_params: Annotated[Optional[type[Schema]], Doc("Validation rules for query parameters.")] = None,
-        request_schema: Annotated[
-            Optional[type[Schema]],
-            Doc("Schema definition for the request body.")
-        ] = None,
-        response_schema: Annotated[
-            Optional[type[Schema]],
-            Doc("Schema definition for successful responses.")
-        ] = None,
-        deprecated: Annotated[
-            Optional[bool],
-            Doc("Marks endpoint as deprecated in API documentation when True.")
-        ] = None,
-        tags: Annotated[
-            Optional[List[str]],
-            Doc("Organizational tags for API documentation grouping.")
-        ] = None,
-        description: Annotated[
-            Optional[str],
-            Doc("Detailed endpoint documentation in Markdown format.")
-        ] = None,
-        summary: Annotated[
-            Optional[str],
-            Doc("Concise one-line description for API documentation listings.")
-        ] = None,
+       
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("Additional arguments to pass to the Routes class.")
@@ -636,17 +443,8 @@ class Router(BaseRouter):
             ```
         """
         return self.route(path=f"{path}", 
-                           methods=["DELETE"], 
-                            query_params=query_params,
-                             path_params=path_params,
-                           
+                           methods=["DELETE"],                      
                            name=name,
-                            request_schema=request_schema,
-                            response_schema=response_schema,
-                            deprecated=deprecated,
-                            tags=tags,
-                            description=description,
-                            summary=summary,
                             **kwargs)
 
 
@@ -660,32 +458,7 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        path_params: Annotated[Optional[type[Schema]], Doc("Validation rules for path parameters.")] = None,
-        query_params: Annotated[Optional[type[Schema]], Doc("Validation rules for query parameters.")] = None,
-        request_schema: Annotated[
-            Optional[type[Schema]],
-            Doc("Schema definition for the request body.")
-        ] = None,
-        response_schema: Annotated[
-            Optional[type[Schema]],
-            Doc("Schema definition for successful responses.")
-        ] = None,
-        deprecated: Annotated[
-            Optional[bool],
-            Doc("Marks endpoint as deprecated in API documentation when True.")
-        ] = None,
-        tags: Annotated[
-            Optional[List[str]],
-            Doc("Organizational tags for API documentation grouping.")
-        ] = None,
-        description: Annotated[
-            Optional[str],
-            Doc("Detailed endpoint documentation in Markdown format.")
-        ] = None,
-        summary: Annotated[
-            Optional[str],
-            Doc("Concise one-line description for API documentation listings.")
-        ] = None,
+       
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("Additional arguments to pass to the Routes class.")
@@ -713,15 +486,7 @@ class Router(BaseRouter):
         """
         return self.route(path=f"{path}", 
                            methods=["PUT"], 
-                            query_params=query_params,
-                             path_params=path_params,
                            name=name,
-                            request_schema=request_schema,
-                            response_schema=response_schema,
-                            deprecated=deprecated,
-                            tags=tags,
-                            description=description,
-                            summary=summary,
                             **kwargs)
 
     def patch(
@@ -734,32 +499,7 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        path_params: Annotated[Optional[type[Schema]], Doc("Validation rules for path parameters.")] = None,
-        query_params: Annotated[Optional[type[Schema]], Doc("Validation rules for query parameters.")] = None,
-        request_schema: Annotated[
-            Optional[type[Schema]],
-            Doc("Schema definition for the request body.")
-        ] = None,
-        response_schema: Annotated[
-            Optional[type[Schema]],
-            Doc("Schema definition for successful responses.")
-        ] = None,
-        deprecated: Annotated[
-            Optional[bool],
-            Doc("Marks endpoint as deprecated in API documentation when True.")
-        ] = None,
-        tags: Annotated[
-            Optional[List[str]],
-            Doc("Organizational tags for API documentation grouping.")
-        ] = None,
-        description: Annotated[
-            Optional[str],
-            Doc("Detailed endpoint documentation in Markdown format.")
-        ] = None,
-        summary: Annotated[
-            Optional[str],
-            Doc("Concise one-line description for API documentation listings.")
-        ] = None,
+       
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("Additional arguments to pass to the Routes class.")
@@ -789,15 +529,7 @@ class Router(BaseRouter):
         """
         return self.route(path=f"{path}", 
                            methods=["PATCH"], 
-                            query_params=query_params,
-                             path_params=path_params,
                            name=name,
-                            request_schema=request_schema,
-                            response_schema=response_schema,
-                            deprecated=deprecated,
-                            tags=tags,
-                            description=description,
-                            summary=summary,
                             **kwargs)
 
 
@@ -815,32 +547,7 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        path_params: Annotated[Optional[type[Schema]], Doc("Validation rules for path parameters.")] = None,
-        query_params: Annotated[Optional[type[Schema]], Doc("Validation rules for query parameters.")] = None,
-        request_schema: Annotated[
-            Optional[type[Schema]],
-            Doc("Schema definition for the request body.")
-        ] = None,
-        response_schema: Annotated[
-            Optional[type[Schema]],
-            Doc("Schema definition for successful responses.")
-        ] = None,
-        deprecated: Annotated[
-            Optional[bool],
-            Doc("Marks endpoint as deprecated in API documentation when True.")
-        ] = None,
-        tags: Annotated[
-            Optional[List[str]],
-            Doc("Organizational tags for API documentation grouping.")
-        ] = None,
-        description: Annotated[
-            Optional[str],
-            Doc("Detailed endpoint documentation in Markdown format.")
-        ] = None,
-        summary: Annotated[
-            Optional[str],
-            Doc("Concise one-line description for API documentation listings.")
-        ] = None,
+       
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("Additional arguments to pass to the Routes class.")
@@ -871,17 +578,8 @@ class Router(BaseRouter):
             ```
         """
         return self.route(path=f"{path}", 
-                    
                            methods=["OPTIONS"], 
-                            query_params=query_params,
-                             path_params=path_params,
                            name=name,
-                            request_schema=request_schema,
-                            response_schema=response_schema,
-                            deprecated=deprecated,
-                            tags=tags,
-                            description=description,
-                            summary=summary,
                             **kwargs)
 
 
@@ -900,32 +598,7 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        path_params: Annotated[Optional[type[Schema]], Doc("Validation rules for path parameters.")] = None,
-        query_params: Annotated[Optional[type[Schema]], Doc("Validation rules for query parameters.")] = None,
-        request_schema: Annotated[
-            Optional[type[Schema]],
-            Doc("Schema definition for the request body.")
-        ] = None,
-        response_schema: Annotated[
-            Optional[type[Schema]],
-            Doc("Schema definition for successful responses.")
-        ] = None,
-        deprecated: Annotated[
-            Optional[bool],
-            Doc("Marks endpoint as deprecated in API documentation when True.")
-        ] = None,
-        tags: Annotated[
-            Optional[List[str]],
-            Doc("Organizational tags for API documentation grouping.")
-        ] = None,
-        description: Annotated[
-            Optional[str],
-            Doc("Detailed endpoint documentation in Markdown format.")
-        ] = None,
-        summary: Annotated[
-            Optional[str],
-            Doc("Concise one-line description for API documentation listings.")
-        ] = None,
+       
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("Additional arguments to pass to the Routes class.")
@@ -934,15 +607,7 @@ class Router(BaseRouter):
         
          return self.route(path=f"{path}", 
                            methods=["HEAD"], 
-                            query_params=query_params,
-                             path_params=path_params,
                            name=name,
-                            request_schema=request_schema,
-                            response_schema=response_schema,
-                            deprecated=deprecated,
-                            tags=tags,
-                            description=description,
-                            summary=summary,
                             **kwargs)
     
     def route(
@@ -959,32 +624,7 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-        path_params: Annotated[Optional[type[Schema]], Doc("Validation rules for path parameters.")] = None,
-        query_params: Annotated[Optional[type[Schema]], Doc("Validation rules for query parameters.")] = None,
-        request_schema: Annotated[
-            Optional[type[Schema]],
-            Doc("Schema definition for the request body.")
-        ] = None,
-        response_schema: Annotated[
-            Optional[type[Schema]],
-            Doc("Schema definition for successful responses.")
-        ] = None,
-        deprecated: Annotated[
-            Optional[bool],
-            Doc("Marks endpoint as deprecated in API documentation when True.")
-        ] = None,
-        tags: Annotated[
-            Optional[List[str]],
-            Doc("Organizational tags for API documentation grouping.")
-        ] = None,
-        description: Annotated[
-            Optional[str],
-            Doc("Detailed endpoint documentation in Markdown format.")
-        ] = None,
-        summary: Annotated[
-            Optional[str],
-            Doc("Concise one-line description for API documentation listings.")
-        ] = None,
+       
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("Additional arguments to pass to the Routes class.")
@@ -1016,15 +656,7 @@ class Router(BaseRouter):
             route = Routes(path=f"{path}", 
                            handler=_handler, 
                            methods=methods, 
-                            query_params=query_params,
-                             path_params=path_params,
                            name=name,
-                            request_schema=request_schema,
-                            response_schema=response_schema,
-                            deprecated=deprecated,
-                            tags=tags,
-                            description=description,
-                            summary=summary,
                             **kwargs
                            )
             self.add_route(route)

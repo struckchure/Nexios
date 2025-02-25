@@ -285,6 +285,7 @@ class NexiosApp(Router):
                    
                 def handler_wrapper(req: Request, res: NexiosResponse):
                     return route.handle(req, res)
+                
                 handler = handler_wrapper
                 break
         await self.__execute_middleware_stack(request, response, handler)  # type: ignore
