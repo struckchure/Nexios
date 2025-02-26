@@ -11,3 +11,4 @@ docs/site
 .tox/
 dev/
 sandbox.py
+/**/node_modules/

@@ -1,32 +1,27 @@
-name: Deploy MkDocs
+name: Deploy Focs to GitHub Pages
 
 on:
   push:
     branches:
       - main  
 
-permissions:
-  contents: write  
-  pages: write    
-  id-token: write
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
-          python-version: "3.x" 
+          node-version: '20'  
 
-      - name: Install MkDocs and dependencies
-        run: |
-          pip install mkdocs-material mkdocs-minify-plugin mkdocs-glightbox mkdocs-awesome-pages-plugin pymdown-extensions
+      - name: Install Docsify
+        run: npm install -g docsify-cli
 
-      - name: Build and Deploy MkDocs
-        run: |
-          mkdocs gh-deploy --force --config-file docs/mkdocs.yml
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          publish_dir: ./  
