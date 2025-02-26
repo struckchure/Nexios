@@ -380,7 +380,8 @@ async def paginate(
     request: Annotated[Request, Doc("The FastAPI request object containing query parameters.")],
     page_param: Annotated[Optional[str], Doc("The query parameter name for the page number. If not provided, it will be fetched from the configuration.")] = None,
     page_size_param: Annotated[Optional[str], Doc("The query parameter name for the page size. If not provided, it will be fetched from the configuration.")] = None,
-    use_structure: Annotated[bool, Doc("If True, returns the paginated data in a structured format. If False, returns the raw paginated data.")] = True
+    use_structure: Annotated[bool, Doc("If True, returns the paginated data in a structured format. If False, returns the raw paginated data.")] = True,
+    data_handler :type[AsyncDataHandler] = AsyncDataHandler
 ) -> Dict[str, Any]:
     """
     Paginates a list of data based on the request parameters.
@@ -388,7 +389,7 @@ async def paginate(
     Returns:
         Dict[str, Any]: The paginated data, either in a structured format or raw, depending on `use_structure`.
     """
-    data_handler = ListDataHandler(data)
+    data_handler = data_handler(data) #type: ignore
     config = get_config().to_dict()
     pagination_config = config.get("pagination", {})
     
