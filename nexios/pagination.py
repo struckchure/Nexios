@@ -24,14 +24,6 @@ class InvalidCursorError(PaginationError):
     """Raised when providing an invalid cursor"""
 
 
-class DataHandler(abc.ABC):
-    @abc.abstractmethod
-    def get_total_items(self) -> int:
-        pass
-
-    @abc.abstractmethod
-    def get_items(self, offset: int, limit: int) -> List[Any]:
-        pass
 
 
 class AsyncDataHandler(abc.ABC):
@@ -44,14 +36,14 @@ class AsyncDataHandler(abc.ABC):
         pass
 
 
-class ListDataHandler(DataHandler):
+class ListDataHandler(AsyncDataHandler):
     def __init__(self, data: List[Any]):
         self.data = data
 
-    def get_total_items(self) -> int:
+    async def get_total_items(self) -> int:
         return len(self.data)
 
-    def get_items(self, offset: int, limit: int) -> List[Any]:
+    async def get_items(self, offset: int, limit: int) -> List[Any]:
         return self.data[offset : offset + limit]
 
 
@@ -255,6 +247,7 @@ class LimitOffsetPagination(BasePaginationStrategy):
         }
 
 
+
 class CursorPagination(BasePaginationStrategy):
     def __init__(
         self,
@@ -327,41 +320,6 @@ class CursorPagination(BasePaginationStrategy):
         }
 
 
-class Paginator:
-    def __init__(
-        self,
-        data_handler: DataHandler,
-        pagination_strategy: BasePaginationStrategy,
-        base_url: str,
-        request_params: Dict[str, Any],
-        validate_total_items: bool = True
-    ):
-        self.data_handler  = data_handler
-        self.pagination_strategy = pagination_strategy
-        self.base_url = base_url
-        self.request_params = request_params
-        self.validate_total_items = validate_total_items
-
-    def paginate(self) -> Dict[str, Any]:
-        params = self.pagination_strategy.parse_parameters(self.request_params)
-        offset, limit = self.pagination_strategy.calculate_offset_limit(*params)
-
-        total_items = self.data_handler.get_total_items() #type:ignore
-        if self.validate_total_items and offset >= total_items and total_items > 0:
-            raise InvalidPageError("Requested offset exceeds total items")
-
-        items = self.data_handler.get_items(offset, limit)  #type:ignore
-        metadata = self.pagination_strategy.generate_metadata(
-            total_items,
-            items,
-            self.base_url,
-            self.request_params
-        )
-
-        return {
-            "items": items,
-            "pagination": metadata
-        }
 
 
 class AsyncPaginator:
@@ -417,7 +375,7 @@ class PaginatedResponse:
 
 
 
-def paginate(
+async def paginate(
     data: Annotated[List[Any], Doc("The list of data to be paginated.")],
     request: Annotated[Request, Doc("The FastAPI request object containing query parameters.")],
     page_param: Annotated[Optional[str], Doc("The query parameter name for the page number. If not provided, it will be fetched from the configuration.")] = None,
@@ -445,7 +403,7 @@ def paginate(
         max_page_size=pagination_config.get("max_page_size", 100),
     )
     
-    paginator = Paginator(
+    paginator = AsyncPaginator(
         data_handler=data_handler,
         pagination_strategy=pagination_strategy,
         base_url="/items",
@@ -456,7 +414,7 @@ def paginate(
     )
     
     try:
-        paginated_data = paginator.paginate()
+        paginated_data = await paginator.paginate()
     except InvalidPageError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except InvalidPageSizeError as e:
@@ -466,3 +424,6 @@ def paginate(
         return paginated_data
     
     return PaginatedResponse(paginated_data).to_dict()
+
+
+
