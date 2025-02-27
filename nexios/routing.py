@@ -1,17 +1,92 @@
 from typing import Any, List, Optional, Pattern,Dict,TypeVar,Tuple,Callable,Union
 from dataclasses import dataclass
 import re
-import warnings
+import warnings,typing
 from enum import Enum
 from nexios.types import MiddlewareType,WsMiddlewareType,HandlerType,WsHandlerType
 from nexios.decorators import allowed_methods
 from typing_extensions import Doc,Annotated #type: ignore
 from nexios.structs import URLPath
 from nexios.http import Request,Response
+from ._routing_utils import Convertor,CONVERTOR_TYPES
 T = TypeVar("T")
 allowed_methods_default = ['get','post','delete','put','patch','options']
 
+def replace_params(
+    path: str,
+    param_convertors: dict[str, Convertor[typing.Any]],
+    path_params: dict[str, str],
+) -> tuple[str, dict[str, str]]:
+    for key, value in list(path_params.items()):
+        if "{" + key + "}" in path:
+            convertor = param_convertors[key]
+            value = convertor.to_string(value)
+            path = path.replace("{" + key + "}", value)
+            path_params.pop(key)
+    return path, path_params
 
+
+# Match parameters in URL paths, eg. '{param}', and '{param:int}'
+PARAM_REGEX = re.compile("{([a-zA-Z_][a-zA-Z0-9_]*)(:[a-zA-Z_][a-zA-Z0-9_]*)?}")
+
+
+def compile_path(
+    path: str,
+) -> tuple[typing.Pattern[str], str, dict[str, Convertor[typing.Any]]]:
+    """
+    Given a path string, like: "/{username:str}",
+    or a host string, like: "{subdomain}.mydomain.org", return a three-tuple
+    of (regex, format, {param_name:convertor}).
+
+    regex:      "/(?P<username>[^/]+)"
+    format:     "/{username}"
+    convertors: {"username": StringConvertor()}
+    """
+    is_host = not path.startswith("/")
+
+    path_regex = "^"
+    path_format = ""
+    duplicated_params :typing.Set[typing.Any] = set()
+    
+
+    idx = 0
+    param_convertors = {}
+    param_names :List[str] = []
+    for match in PARAM_REGEX.finditer(path):
+        param_name, convertor_type = match.groups("str")
+        convertor_type = convertor_type.lstrip(":")
+        assert convertor_type in CONVERTOR_TYPES, f"Unknown path convertor '{convertor_type}'"
+        convertor = CONVERTOR_TYPES[convertor_type]
+
+        path_regex += re.escape(path[idx : match.start()])
+        path_regex += f"(?P<{param_name}>{convertor.regex})"
+        print(path_regex)
+        path_format += path[idx : match.start()]
+        path_format += "{%s}" % param_name
+
+        if param_name in param_convertors:
+            duplicated_params.add(param_name)
+
+        param_convertors[param_name] = convertor
+
+        idx = match.end()
+        param_names.append(param_name)
+
+    if duplicated_params:
+        names = ", ".join(sorted(duplicated_params))
+        ending = "s" if len(duplicated_params) > 1 else ""
+        raise ValueError(f"Duplicated param name{ending} {names} at path {path}")
+
+    if is_host:
+        # Align with `Host.matches()` behavior, which ignores port.
+        hostname = path[idx:].split(":")[0]
+        path_regex += re.escape(hostname) + "$"
+    else:
+        path_regex += re.escape(path[idx:]) + "$"
+    path_format += path[idx:]
+
+    
+    return re.compile(path_regex), path_format, param_convertors,param_names #type: ignore
 class RouteType(Enum):
     REGEX = "regex"
     PATH = "path"
@@ -24,59 +99,13 @@ class RoutePattern:
     raw_path: str
     param_names: List[str]
     route_type: RouteType
+    convertor :Convertor[Any]
 
 class RouteBuilder:
-    """Handles route pattern creation and processing"""
-    
     @staticmethod
     def create_pattern(path: str) -> RoutePattern:
-        """Create a route pattern from a path string"""
-        param_names :List[str] = []
-        
-        if path.startswith("^"):
-            return RoutePattern(
-                pattern=re.compile(path),
-                raw_path=path,
-                param_names=re.findall(r'\?P<(\w+)>', path),
-                route_type=RouteType.REGEX
-            )
-            
-        if "*" in path:
-            wildcard_pattern = path.replace("*", ".*?")
-            return RoutePattern(
-                pattern=re.compile(f"^{wildcard_pattern}$"),
-                raw_path=path,
-                param_names=[],
-                route_type=RouteType.WILDCARD
-            )
-            
-        processed_path = path
-        
-
-        if path.startswith("^") or path.endswith("$"):
-            return RoutePattern(
-                pattern=re.compile(path),
-                raw_path=path,
-                param_names=re.findall(r'\?P<(\w+)>', path),
-                route_type=RouteType.REGEX
-            )
-        
-        param_matches = re.finditer(r"{(\w+)(?::([^}]+))?}", path)
-        for match in param_matches:
-            param_name = match.group(1)
-            constraint = match.group(2) or "[^/]+"
-            param_names.append(param_name)
-            processed_path = processed_path.replace(
-                match.group(0),
-                f"(?P<{param_name}>{constraint})"
-            )
-            
-        return RoutePattern(
-            pattern=re.compile(f"^{processed_path}$"),
-            raw_path=path,
-            param_names=param_names,
-            route_type=RouteType.PATH
-        )
+        path_regex, path_format, param_convertors,param_names = compile_path(path) #type:ignore #REVIEW
+        return RoutePattern(pattern=path_regex, raw_path=path,param_names=param_names,route_type=path_format,convertor=param_convertors) #type:ignore
 
 class BaseRouter:
     def add_route(self, route: 'Routes') -> None:
@@ -146,7 +175,7 @@ class Routes:
             """)
         ] = None,
         name :Optional[str] = None,
-       
+        middlewares :List[Any] = [],
         **kwargs :Dict[str,Any]
     ):
         """
@@ -180,9 +209,10 @@ class Routes:
         self.param_names = self.route_info.param_names
         self.route_type = self.route_info.route_type
         self.router_middleware = None
-        
+        self.middlewares = middlewares
+        self.kwargs = kwargs
 
-    def match(self, path: str) -> re.Match[str] | None:
+    def match(self, path: str) -> typing.Tuple[Any,Any]:
         """
         Match a path against this route's pattern and return captured parameters.
 
@@ -195,8 +225,11 @@ class Routes:
         """
         match = self.pattern.match(path)
         if match:
-            return match
-        return None
+            matched_params = match.groupdict()
+            for key, value in matched_params.items():
+                matched_params[key] = self.route_info.convertor[key].convert(value) #type:ignore
+            return match,matched_params
+        return None, None
     
     def url_path_for(self, name: str, **path_params: Any) -> URLPath:
         """
@@ -244,9 +277,27 @@ class Routes:
         Returns:
             Response: The processed HTTP response object.
         """
-       
+        middlewares =  self.middlewares.copy()
+        middlewares.append(self.handler)
         
-        return await self.handler(request, response)
+        index = -1
+
+        async def next_middleware() -> None:
+            nonlocal index
+            index += 1
+
+            if index < len(middlewares):
+                middleware = middlewares[index]
+
+                if index == len(middlewares) - 1:
+                    
+                    return await middleware(request, response)
+                else:
+                    await middleware(request, response, next_middleware)
+                return
+
+        return await next_middleware()
+        
             
            
   
@@ -256,6 +307,7 @@ class Routes:
 
         Returns:
             Tuple[Pattern[str], HandlerType]: The compiled regex pattern and the handler.
+            
         """
         return self.pattern, self.handler
 
@@ -332,7 +384,10 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-       
+        middlewares : Annotated[
+            List[Any],
+            Doc("Optional Middleware that should be executed before the route handler")
+         ] = [],
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("Additional arguments to pass to the Routes class.")
@@ -361,6 +416,7 @@ class Router(BaseRouter):
         return self.route(path=f"{path}", 
                            methods=["GET"], 
                            name=name,
+                           middlewares = middlewares,
                             **kwargs)
 
 
@@ -374,6 +430,10 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
+        middlewares : Annotated[
+            List[Any],
+            Doc("Optional Middleware that should be executed before the route handler")
+        ] = [],
        
         **kwargs: Annotated[
             Dict[str, Any],
@@ -403,6 +463,7 @@ class Router(BaseRouter):
         return self.route(path=f"{path}", 
                            methods=["POST"], 
                            name=name,
+                           middlewares = middlewares,
                             **kwargs)
 
 
@@ -416,6 +477,10 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
+        middlewares : Annotated[
+            List[Any],
+            Doc("Optional Middleware that should be executed before the route handler")
+        ] = [],
        
         **kwargs: Annotated[
             Dict[str, Any],
@@ -446,6 +511,7 @@ class Router(BaseRouter):
         return self.route(path=f"{path}", 
                            methods=["DELETE"],                      
                            name=name,
+                           middlewares = middlewares,
                             **kwargs)
 
 
@@ -459,7 +525,10 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-       
+        middlewares : Annotated[
+            List[Any],
+            Doc("Optional Middleware that should be executed before the route handler")
+        ] = [],
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("Additional arguments to pass to the Routes class.")
@@ -488,6 +557,7 @@ class Router(BaseRouter):
         return self.route(path=f"{path}", 
                            methods=["PUT"], 
                            name=name,
+                           middlewares = middlewares,
                             **kwargs)
 
     def patch(
@@ -500,6 +570,10 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
+        middlewares : Annotated[
+            List[Any],
+            Doc("Optional Middleware that should be executed before the route handler")
+        ] = [],
        
         **kwargs: Annotated[
             Dict[str, Any],
@@ -531,6 +605,7 @@ class Router(BaseRouter):
         return self.route(path=f"{path}", 
                            methods=["PATCH"], 
                            name=name,
+                           middlewares = middlewares,
                             **kwargs)
 
 
@@ -540,15 +615,14 @@ class Router(BaseRouter):
             str,
             Doc("The URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.")
         ],
-        handler: Annotated[
-            Optional[HandlerType],
-            Doc("Callable responsible for processing requests to this endpoint.")
-        ] = None,
         name: Annotated[
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-       
+        middlewares : Annotated[
+            List[Any],
+            Doc("Optional Middleware that should be executed before the route handler")
+        ] = [],
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("Additional arguments to pass to the Routes class.")
@@ -581,6 +655,7 @@ class Router(BaseRouter):
         return self.route(path=f"{path}", 
                            methods=["OPTIONS"], 
                            name=name,
+                           *middlewares,
                             **kwargs)
 
 
@@ -591,15 +666,15 @@ class Router(BaseRouter):
             str,
             Doc("The URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.")
         ],
-        handler: Annotated[
-            Optional[HandlerType],
-            Doc("Callable responsible for processing requests to this endpoint.")
-        ] = None,
+
         name: Annotated[
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
-       
+        middlewares : Annotated[
+            List[Any],
+            Doc("Optional Middleware that should be executed before the route handler")
+        ] = [],
         **kwargs: Annotated[
             Dict[str, Any],
             Doc("Additional arguments to pass to the Routes class.")
@@ -609,6 +684,7 @@ class Router(BaseRouter):
          return self.route(path=f"{path}", 
                            methods=["HEAD"], 
                            name=name,
+                           middlewares = [],
                             **kwargs)
     
     def route(
@@ -625,6 +701,10 @@ class Router(BaseRouter):
             Optional[str],
             Doc("A unique name for the route.")
         ] = None,
+        middlewares : Annotated[
+            List[Any],
+            Doc("Optional Middleware that should be executed before the route handler")
+        ] = [],
        
         **kwargs: Annotated[
             Dict[str, Any],
@@ -658,6 +738,7 @@ class Router(BaseRouter):
                            handler=_handler, 
                            methods=methods, 
                            name=name,
+                           middlewares = middlewares,
                             **kwargs
                            )
             self.add_route(route)
@@ -824,7 +905,7 @@ class WSRouter(BaseRouter):
             ```
     """
         def decorator(handler: WsHandlerType) -> WsHandlerType:
-            self.add_ws_route(WebsocketRoutes(path, handler))
+            self.add_ws_route(WebsocketRoutes(f"{self.prefix}{path}", handler))
             return handler
 
         return decorator

@@ -677,6 +677,9 @@ class RouteParam:
     def __call__(self, *args: Any, **kwds: Any) ->  Dict[str, Any]:
         return self.data
     
+    def get(self, key :str):
+        return self.data.get(key)
+    
     def __dict__(self) -> Dict[str, Any]: #type:ignore
         return self.data
 

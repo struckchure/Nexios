@@ -72,7 +72,8 @@ class NexiosApp(Router):
             server_error_handler or ExceptionMiddleware()
         )
         
-    
+        self.request_class = Request
+        self.response_manager = NexiosResponse
 
     def on_startup(self, handler: Callable[[], Awaitable[None]]) -> None:
         """
@@ -267,20 +268,19 @@ class NexiosApp(Router):
     async def __handle_http_request(
         self, scope: Scope, receive: Receive, send: Send
     ) -> None:
-        request = Request(scope, receive, send)
-        response = NexiosResponse()
+        request = self.request_class(scope,receive,send)
+        response = self.response_manager()
         request.scope["config"] = self.config
 
         handler = None
         for route in self.routes:
             url = self.__normalize_path(request.url.path)
-            match = route.match(url)
+            match,matched_params = route.match(url)
             if match:
                 route.handler = allowed_methods(route.methods)(route.handler)
-                route_kwargs = match.groupdict()
             
                
-                scope["route_params"] = RouteParam(route_kwargs)
+                scope["route_params"] = RouteParam(matched_params)
 
                 if route.router_middleware and len(route.router_middleware) > 0:
                     self.http_middlewares.extend(route.router_middleware)
