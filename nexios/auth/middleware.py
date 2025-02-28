@@ -67,15 +67,18 @@ class AuthenticationMiddleware(BaseMiddleware):
 
         """
         if not inspect.iscoroutinefunction(self.backend.authenticate):
-            user: BaseUser = self.backend.authenticate(request, response)  # type:ignore
+            user: typing.Tuple[BaseUser,str] = self.backend.authenticate(request, response)  # type:ignore
         else:
-            user: BaseUser = await self.backend.authenticate(request, response)  # type:ignore
+            user: typing.Tuple[BaseUser,str] = await self.backend.authenticate(request, response)  # type:ignore
 
         if user is None:  # type:ignore
-            request.scope["user"] = UnauthenticatedUser(), "no-auth"
+            request.scope["user"] = UnauthenticatedUser()
+            request.scope["auth"] = "no-auth"
             await call_next()
             
             return
 
-        request.scope["user"] = user
+        request.scope["user"] = user[0]
+        request.scope["auth"] = user[-1]
+        
         await call_next()

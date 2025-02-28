@@ -21,7 +21,7 @@ class auth(RouteDecorator):
                 
                 raise AuthenticationFailed
             
-            user, scope  = request.scope.get("user") #type:ignore
+            scope  = request.scope.get("auth") #type:ignore
             if self.scopes and scope not in self.scopes:
                 raise AuthenticationFailed
             
