@@ -60,7 +60,6 @@ def compile_path(
 
         path_regex += re.escape(path[idx : match.start()])
         path_regex += f"(?P<{param_name}>{convertor.regex})"
-        print(path_regex)
         path_format += path[idx : match.start()]
         path_format += "{%s}" % param_name
 

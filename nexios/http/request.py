@@ -90,9 +90,6 @@ class HTTPConnection:
     def base_url(self) -> URL:
         if not hasattr(self, "_base_url"):
             base_url_scope = dict(self.scope)
-            # This is used by request.url_for, it might be used inside a Mount which
-            # would have its own child scope with its own root_path, but the base URL
-            # for url_for should still be the top level app root path.
             app_root_path = base_url_scope.get("app_root_path", base_url_scope.get("root_path", ""))
             path = app_root_path
             if not path.endswith("/"):
@@ -339,6 +336,7 @@ class Request(HTTPConnection):
                 files_dict[key] = value
         return files_dict  #type: ignore
 
+    @property
     async def text(self) -> str:
         """
         Returns the body of the request as a string.
