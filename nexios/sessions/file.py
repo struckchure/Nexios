@@ -7,9 +7,9 @@ from .base import BaseSessionInterface
 
 class FileSessionManager(BaseSessionInterface):
     def __init__(self, session_key: str) -> None:
-        session_key = session_key 
         super().__init__(session_key)
-        self.session_file_path = os.path.join(self.config.SESSION_FILE_STORAGE_PATH or "sessions", f"{session_key}.json")
+        self.session_key = session_key or self.get_session_key()
+        self.session_file_path = os.path.join(self.config.session_file_name or "sessions", f"{self.session_key}.json")
         
         # Ensure the session storage directory exists
         os.makedirs(self.config.SESSION_FILE_STORAGE_PATH or "sessions", exist_ok=True)
@@ -90,6 +90,4 @@ class FileSessionManager(BaseSessionInterface):
         if os.path.exists(self.session_file_path):
             os.remove(self.session_file_path)
 
-    def get_session_key(self) -> str:
-        """Returns the session key."""
-        return self.session_key
+    

@@ -1,6 +1,8 @@
 from typing import Dict,Any,Union
 from nexios.config import get_config,MakeConfig
-from datetime import datetime,timedelta
+from datetime import datetime,timedelta,timezone
+import secrets
+
 class BaseSessionInterface:
 
     modified = False
@@ -105,10 +107,10 @@ class BaseSessionInterface:
     def get_expiration_time(self) -> datetime | None:
         """Returns the expiration time for the session. Uses `self.session_config.session_expiration_time`."""
         if not self.session_config:
-            return datetime.utcnow() + timedelta(minutes=86400) #type: ignore
+            return datetime.now(timezone.utc) + timedelta(minutes=86400) #type: ignore
         if self.session_config.session_permanent:
-            return datetime.utcnow() + timedelta(minutes=self.session_config.session_expiration_time or 86400) #type: ignore
-        return None
+            return datetime.now(timezone.utc) + timedelta(minutes=self.session_config.session_expiration_time or 86400) #type: ignore
+        return datetime.now(timezone.utc) + timedelta(minutes=86400) #type: ignore
 
     @property
     def should_set_cookie(self) -> bool:
@@ -125,6 +127,15 @@ class BaseSessionInterface:
     def has_expired(self) -> bool:
         """Returns True if the session has expired."""
         expiration_time = self.get_expiration_time()
-        if expiration_time and datetime.utcnow() > expiration_time: #type: ignore
+        if expiration_time and datetime.now(timezone.utc) > expiration_time: #type: ignore
             return True
         return False
+
+
+    def get_session_key(self) -> str:
+        """Returns the session key."""
+        if self.session_key:
+            return self.session_key
+        return secrets.token_hex(32)
+    
+    

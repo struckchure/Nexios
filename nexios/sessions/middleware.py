@@ -1,12 +1,18 @@
 from nexios.middlewares.base import BaseMiddleware
 from .signed_cookies import SignedSessionManager
-from .file import FileSessionManager
 from .base import BaseSessionInterface
 from nexios.http import Request,Response
 from nexios.config import get_config
 import warnings,typing
 class SessionMiddleware(BaseMiddleware):
 
+    def get_manager(self):
+        if not self.config:
+            return SignedSessionManager
+        else:
+           return  self.config.manager or SessionMiddleware
+            
+        
     async def process_request(self, request :Request, response :Response,call_next:  typing.Callable[..., typing.Awaitable[typing.Any]]):
         self.secret = get_config().secret_key
         
@@ -14,31 +20,15 @@ class SessionMiddleware(BaseMiddleware):
         if not self.secret:
             warnings.warn("`secret_key` is not set, `secret_key`  is required to use session",RuntimeWarning)
             return await call_next()
-        # if not self.config:
-        #     warnings.warn("`Config for session not provided",RuntimeWarning)       
-            await call_next()
-            return
+        
         if self.config:
-            session_cookie_name = self.config.session_cookie_name
+            session_cookie_name = self.config.session_cookie_name or "session_id"
         else:
             session_cookie_name =  "session_id"
 
         self.session_cookie_name = session_cookie_name
-        managers :typing.Dict[str,typing.Any]= {
-            "file":FileSessionManager,
-            "cookies":SignedSessionManager
-        }
-        if self.config:
-            manager_config = self.config.session_manager
-        else:
-            manager_config  = "cookies"
-
-        if self.config:
-            self.config.manager
-            manager :type[BaseSessionInterface] = managers.get(manager_config,SignedSessionManager)
-        else:
-            manager = SignedSessionManager
-        session :typing.Type[BaseSessionInterface] = manager(session_key=request.cookies.get(session_cookie_name)) #type:ignore
+        manager = self.get_manager()
+        session :type[BaseSessionInterface] = manager(session_key=request.cookies.get(session_cookie_name)) #type:ignore
         await session.load() #type: ignore
         request.scope['session'] = session
         await call_next()
@@ -58,7 +48,6 @@ class SessionMiddleware(BaseMiddleware):
             await request.session.save()
 
             session_key = request.session.get_session_key()
-
             response.set_cookie(
                 key =  self.session_cookie_name,
                 value=session_key,
@@ -70,4 +59,3 @@ class SessionMiddleware(BaseMiddleware):
                 expires=request.session.get_expiration_time()
 
             )
-            # print(response._response._cookies)

@@ -3,7 +3,6 @@ import typing
 from nexios.config import get_config
 from .base import BaseSessionInterface
 
-
 class SignedSessionManager(BaseSessionInterface):
     def __init__(self, session_key: str):
         super().__init__(session_key)
@@ -76,7 +75,6 @@ class SignedSessionManager(BaseSessionInterface):
         self._session_cache.clear()
 
     
-    def get_session_key(self):
-        return self.session_key
+   
 
 
