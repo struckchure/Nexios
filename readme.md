@@ -10,7 +10,7 @@
 
 ### 🌟 The lightweight, blazing-fast Python framework you've been waiting for!  
 
-[![GitHub stars](https://github.com/nexios-labs/Nexios?style=for-the-badge)](https://github.com/nexios-labs/Nexios)  
+[![GitHub stars](https://github.com/nexios-labs/nexios?style=for-the-badge)](https://github.com/nexios-labs/Nexios)  
 [![PyPI Downloads](https://img.shields.io/pypi/dm/nexios?style=for-the-badge)](https://pypi.org/project/nexios/)  
 [![Documentation](https://img.shields.io/badge/Docs-Read%20Now-blue?style=for-the-badge)](https://nexios-labs.github.io/Nexios/)  
 
