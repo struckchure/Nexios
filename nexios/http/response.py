@@ -532,14 +532,14 @@ class NexiosResponse:
     A wrapper class that provides a fluent interface for different response types.
     """
     def __init__(self):
-        self._body: Optional[JSONType] = None
         self._content_type = "application/json"
         self._response: Response = Response()
         self._cookies: List[Dict[str, Any]] = []
         self._status_code = self._response.status_code
         self._delete_cookies: List[Dict[str, Any]] = []
-        self.headers = {}
+        self.headers:Dict[str,Any] = {**self._response.headers}
 
+        self.body = self._response._body #type:ignore
     
     def text(self, content: JSONType, status_code:int = 200, headers: Dict[str, Any] = {}):
         """Send plain text or HTML content."""
@@ -723,12 +723,13 @@ class NexiosResponse:
         """Make the response ASGI-compatible."""
         
         response = self._response
+        response.headers.update(self.headers)
         return response
 
        
         
     def __str__(self):
-        return f"Response [{self._status_code} {self._body}]" 
+        return f"Response [{self._status_code} {self.body}]" 
     
     
     
