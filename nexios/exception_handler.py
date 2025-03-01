@@ -8,6 +8,9 @@ import traceback
 from nexios.auth.exceptions import AuthenticationFailed,AuthErrorHandler
 from nexios.exceptions import NotFoundException
 from nexios.handlers.not_found import handle_404_error
+from nexios import logging
+
+logger = logging.getLogger("nexios")
 def _lookup_exception_handler(exc_handlers :typing.Dict[typing.Any[int ,Exception],ExceptionHandlerType], exc: Exception) :
     
     for cls in type(exc).__mro__:
@@ -34,8 +37,9 @@ async def wrap_app_handling_exceptions(request :Request, response :Response, cal
         if handler is None: #type: ignore
             handler = _lookup_exception_handler(exception_handlers, exc)
             if not handler:
+                error = traceback.format_exc()
+                logger.error(error)
                 raise exc
-            error = traceback.format_exc()
             return  await handler(request,response,exc)
         raise exc
        

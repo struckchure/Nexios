@@ -12,6 +12,7 @@ from typing_extensions import Doc, Annotated  # type:ignore
 from nexios.config import MakeConfig
 from typing import Awaitable, Optional
 from nexios.exceptions import NotFoundException
+from nexios.logging import getLogger
 from .types import (
     MiddlewareType,
     Scope,
@@ -30,7 +31,7 @@ from typing import Dict, Any
 AppType = typing.TypeVar("AppType", bound="NexiosApp")
 
 
-
+logger = getLogger("nexios")
 class NexiosApp(Router):
     def __init__(
         self,
@@ -430,11 +431,10 @@ class NexiosApp(Router):
     ) -> None:
         """Execute WebSocket middleware stack, with the handler as the last middleware."""
         stack = self.ws_middlewares.copy()
-        
-        async def default_handler(ws:WebSocket):
-           raise NotFoundException
-       
-        handler_:WsHandlerType= handler or default_handler 
+        async def default_handler(ws:WebSocket):  
+            await ws.close(code=1011, reason=f"Not Found")
+              
+        handler_ = handler or default_handler
         stack.append(handler_)    # type: ignore
 
         index = -1
@@ -450,8 +450,14 @@ class NexiosApp(Router):
                     return await middleware(ws)  # type:ignore
                 else:
                     return await middleware(ws, next_middleware, **kwargs)  # type: ignore
-
-        return await next_middleware()
+        try:
+            
+            return await next_middleware()
+        except Exception as _:
+            error = traceback.format_exc()
+            logger.error(error)
+            await ws.close(code=1011, reason=f"Internal Server Error: {str(error)}")
+            
 
     async def __handle_websocket(self, scope: Scope, receive: Receive, send: Send) -> None:
         ws = await get_websocket_session(scope, receive, send)
@@ -461,7 +467,6 @@ class NexiosApp(Router):
         handler :WsHandlerType | None = None
         for route in self.ws_routes:
             match = route.pattern.match(url)
-            print(match, url)
             if match:
                 route_kwargs = match.groupdict()
                 scope["route_params"] = RouteParam(route_kwargs)
@@ -471,20 +476,12 @@ class NexiosApp(Router):
 
               
 
-                handler = route.handler
+                handler = route.handle
                 break
 
-        if handler:
-            try:
-                await self.__execute_ws_middleware_stack(ws, handler)
-            except Exception as _:
-                error = traceback.format_exc()
-                print(error)
-                await ws.close(code=1011, reason=f"Internal Server Error: {str(error)}")
-                return
-        else:
-            await ws.close(reason="Not found")
-            return
+        
+        await self.__execute_ws_middleware_stack(ws, handler) #type:ignore
+            
 
     def add_ws_middleware(
         self,

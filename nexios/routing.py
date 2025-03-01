@@ -9,6 +9,7 @@ from typing_extensions import Doc,Annotated #type: ignore
 from nexios.structs import URLPath
 from nexios.http import Request,Response
 from ._routing_utils import Convertor,CONVERTOR_TYPES
+from nexios.websockets import WebSocket
 T = TypeVar("T")
 allowed_methods_default = ['get','post','delete','put','patch','options']
 
@@ -787,14 +788,45 @@ class WebsocketRoutes:
         self.route_type = self.route_info.route_type
         self.router_middleware = None
     
-    def match(self, path: str) -> Optional[Dict[str,Any]]:
+    def match(self, path: str) -> typing.Tuple[Any,Any]:
         """
-        Match a path against this route's pattern and return captured parameters
+        Match a path against this route's pattern and return captured parameters.
+
+        Args:
+            path: The URL path to match.
+
+        Returns:
+            Optional[Dict[str, Any]]: A dictionary of captured parameters if the path matches,
+            otherwise None.
         """
         match = self.pattern.match(path)
         if match:
-            return match.groupdict()
-        return None
+            matched_params = match.groupdict()
+            for key, value in matched_params.items():
+                matched_params[key] = self.route_info.convertor[key].convert(value) #type:ignore
+            return match,matched_params
+        return None, None
+    
+    async def handle(self, ws :WebSocket):
+        stack = self.middlewares.copy()
+       
+        stack.append(self.handler)    # type: ignore
+
+        index = -1
+          
+        async def next_middleware() -> None:
+            nonlocal index
+            index += 1
+
+            if index < len(stack):
+                middleware = stack[index]
+                if index == len(stack) - 1:
+                    
+                    return await middleware(ws)  # type:ignore
+                else:
+                    return await middleware(ws, next_middleware)  # type: ignore
+
+        return await next_middleware()
     
     
     
@@ -867,7 +899,8 @@ class WSRouter(BaseRouter):
 
     def ws_route(
         self, 
-        path: Annotated[str, Doc("The WebSocket route path. Must be a valid URL pattern.")]
+        path: Annotated[str, Doc("The WebSocket route path. Must be a valid URL pattern.")],
+        middlewares : Annotated[List[WsMiddlewareType], Doc("List of middleware to be executes before the router handler")],
     ) -> Union[WsHandlerType , Any]:
         """
         Registers a WebSocket route.
@@ -891,7 +924,7 @@ class WSRouter(BaseRouter):
             ```
     """
         def decorator(handler: WsHandlerType) -> WsHandlerType:
-            self.add_ws_route(WebsocketRoutes(f"{self.prefix}{path}", handler))
+            self.add_ws_route(WebsocketRoutes(f"{self.prefix}{path}", handler, middlewares=middlewares))
             return handler
 
         return decorator
