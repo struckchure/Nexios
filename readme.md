@@ -5,7 +5,7 @@
 #  Nexios – The Future of Python Frameworks!  
 
 <p align="center">
-  <img src="./docs/nexiohero.png" width="1000" alt="Nexios Logo"/>
+  <img src="./docs/_media/icon.svg" width="1000" alt="Nexios Logo"/>
 </p>  
 
 ### 🌟 The lightweight, blazing-fast Python framework you've been waiting for!  
