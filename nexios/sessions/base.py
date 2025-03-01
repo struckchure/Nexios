@@ -52,7 +52,7 @@ class BaseSessionInterface:
         return self._session_cache.keys()
     
     def values(self):
-        return self._session_cache.items()
+        return self._session_cache.values()
     
     def is_empty(self):
         return self._session_cache.items().__len__() == 0
@@ -137,5 +137,7 @@ class BaseSessionInterface:
         if self.session_key:
             return self.session_key
         return secrets.token_hex(32)
+    
+    
     
     

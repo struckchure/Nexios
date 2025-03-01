@@ -10,7 +10,7 @@ class SessionMiddleware(BaseMiddleware):
         if not self.config:
             return SignedSessionManager
         else:
-           return  self.config.manager or SessionMiddleware
+           return  self.config.manager or SignedSessionManager
             
         
     async def process_request(self, request :Request, response :Response,call_next:  typing.Callable[..., typing.Awaitable[typing.Any]]):

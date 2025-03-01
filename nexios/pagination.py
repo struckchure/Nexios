@@ -2,11 +2,8 @@ import abc
 import base64
 import json
 import urllib.parse
-from  nexios.http import Request
-from nexios.config import get_config
 from typing import Any, Optional, Dict, List, Tuple, Union
-from typing_extensions import Annotated,Doc
-from nexios.exceptions import HTTPException
+
 
 class PaginationError(Exception):
     """Base class for all pagination errors"""
@@ -372,59 +369,6 @@ class PaginatedResponse:
         }
 
 
-
-
-
-async def paginate(
-    data: Annotated[List[Any], Doc("The list of data to be paginated.")],
-    request: Annotated[Request, Doc("The FastAPI request object containing query parameters.")],
-    page_param: Annotated[Optional[str], Doc("The query parameter name for the page number. If not provided, it will be fetched from the configuration.")] = None,
-    page_size_param: Annotated[Optional[str], Doc("The query parameter name for the page size. If not provided, it will be fetched from the configuration.")] = None,
-    use_structure: Annotated[bool, Doc("If True, returns the paginated data in a structured format. If False, returns the raw paginated data.")] = True,
-    data_handler :type[AsyncDataHandler] = AsyncDataHandler
-) -> Dict[str, Any]:
-    """
-    Paginates a list of data based on the request parameters.
-
-    Returns:
-        Dict[str, Any]: The paginated data, either in a structured format or raw, depending on `use_structure`.
-    """
-    data_handler = data_handler(data) #type: ignore
-    config = get_config().to_dict()
-    pagination_config = config.get("pagination", {})
-    
-    page_param :str = page_param or pagination_config.get("page_param", "page")
-    page_size_param :str = page_size_param or pagination_config.get("page_size_param", "page_size")
-    
-    pagination_strategy = PageNumberPagination(
-        page_param=page_param, #type: ignore[arg-type]
-        page_size_param=page_size_param, #type: ignore[arg-type]
-        default_page=pagination_config.get("default_page", 1),
-        default_page_size=pagination_config.get("default_page_size", 20),
-        max_page_size=pagination_config.get("max_page_size", 100),
-    )
-    
-    paginator = AsyncPaginator(
-        data_handler=data_handler,
-        pagination_strategy=pagination_strategy,
-        base_url="/items",
-        request_params={
-            page_param: request.query_params.get(page_param, pagination_config.get("default_page", 1)), #type: ignore[dict-item,arg-type]
-            page_size_param: request.query_params.get(page_size_param, pagination_config.get("default_page_size", 5)), #type: ignore[dict-item,arg-type]
-        },
-    )
-    
-    try:
-        paginated_data = await paginator.paginate()
-    except InvalidPageError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except InvalidPageSizeError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    
-    if not use_structure:
-        return paginated_data
-    
-    return PaginatedResponse(paginated_data).to_dict()
 
 
 

@@ -49,7 +49,7 @@ class FileSessionManager(BaseSessionInterface):
 
     def values(self):
         """Get all session values."""
-        return self._session_cache.items()
+        return self._session_cache.values()
 
     def is_empty(self) -> bool:
         """Check if the session is empty."""
