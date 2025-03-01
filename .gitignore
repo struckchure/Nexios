@@ -13,3 +13,4 @@ dev/
 sandbox.py
 /**/node_modules/
 static/
+poetry.lock

@@ -41,7 +41,7 @@ typing-extensions = "4.12.2"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^0.910"
-pytest = "~=6.2.5"
+pytest = "~=8.3.4"
 mkdocs = "^1.2.3"
 coverage = "^6.3"
 httpx = "^0.23.3"
