@@ -45,17 +45,8 @@ pytest = "~=6.2.5"
 mkdocs = "^1.2.3"
 coverage = "^6.3"
 httpx = "^0.23.3"
-mkdocs-material = "*"
-mkdocs-git-revision-date-localized-plugin = "*"
-mkdocs-multirepo-plugin = "*"
-pymdown-extensions = "*"
 typing-extensions = "4.12.2"
 
-
-
-
-[tool.poetry.scripts]
-nexios = "nexios.cli.main:nexios"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
