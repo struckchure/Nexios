@@ -775,12 +775,12 @@ class WebsocketRoutes:
         self,
         path: str,
         handler: WsHandlerType,
-        middleware: Optional[WsMiddlewareType] = None
+        middlewares: typing.List[WsMiddlewareType] = []
     ):
         assert callable(handler), "Route handler must be callable"
         self.raw_path = path
         self.handler:WsHandlerType = handler
-        self.middleware  = middleware
+        self.middlewares  = middlewares
         self.route_info = RouteBuilder.create_pattern(path)
         self.pattern = self.route_info.pattern
         self.param_names = self.route_info.param_names
@@ -797,9 +797,7 @@ class WebsocketRoutes:
         return None
     
     
-    def __call__(self) -> Tuple[Pattern[str],WsHandlerType,Union[WsMiddlewareType,None] ]:
-        """Return the route components for registration"""
-        return self.pattern, self.handler, self.middleware
+    
     
     def __repr__(self) -> str:
         return f"<WSRoute {self.raw_path}>"
@@ -865,18 +863,7 @@ class WSRouter(BaseRouter):
         if callable(middleware):
             self.middlewares.append(middleware)
     
-    def get_routes(self) -> List[WebsocketRoutes]:
-        """Get all WebSocket routes with their patterns, handlers, and middleware"""
-        routes :List[WebsocketRoutes]= []
-        for route in self.routes:
-            route_ = WebsocketRoutes(
-                path=route.raw_path, 
-                handler=route.handler, 
-                middleware=route.middleware
-            )
-            setattr(route_, "router_middleware", self.middlewares)
-            routes.append(route_)
-        return routes
+  
 
     def ws_route(
         self, 

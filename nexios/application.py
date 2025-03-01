@@ -20,6 +20,7 @@ from .types import (
     WsMiddlewareType,
     Message,
     HandlerType,
+    WsHandlerType
 )
 
 allowed_methods_default = ["get", "post", "delete", "put", "patch", "options"]
@@ -421,55 +422,69 @@ class NexiosApp(Router):
             app.mount_ws_router(chat_router)  # Mounts the user routes into the main app
             ```
         """
-        
-        for route in router.get_routes():
-            self.add_ws_route(route)
+        self.ws_routes.extend(router.routes)
+        self.ws_middlewares.extend(router.middlewares)
 
     async def __execute_ws_middleware_stack(
-        self, ws: WebSocket, **kwargs: Dict[str, Any]
+        self, ws: WebSocket, handler: WsHandlerType, **kwargs: Dict[str, Any]
     ) -> None:
-        """
-        Executes WebSocket middleware stack after route matching.
-        """
+        """Execute WebSocket middleware stack, with the handler as the last middleware."""
         stack = self.ws_middlewares.copy()
-        index = -1
+        
+        async def default_handler(ws:WebSocket):
+           raise NotFoundException
+       
+        handler_:WsHandlerType= handler or default_handler 
+        stack.append(handler_)    # type: ignore
 
+        index = -1
+          
         async def next_middleware() -> None:
             nonlocal index
             index += 1
+
             if index < len(stack):
                 middleware = stack[index]
-                return await middleware(ws, next_middleware, **kwargs)  # type:ignore
-            else:
-                return None
+                if index == len(stack) - 1:
+                    
+                    return await middleware(ws)  # type:ignore
+                else:
+                    return await middleware(ws, next_middleware, **kwargs)  # type: ignore
 
         return await next_middleware()
 
-    async def __handle_websocket(self, scope: Scope, receive: Receive, send: Send):
+    async def __handle_websocket(self, scope: Scope, receive: Receive, send: Send) -> None:
         ws = await get_websocket_session(scope, receive, send)
-        await self.__execute_ws_middleware_stack(ws)
+        
+        url = self.__normalize_path(ws.url.path)
+        
+        handler :WsHandlerType | None = None
         for route in self.ws_routes:
-            url = self.__normalize_path(ws.url.path)
             match = route.pattern.match(url)
-
+            print(match, url)
             if match:
                 route_kwargs = match.groupdict()
                 scope["route_params"] = RouteParam(route_kwargs)
 
-                try:
-                    await route.execute_middleware_stack(ws)  # type: ignore
-                    await route.handler(ws, **route_kwargs)
-                    return
+                if route.router_middleware and len(route.router_middleware) > 0:
+                    self.ws_middlewares.extend(route.router_middleware)
 
-                except Exception as _:
-                    error = traceback.format_exc()
-                    await ws.close(
-                        code=1011, reason=f"Internal Server Error: {str(error)}"
-                    )
-                    return
+              
 
-        await ws.close(reason="Not found")
-        return
+                handler = route.handler
+                break
+
+        if handler:
+            try:
+                await self.__execute_ws_middleware_stack(ws, handler)
+            except Exception as _:
+                error = traceback.format_exc()
+                print(error)
+                await ws.close(code=1011, reason=f"Internal Server Error: {str(error)}")
+                return
+        else:
+            await ws.close(reason="Not found")
+            return
 
     def add_ws_middleware(
         self,

@@ -28,7 +28,7 @@ MiddlewareType: TypeAlias = Callable[
 ]
 WsMiddlewareType :TypeAlias = Callable[[Type[WebSocket],Type[Callable[...,Awaitable[Message]]]], Type[Send]]  
 
-WsHandlerType = Callable[..., Awaitable[typing.Union[Send , Message]]]
+WsHandlerType =  typing.Callable[[WebSocket], typing.Awaitable[None]]
 HandlerType = Callable[..., Awaitable[Any]]
 ExceptionHandlerType = Callable[[Request,Response,Exception],typing.Coroutine[Any,Any,Any]]
 
