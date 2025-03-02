@@ -22,7 +22,7 @@ Message = typing.MutableMapping[str, typing.Any]
 Receive = typing.Callable[[], typing.Awaitable[Message]]
 Send = typing.Callable[[Message], typing.Awaitable[None]]
     
-MiddlewareType: TypeAlias = Callable[
+MiddlewareType = Callable[
     [Request, NexiosResponse, Callable[..., Awaitable[None]]], 
     Awaitable[typing.Union[NexiosResponse , None]]
 ]

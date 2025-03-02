@@ -257,7 +257,6 @@ class NexiosApp(Router):
 
             if index < len(stack):
                 middleware = stack[index]
-
                 if index == len(stack) - 1:
                     
                     return await middleware(request, response)  # type:ignore

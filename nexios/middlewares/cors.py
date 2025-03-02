@@ -4,6 +4,10 @@ from nexios.http import Request,Response
 from nexios.config import get_config
 from typing import Callable, Optional,List,Dict,Any
 import typing
+from nexios.logging import getLogger
+
+
+logger = getLogger()
 
 ALL_METHODS = ("delete", "get", "head", "options", "patch", "post", "put")
 BASIC_HEADERS = {"Accept", "Accept-Language", "Content-Language", "Content-Type"}
@@ -46,6 +50,7 @@ class CORSMiddleware(BaseMiddleware):
         else:
             self.allow_headers  = list(SAFELISTED_HEADERS)
     async def process_request(self, request: Request,response :  Response, call_next :  typing.Callable[..., typing.Awaitable[Any]]):
+        
         config = get_config().cors
         if not config:
             await call_next()
@@ -56,9 +61,8 @@ class CORSMiddleware(BaseMiddleware):
 
         if not origin and self.strict_origin_checking:
             if self.debug:
-                print("Request denied: Missing 'Origin' header.")
+                logger.error("Request denied: Missing 'Origin' header.")
             return response.json(self.get_error_message("missing_origin"), status_code=self.custom_error_status)
-
         if method.lower() == "options" and "access-control-request-method" in request.headers:
             return await self.preflight_response(request, response)
         await call_next()
@@ -82,7 +86,7 @@ class CORSMiddleware(BaseMiddleware):
     def is_allowed_origin(self, origin: str | None) -> bool:
         if origin in self.blacklist_origins:
             if self.debug:
-                print(f"Request denied: Origin '{origin}' is blacklisted.")
+                logger.error(f"Request denied: Origin '{origin}' is blacklisted.")
 
             return False
 
@@ -117,7 +121,7 @@ class CORSMiddleware(BaseMiddleware):
 
 
             if self.debug:
-                print(f"Preflight request denied: Origin '{origin}' is not allowed.")
+                logger.error(f"Preflight request denied: Origin '{origin}' is not allowed.")
             return response.json(self.get_error_message("disallowed_origin"), status_code=self.custom_error_status)
 
         headers["Access-Control-Allow-Origin"] = origin #type:ignore
@@ -125,7 +129,7 @@ class CORSMiddleware(BaseMiddleware):
 
         if not self.is_allowed_method(requested_method):
             if self.debug:
-                print(f"Preflight request denied: Method '{requested_method}' is not allowed.")
+                logger.error(f"Preflight request denied: Method '{requested_method}' is not allowed.")
 
                 return response.json(self.get_error_message("disallowed_method"), status_code=self.custom_error_status)
 
@@ -137,7 +141,7 @@ class CORSMiddleware(BaseMiddleware):
                 for header in requested_header_list:
                     if header not in self.allow_headers or header in self.blacklist_headers:
                         if self.debug:
-                            print(f"Preflight request denied: Header '{header}' is not allowed.")
+                            logger.error(f"Preflight request denied: Header '{header}' is not allowed.")
                         return response.json(self.get_error_message("disallowed_header"), status_code=self.custom_error_status)
                 headers["Access-Control-Allow-Headers"] = requested_headers
         return response.json("OK", status_code=201, headers=headers)

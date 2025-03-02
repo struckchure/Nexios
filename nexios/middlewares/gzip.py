@@ -24,16 +24,17 @@ class GzipMiddleware(BaseMiddleware):
         if 'gzip' not in accept_encoding.lower():
             await call_next()
             return
-
         await call_next()
-
-        if self.should_compress(response):
+        print(response.headers)
+        if  self.should_compress(response):
+            print("Hello worls")
             self.compress_response(response)
 
     def should_compress(self, response: Response) -> bool:
         content_length = int(response.headers.get('Content-Length', 0))
-        content_type = response.headers.get('Content-Type', '').split(';')[0].strip()
-
+        content_type = response.content_type #type:ignore
+       
+        print(content_length)
         return (
             content_length >= self.minimum_size and
             content_type in self.content_types
@@ -44,11 +45,11 @@ class GzipMiddleware(BaseMiddleware):
         with gzip.GzipFile(mode='wb', fileobj=buffer, compresslevel=self.compression_level) as gzip_file:
             gzip_file.write(response.body)
 
-        # Update the response body and headers
-        response.body = buffer.getvalue()
-        response.headers['Content-Encoding'] = 'gzip'
-        response.headers['Content-Length'] = str(len(response.body))
-        response.headers['Vary'] = 'Accept-Encoding'
+        response.resp(buffer.getvalue())
+        response.header('Content-Encoding', 'gzip')
+        response.header('Content-Length',str(len(response.body)),overide=True)
+        response.header('Vary','Accept-Encoding')
 
     async def process_response(self, request: Request, response: Response):
+        print(response.headers)
         pass

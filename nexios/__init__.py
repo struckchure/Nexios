@@ -7,6 +7,7 @@ from .config import set_config, DEFAULT_CONFIG
 from .routing import Router  # type:ignore
 from nexios.middlewares.errors.server_error_handler import ServerErrorMiddleware
 from .middlewares.cors import CORSMiddleware
+from .middlewares.gzip import GzipMiddleware
 from typing import Sequence, Optional
 from .application import NexiosApp 
 
@@ -74,6 +75,7 @@ def get_application(
             CORSMiddleware(),
             SessionMiddleware(),
             CSRFMiddleware(),
+            GzipMiddleware(),
             *middlewares,
         ],
         config=config,

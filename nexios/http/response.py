@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from urllib.parse import quote
 import hashlib
 import anyio.to_thread
-from nexios.structs import Headers
+from nexios.structs import MutableHeaders
 import stat
 Scope = typing.MutableMapping[str, typing.Any]
 Message = typing.MutableMapping[str, typing.Any]
@@ -36,7 +36,7 @@ class RangeNotSatisfiable(Exception):
     def __init__(self, max_size: int) -> None:
         self.max_size = max_size
 
-class Response:
+class BaseResponse:
     """
     Base ASGI-compatible Response class with support for cookies, caching, and custom headers.
     """
@@ -61,6 +61,7 @@ class Response:
         status_code: int = 200,
         headers: Optional[Dict[str, str]] = None,
         content_type: Optional[str] = None,
+        setup :bool = True
     ):
         self.charset = "utf-8"
         self.status_code: int = status_code
@@ -70,6 +71,8 @@ class Response:
         self.headers = headers or {}
         
         self.content_type :str | None = content_type
+        if setup:
+            self._init_headers()
 
     def render(self, content: typing.Any) -> bytes | memoryview:
         if content is None:
@@ -90,12 +93,13 @@ class Response:
             and not (self.status_code < 200 or self.status_code in (204, 304))
         ):
             content_length = str(len(body))
-            raw_headers.append((b"content-length", content_length.encode("latin-1")))
+            self.header("content-length",content_length,overide=True)
         content_type :str | None = self.content_type
         if content_type is not None and populate_content_type:
             if content_type.startswith("text/") and "charset=" not in content_type.lower():
                 content_type += "; charset=" + self.charset
             self._headers.append((b"content-type", content_type.encode("latin-1")))
+        
         self._headers.extend(raw_headers)
         
     def set_cookie(
@@ -174,8 +178,6 @@ class Response:
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Make the response callable as an ASGI application."""
-        self._init_headers()
-        
         await send({
             'type': 'http.response.start',
             'status': self.status_code,
@@ -194,9 +196,18 @@ class Response:
         content_hash.update(self._body) #type:ignore
         return f'W/"{b64encode(content_hash.digest()).decode("utf-8")}"'
     
-    def header(self, key :str, value:str):
-        header :Tuple[bytes, bytes]= (key.encode("utf-8"), value.encode("utf-8"))
-        self._headers.append(header)
+    def header(self, key: str, value: str, overide: bool = False) -> "BaseResponse":
+        """
+        Set a response header. If `overide` is True, replace the existing header.
+        """
+        key_bytes = key.lower().encode("latin-1")  # Normalize key to lowercase for case-insensitive comparison
+        value_bytes = value.encode("latin-1")
+        new_header = (key_bytes, value_bytes)
+
+        if overide:
+            self._headers = [(k, v) for k, v in self._headers if k != key_bytes]
+        
+        self._headers.append(new_header)
         return self
     
  
@@ -205,10 +216,10 @@ class Response:
     
 
 
-class PlainTextResponse(Response):
+class PlainTextResponse(BaseResponse):
     def __init__(self, body:JSONType =  "", status_code: int = 200, headers: Dict[str, str] | None = None, content_type: str = "text/plain"):
         super().__init__(body, status_code, headers, content_type)
-class JSONResponse(Response):
+class JSONResponse(BaseResponse):
     """
     Response subclass for JSON content.
     """
@@ -239,7 +250,7 @@ class JSONResponse(Response):
         )
 
 
-class HTMLResponse(Response):
+class HTMLResponse(BaseResponse):
     """
     Response subclass for HTML content.
     """
@@ -257,7 +268,7 @@ class HTMLResponse(Response):
         )
 
 
-class FileResponse(Response):
+class FileResponse(BaseResponse):
     """
     Enhanced FileResponse class with AnyIO for asynchronous file streaming,
     support for range requests, and multipart responses.
@@ -292,7 +303,7 @@ class FileResponse(Response):
         etag_base = str(stat_result.st_mtime) + "-" + str(stat_result.st_size)
         etag = f'"{hashlib.md5(etag_base.encode(), usedforsecurity=False).hexdigest()}"'
 
-        self.headers.setdefault("content-length", content_length)
+        self.header("content-length", content_length, overide=True)
         self.headers.setdefault("last-modified", last_modified)
         self.headers.setdefault("etag", etag)
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
@@ -309,7 +320,7 @@ class FileResponse(Response):
                 raise RuntimeError(f"File at path {self.path} is not a file.")
         
         
-        range_header = Headers(scope=scope).get("Range")
+        range_header = MutableHeaders(scope=scope).get("Range")
         if range_header:
             self._handle_range_header(range_header)
 
@@ -342,7 +353,7 @@ class FileResponse(Response):
                 start, end = self._ranges[0]
                 content_length = end - start + 1
                 self.header('content-range', f'bytes {start}-{end}/{file_size}')
-                self.header('content-length', str(content_length))
+                self.header('content-length', str(content_length),overide=True)
                 self.status_code = 206
             elif len(self._ranges) > 1:
                 
@@ -408,7 +419,7 @@ class FileResponse(Response):
         """Send a single range of the file using AnyIO."""
         await file.seek(start)
         remaining = end - start + 1
-        self.header('content-length',str(remaining))
+        self.header('content-length',str(remaining), overide=True)
         
         while remaining > 0:
             chunk_size = min(self.chunk_size, remaining)
@@ -459,7 +470,7 @@ class FileResponse(Response):
         return f"boundary_{os.urandom(16).hex()}"
 
 
-class StreamingResponse(Response):
+class StreamingResponse(BaseResponse):
     """
     Response subclass for streaming content.
     """
@@ -505,7 +516,7 @@ class StreamingResponse(Response):
         })
 
 
-class RedirectResponse(Response):
+class RedirectResponse(BaseResponse):
     """
     Response subclass for HTTP redirects.
     """
@@ -528,110 +539,116 @@ class RedirectResponse(Response):
 
 
 class NexiosResponse:
-    """
-    A wrapper class that provides a fluent interface for different response types.
-    """
     def __init__(self):
-        self._content_type = "application/json"
-        self._response: Response = Response()
+        self._response: BaseResponse = BaseResponse(setup = False)
         self._cookies: List[Dict[str, Any]] = []
         self._status_code = self._response.status_code
-        self._delete_cookies: List[Dict[str, Any]] = []
-        self.headers:Dict[str,Any] = {**self._response.headers}
+       
 
-        self.body = self._response._body #type:ignore
+    @property
+    def headers(self):
+        return MutableHeaders({k.decode("utf-8"): v.decode("utf-8") for k, v in self._response._headers}) #type:ignore
     
-    def text(self, content: JSONType, status_code:int = 200, headers: Dict[str, Any] = {}):
+    def remove_header(self, key: str) -> "NexiosResponse":
+        """Remove a header from the response."""
+        self._response._headers = [(k, v) for k, v in self._response._headers if k.decode("latin-1").lower() != key.lower()] #type:ignore
+        return self
+    @property
+    def body(self):
+        return self._response._body #type:ignore
+    
+    @property
+    def content_type(self):
+        return self._response.content_type
+    
+    def status_code(self):
+        return self._response.status_code
+    
+    def _preserve_headers_and_cookies(self, new_response: BaseResponse) -> BaseResponse:
+        """Preserve headers and cookies when switching to a new response."""
+        for key, value in self.headers.items():
+            new_response.header(key, value, overide=True)
+
+        for cookie in self._cookies:
+            new_response.set_cookie(**cookie)            
+
+        return new_response
+    def has_header(self, key: str) -> bool:
+        """Check if a header is present in the response."""
+        return key.lower() in (k.lower() for k in self.headers.keys())
+
+    def has_cookie(self, key: str) -> bool:
+        """Check if a cookie is present in the response."""
+        return any(cookie.get("key") == key for cookie in self._cookies)
+    def text(self, content: JSONType, status_code: int = 200, headers: Dict[str, Any] = {}):
         """Send plain text or HTML content."""
-        header_store = self._response._headers.copy() # type: ignore[reportPrivateUsage]
-        
-        self._response = PlainTextResponse(body=content, status_code=status_code,headers=headers)
-        self._response._headers.extend(header_store)   # type: ignore[reportPrivateUsage]
-        
+        new_response = PlainTextResponse(body=content, status_code=status_code, headers=headers)
+        self._response = self._preserve_headers_and_cookies(new_response)
         return self
 
-    def json(self, data: Union[str, List[Any], 
-                               Dict[str, Any]], 
-             status_code: int= 200, headers: Dict[str, Any] = {}, 
-             indent: Optional[int] = None,
-                ensure_ascii: bool = True,):
+    def json(self, data: Union[str, List[Any], Dict[str, Any]], status_code: int = 200, headers: Dict[str, Any] = {}, indent: Optional[int] = None, ensure_ascii: bool = True):
         """Send JSON response."""
-        header_store = self._response._headers.copy() # type: ignore[reportPrivateUsage]
-        self._response = JSONResponse(
+        new_response = JSONResponse(
             content=data,
             status_code=status_code,
             headers=headers,
             indent=indent,
             ensure_ascii=ensure_ascii
         )
-        self._response._headers.extend(header_store)   # type: ignore[reportPrivateUsage]
-
+        self._response = self._preserve_headers_and_cookies(new_response)
         return self
-    def empty(self, status_code:int = 200, headers: Dict[str, Any] = {}):
+    def download(self, path: str, filename: Optional[str] = None) -> "NexiosResponse":
+        """Set a response to force a file download."""
+        return self.file(path, filename, content_disposition_type="attachment")
+    def set_permanent_cookie(self, key: str, value: str, **kwargs :Dict[str,Any]) -> "NexiosResponse":
+        """Set a permanent cookie with a far-future expiration date."""
+        expires = datetime.now(timezone.utc) + timedelta(days=365 * 10)
+        self.set_cookie(key, value, expires=expires, **kwargs) #type:ignore
+        return self
+
+    def empty(self, status_code: int = 200, headers: Dict[str, Any] = {}):
         """Send an empty response."""
-        header_store = self._response._headers.copy() # type: ignore[reportPrivateUsage]
-        
-        self._response = Response(
-            status_code=status_code,
-            headers=headers
-        )
-        self._response._headers.extend(header_store) # type: ignore[reportPrivateUsage]
-        
-        return self._response
-        
+        new_response = BaseResponse(status_code=status_code, headers=headers)
+        self._response = self._preserve_headers_and_cookies(new_response)
+        return self
+
     def html(self, content: str, status_code: int = 200, headers: Dict[str, Any] = {}):
         """Send HTML response."""
-        
-        header_store = self._response._headers.copy() # type: ignore[reportPrivateUsage]
-        self._response = HTMLResponse(
-            content=content,
-            status_code=status_code,
-            headers=headers
-        )
-        self._response._headers.extend(header_store) # type: ignore[reportPrivateUsage]
-        
+        new_response = HTMLResponse(content=content, status_code=status_code, headers=headers)
+        self._response = self._preserve_headers_and_cookies(new_response)
         return self
 
     def file(self, path: str, filename: Optional[str] = None, content_disposition_type: str = "inline"):
         """Send file response."""
-        header_store = self._response._headers.copy() # type: ignore[reportPrivateUsage]
-        
-        self._response = FileResponse(
+        new_response = FileResponse(
             path=path,
             filename=filename,
-            status_code=self._status_code,  # type: ignore
+            status_code=self._status_code,
             headers=self._response.headers,
             content_disposition_type=content_disposition_type,
         )
-        self._response._headers.extend(header_store) # type: ignore[reportPrivateUsage]
-        
+        self._response = self._preserve_headers_and_cookies(new_response)
         return self
 
-    def stream(self, iterator: Generator[Union[str, bytes],Any, Any], content_type: str = "text/plain"):
+    def stream(self, iterator: Generator[Union[str, bytes], Any, Any], content_type: str = "text/plain"):
         """Send streaming response."""
-        header_store = self._response._headers.copy() # type: ignore[reportPrivateUsage]
-        
-        self._response = StreamingResponse(
+        new_response = StreamingResponse(
             content=iterator,  # type: ignore
             status_code=self._status_code,
             headers=self._response.headers,
             content_type=content_type
         )
-        self._response._headers.extend(header_store) # type: ignore[reportPrivateUsage]
-        
+        self._response = self._preserve_headers_and_cookies(new_response)
         return self
 
     def redirect(self, url: str, status_code: int = 302):
         """Send redirect response."""
-        header_store = self._response._headers.copy() # type: ignore[reportPrivateUsage]
-        
-        self._response = RedirectResponse(
+        new_response = RedirectResponse(
             url=url,
             status_code=status_code,
             headers=self._response.headers
         )
-        self._response._headers.extend(header_store) # type: ignore[reportPrivateUsage]
-        
+        self._response = self._preserve_headers_and_cookies(new_response)
         return self
 
     def status(self, status_code: int):
@@ -639,9 +656,12 @@ class NexiosResponse:
         self._response.status_code = status_code
         return self
 
-    def header(self, key: str, value: str):
+    def header(self, key: str, value: str, overide:bool = False):
         """Set a response header."""
-        self._response.header(key, value)
+        
+            
+        self._response.header(key, value,overide=overide)
+        self.headers[key] = value  # Update the headers dictionary
         return self
 
     def set_cookie(
@@ -658,18 +678,29 @@ class NexiosResponse:
     ):
         """Set a response cookie."""
         self._response.set_cookie(
-            key  = key,
-            value= value,
-            max_age = max_age,
-            expires =  expires,
-            path= path,
-            domain= domain,
+            key=key,
+            value=value,
+            max_age=max_age,
+            expires=expires,
+            path=path,
+            domain=domain,
             secure=secure,
-            httponly= httponly,
-            samesite= samesite
+            httponly=httponly,
+            samesite=samesite
         )
+        self._cookies.append({
+            "key": key,
+            "value": value,
+            "max_age": max_age,
+            "expires": expires,
+            "path": path,
+            "domain": domain,
+            "secure": secure,
+            "httponly": httponly,
+            "samesite": samesite
+        })
         return self
-    
+
     def delete_cookie(
         self,
         key: str,
@@ -678,23 +709,20 @@ class NexiosResponse:
     ):
         """Delete a response cookie."""
         self._response.delete_cookie(
-            key  = key,
-            path= path,
-            domain= domain,
-
-            
+            key=key,
+            path=path,
+            domain=domain,
         )
+       
         return self
 
     def cache(self, max_age: int = 3600, private: bool = True):
         """Enable response caching."""
-        
         self._response.enable_caching(max_age, private)
         return self
 
     def no_cache(self):
         """Disable response caching."""
-       
         self._response.disable_caching()
         return self
 
@@ -708,28 +736,39 @@ class NexiosResponse:
         """
         Provides access to the purest form of the response object.
         """
-        _resp = Response(
+        new_response = BaseResponse(
             body=body,
             status_code=status_code,
             headers=headers,
             content_type=content_type
         )
-        self._response = _resp
+        self._response = self._preserve_headers_and_cookies(new_response)
+        return self
+    
+    def set_cookies(self, cookies: List[Dict[str, Any]]):
+        """Set multiple cookies at once."""
+        for cookie in cookies:
+            self.set_cookie(**cookie)
+        return self
+    
+    def set_headers(self, headers: Dict[str, str]):
+        """Set multiple headers at once."""
+        for key, value in headers.items():
+            self.header(key, value)
         return self
 
-   
-
-    def get_response(self) -> Response:
+    def get_response(self) -> BaseResponse:
         """Make the response ASGI-compatible."""
-        
-        response = self._response
-        response.headers.update(self.headers)
-        return response
-
-       
-        
+        return self._response
+    
+    def add_csp_header(self, policy: str) -> "NexiosResponse":
+        """Add a Content Security Policy header."""
+        self.header("Content-Security-Policy", policy)
+        return self
     def __str__(self):
-        return f"Response [{self._status_code} {self.body}]" 
+        return f"Response [{self._status_code} {self.body}]"
     
     
     
+    
+Response = BaseResponse
