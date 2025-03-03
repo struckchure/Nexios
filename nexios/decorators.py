@@ -26,7 +26,6 @@ class allowed_methods(RouteDecorator):
     def __init__(self, methods: List[str]) -> None:
         super().__init__()
         self.allowed_methods: List[str] = [method.upper() for method in methods]
-        self.allowed_methods.append("OPTIONS")
 
     def __call__(self, handler: F) -> F:
         if getattr(handler, "_is_wrapped", False):  
@@ -45,6 +44,9 @@ class allowed_methods(RouteDecorator):
                         "allowed_methods": self.allowed_methods,
                     },
                     status_code=405,
+                    headers={
+                        "Allow":", ".join(self.allowed_methods)
+                    }
                 )
 
             return await handler(*args, **kwargs)
