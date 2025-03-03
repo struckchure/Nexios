@@ -219,7 +219,7 @@ async def test_url_for(async_client:Client):
     assert full_url == "/get/name"
     
     
-async def test_url_for_with_params(async_client):
+async def test_url_for_with_params(async_client :Client):
     app = get_application()
     @app.get("/get/name/{age}", name="name")
     async def get(req :Request, res :Response):
