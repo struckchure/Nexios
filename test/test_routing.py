@@ -207,3 +207,22 @@ async def test_duplicate_params(async_client :Client):
     
     response = await async_client.get("/item/4") 
     assert response.text == "4"
+    
+
+async def test_url_for(async_client:Client):
+    
+    @app.get("/get/name",name="name")
+    async def handle(req:Request, res:Response):
+        ...
+        
+    full_url = app.url_for("name")
+    assert full_url == "/get/name"
+    
+    
+async def test_url_for_with_params(async_client):
+    app = get_application()
+    @app.get("/get/name/{age}", name="name")
+    async def get(req :Request, res :Response):
+        ...
+    a = app.url_for("name", age = 0)
+    assert a == "/get/name/0"

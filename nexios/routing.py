@@ -231,7 +231,7 @@ class Routes:
             return match,matched_params
         return None, None
     
-    def url_path_for(self, name: str, **path_params: Any) -> URLPath:
+    def url_path_for(self, _name: str, **path_params: Any) -> URLPath:
         """
         Generate a URL path for the route with the given name and parameters.
 
@@ -245,8 +245,8 @@ class Routes:
         Raises:
             ValueError: If the route name does not match or if required parameters are missing.
         """
-        if name != self.name:
-            raise ValueError(f"Route name '{name}' does not match the current route name '{self.name}'.")
+        if _name != self.name:
+            raise ValueError(f"Route name '{_name}' does not match the current route name '{self.name}'.")
 
         required_params = set(self.param_names)
         provided_params = set(path_params.keys())
@@ -746,7 +746,7 @@ class Router(BaseRouter):
         return decorator  
     
     
-    def url_for(self, name: str, **path_params: Any) -> URLPath:
+    def url_for(self, _name: str, **path_params: Any) -> URLPath:
         """
         Generate a URL path for the route with the given name and parameters.
 
@@ -761,9 +761,9 @@ class Router(BaseRouter):
             ValueError: If the route name does not match or if required parameters are missing.
         """
         for route in self.routes:
-            if route.name == name:
-                return route.url_path_for(name, **path_params)
-        raise ValueError(f"Route name '{name}' not found in router.")
+            if route.name == _name:
+                return route.url_path_for(_name, **path_params)
+        raise ValueError(f"Route name '{_name}' not found in router.")
     def __repr__(self) -> str:
         return f"<Router prefix='{self.prefix}' routes={len(self.routes)}>"
 
