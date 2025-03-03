@@ -57,6 +57,8 @@ class CORSMiddleware(BaseMiddleware):
             return None
 
         origin = request.origin
+        if not origin:
+            return await call_next()
         method = request.scope["method"]
 
         if not origin and self.strict_origin_checking:
@@ -65,9 +67,11 @@ class CORSMiddleware(BaseMiddleware):
             return response.json(self.get_error_message("missing_origin"), status_code=self.custom_error_status)
         if method.lower() == "options" and "access-control-request-method" in request.headers:
             return await self.preflight_response(request, response)
-        await call_next()
+        await self.simple_response(request, response,call_next)
 
-    async def process_response(self, request: Request, response: Response):
+
+   
+    async def simple_response(self, request: Request, response: Response,call_next :typing.Callable[..., typing.Awaitable[Any]]):
         config = get_config().cors
 
         if not config:
@@ -82,6 +86,8 @@ class CORSMiddleware(BaseMiddleware):
 
         if self.expose_headers:
             response.header("Access-Control-Expose-Headers",  ", ".join(self.expose_headers))
+            
+        return await call_next()
 
     def is_allowed_origin(self, origin: Optional[str]) -> bool:
         if origin in self.blacklist_origins:
