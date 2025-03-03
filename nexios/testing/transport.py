@@ -18,7 +18,7 @@ class NexiosAsyncTransport(httpx.AsyncBaseTransport):
         raise_exceptions: bool = True,
         root_path: str = "",
         client: tuple[str, int] = ("testclient", 5000),
-        app_state: dict[str, typing.Any] | None = None,
+        app_state: typing.Optional[dict[str, typing.Any]] = None,
     ):
         self.app = app
         self.raise_exceptions = raise_exceptions

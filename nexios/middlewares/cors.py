@@ -83,7 +83,7 @@ class CORSMiddleware(BaseMiddleware):
         if self.expose_headers:
             response.header("Access-Control-Expose-Headers",  ", ".join(self.expose_headers))
 
-    def is_allowed_origin(self, origin: str | None) -> bool:
+    def is_allowed_origin(self, origin: Optional[str]) -> bool:
         if origin in self.blacklist_origins:
             if self.debug:
                 logger.error(f"Request denied: Origin '{origin}' is blacklisted.")

@@ -3,14 +3,7 @@ from nexios import status
 import typing,json
 from nexios.types import Message
 class WebSocketEndpoint:
-    encoding: str | None = None  # May be "text", "bytes", or "json".
-
-    # def __init__(self, scope, receive, send) -> None:
-    #     assert scope["type"] == "websocket"
-    #     self.scope = scope
-    #     self.receive = receive
-    #     self.send = send
-
+    encoding: typing.Optional[str]  = None  
    
 
     async def __call__(self,ws :WebSocket) -> None:

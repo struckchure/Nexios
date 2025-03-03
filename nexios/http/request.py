@@ -130,7 +130,7 @@ class HTTPConnection:
         return self._cookies
 
     @property
-    def client(self) -> Address | None:
+    def client(self) -> typing.Union[Address,None ]:
         host_port = self.scope.get("client")
         if host_port is not None:
             return Address(*host_port)
@@ -161,7 +161,7 @@ class HTTPConnection:
         """Returns the User-Agent header if available."""
         return self.headers.get("user-agent", "")
 
-    def build_absolute_uri(self, path: str = "", query_params: dict[str, str] | None = None) -> str:
+    def build_absolute_uri(self, path: str = "", query_params: typing.Optional[dict[str, str]]  = None) -> str:
         """
         Builds an absolute URI using the base URL and the provided path.
 
@@ -194,7 +194,7 @@ async def empty_send(message :Message) -> typing.NoReturn:
 
 
 class Request(HTTPConnection):
-    _form: FormData | None | typing.Dict[str,typing.Any] #type: ignore
+    _form: typing.Union[FormData , None , typing.Dict[str,typing.Any]] #type: ignore
 
     def __init__(self, scope :Scope, receive :Receive = empty_receive, send :Send = empty_send):
         super().__init__(scope,receive)
@@ -213,7 +213,7 @@ class Request(HTTPConnection):
     def receive(self):
         return self._receive
     @property
-    def content_type(self) -> str | None:
+    def content_type(self) -> typing.Optional[str]:
         content_type_header = self.headers.get("Content-Type")
         content_type: str
         content_type, _ = parse_options_header(content_type_header) #type:ignore
@@ -261,7 +261,7 @@ class Request(HTTPConnection):
                 self._json = {}
         return self._json
 
-    async def _get_form(self, *, max_files: int | float = 1000, max_fields: int | float = 1000) -> FormData:
+    async def _get_form(self, *, max_files: typing.Union[int,float] = 1000, max_fields: typing.Union[int , float] = 1000) -> FormData:
         if self._form is None:
             assert (
                 parse_options_header is not None
@@ -288,7 +288,7 @@ class Request(HTTPConnection):
         return self._form #type:ignore
     @property
     def form_data(
-        self, *, max_files: int | float = 1000, max_fields: int | float = 1000
+        self, *, max_files: typing.Union[int , float] = 1000, max_fields: typing.Union[int , float] = 1000
     ) -> AwaitableOrContextManager[FormData]:
         return AwaitableOrContextManagerWrapper(self._get_form(max_files=max_files, max_fields=max_fields))
 

@@ -1,27 +1,28 @@
-#type:ignore
+# type: ignore
 
 import httpx
 import typing
-from typing import Any,Dict,AsyncIterable,Iterable
+from typing import Any, Dict, AsyncIterable, Iterable, Union
 from .transport import NexiosAsyncTransport
+
 _RequestData = typing.Mapping[str, typing.Union[str, typing.Iterable[str], bytes]]
 from nexios.application import NexiosApp
 
 class Client(httpx.AsyncClient):
     def __init__(
         self,
-        app :NexiosApp,
-        root_path :str = "",
+        app: NexiosApp,
+        root_path: str = "",
         client: tuple[str, int] = ("testclient", 5000),
         base_url: str = "http://testserver",
         raise_server_exceptions: bool = True,
-        cookies: httpx._types.CookieTypes | None = None, #type:ignore
-        headers: dict[str, str] | None = None,
+        cookies: Union[httpx._types.CookieTypes, None] = None,  # type: ignore
+        headers: Union[Dict[str, str], None] = None,
         follow_redirects: bool = True,
         max_retries: int = 3,
-        timeout: httpx._types.TimeoutTypes = 5.0, #type:ignore
+        timeout: Union[httpx._types.TimeoutTypes, float] = 5.0,  # type: ignore
         log_requests: bool = False,
-        app_state :Dict[str,Any] = {},
+        app_state: Dict[str, Any] = {},
         **kwargs: Any,
     ) -> None:
         if headers is None:
@@ -33,7 +34,6 @@ class Client(httpx.AsyncClient):
             raise_exceptions=raise_server_exceptions,
             root_path=root_path,
             client=client
-            
         )
         super().__init__(
             base_url=base_url,
@@ -47,24 +47,24 @@ class Client(httpx.AsyncClient):
 
         self.max_retries = max_retries
         self.log_requests = log_requests
+
     async def request_with_retries(
-       
         self,
         method: str,
-        url: httpx._types.URLTypes, #type:ignore
+        url: httpx._types.URLTypes,  # type: ignore
         *,
-        content: str | bytes | Iterable[bytes] | AsyncIterable[bytes] = None, #type:ignore
-        data: _RequestData | None = None,
-        files: httpx._types.RequestFiles | None = None, #type:ignore
+        content: Union[str, bytes, Iterable[bytes], AsyncIterable[bytes], None] = None,  # type: ignore
+        data: Union[_RequestData, None] = None,
+        files: Union[httpx._types.RequestFiles, None] = None,  # type: ignore
         json: typing.Any = None,
-        params: httpx._types.QueryParamTypes | None = None,#type:ignore
-        headers: httpx._types.HeaderTypes | None = None,#type:ignore
-        cookies: httpx._types.CookieTypes | None = None,#type:ignore
-        auth: httpx._types.AuthTypes | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT,#type:ignore
-        follow_redirects: bool | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT,#type:ignore
-        timeout: httpx._types.TimeoutTypes | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT,#type:ignore
-        extensions: dict[str, typing.Any] | None = None,
-    ) -> httpx.Response: 
+        params: Union[httpx._types.QueryParamTypes, None] = None,  # type: ignore
+        headers: Union[httpx._types.HeaderTypes, None] = None,  # type: ignore
+        cookies: Union[httpx._types.CookieTypes, None] = None,  # type: ignore
+        auth: Union[httpx._types.AuthTypes, httpx._client.UseClientDefault] = httpx._client.USE_CLIENT_DEFAULT,  # type: ignore
+        follow_redirects: Union[bool, httpx._client.UseClientDefault] = httpx._client.USE_CLIENT_DEFAULT,  # type: ignore
+        timeout: Union[httpx._types.TimeoutTypes, httpx._client.UseClientDefault] = httpx._client.USE_CLIENT_DEFAULT,  # type: ignore
+        extensions: Union[Dict[str, typing.Any], None] = None,
+    ) -> httpx.Response:
         retries = 0
         last_exception = None
 
@@ -100,13 +100,13 @@ class Client(httpx.AsyncClient):
         self,
         url: httpx._types.URLTypes,
         *,
-        params: httpx._types.QueryParamTypes | None = None, 
-        headers: httpx._types.HeaderTypes | None = None,
-        cookies: httpx._types.CookieTypes | None = None,
-        auth: httpx._types.AuthTypes | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT,
-        follow_redirects: bool | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT,
-        timeout: httpx._types.TimeoutTypes | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT,
-        extensions: dict[str, typing.Any] | None = None,
+        params: Union[httpx._types.QueryParamTypes, None] = None,  # type: ignore
+        headers: Union[httpx._types.HeaderTypes, None] = None,  # type: ignore
+        cookies: Union[httpx._types.CookieTypes, None] = None,  # type: ignore
+        auth: Union[httpx._types.AuthTypes, httpx._client.UseClientDefault] = httpx._client.USE_CLIENT_DEFAULT,  # type: ignore
+        follow_redirects: Union[bool, httpx._client.UseClientDefault] = httpx._client.USE_CLIENT_DEFAULT,  # type: ignore
+        timeout: Union[httpx._types.TimeoutTypes, httpx._client.UseClientDefault] = httpx._client.USE_CLIENT_DEFAULT,  # type: ignore
+        extensions: Union[Dict[str, typing.Any], None] = None,
     ) -> httpx.Response:
         return await self.request_with_retries(
             "GET",
@@ -124,17 +124,17 @@ class Client(httpx.AsyncClient):
         self,
         url: httpx._types.URLTypes,
         *,
-        content: httpx._types.RequestContent | None = None,
-        data: _RequestData | None = None,
-        files: httpx._types.RequestFiles | None = None,
+        content: Union[httpx._types.RequestContent, None] = None,
+        data: Union[_RequestData, None] = None,
+        files: Union[httpx._types.RequestFiles, None] = None,
         json: typing.Any = None,
-        params: httpx._types.QueryParamTypes | None = None,
-        headers: httpx._types.HeaderTypes | None = None,
-        cookies: httpx._types.CookieTypes | None = None,
-        auth: httpx._types.AuthTypes | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT,
-        follow_redirects: bool | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT,
-        timeout: httpx._types.TimeoutTypes | httpx._client.UseClientDefault = httpx._client.USE_CLIENT_DEFAULT,
-        extensions: dict[str, typing.Any] | None = None,
+        params: Union[httpx._types.QueryParamTypes, None] = None,
+        headers: Union[httpx._types.HeaderTypes, None] = None,
+        cookies: Union[httpx._types.CookieTypes, None] = None,
+        auth: Union[httpx._types.AuthTypes, httpx._client.UseClientDefault] = httpx._client.USE_CLIENT_DEFAULT,
+        follow_redirects: Union[bool, httpx._client.UseClientDefault] = httpx._client.USE_CLIENT_DEFAULT,
+        timeout: Union[httpx._types.TimeoutTypes, httpx._client.UseClientDefault] = httpx._client.USE_CLIENT_DEFAULT,
+        extensions: Union[Dict[str, typing.Any], None] = None,
     ) -> httpx.Response:
         return await self.request_with_retries(
             "POST",
@@ -151,8 +151,6 @@ class Client(httpx.AsyncClient):
             timeout=timeout,
             extensions=extensions,
         )
-
-   
 
     async def __aenter__(self) -> "Client":
         await super().__aenter__()

@@ -153,7 +153,7 @@ CENTER_LINE = """
 
 
 class ServerErrorMiddleware(BaseMiddleware):
-    def __init__(self, handler :typing.Optional[HandlerType | None]= None):
+    def __init__(self, handler :typing.Optional[HandlerType]= None):
         self.handler = handler
     async def __call__(self, request :Request, response :Response, next_middleware : typing.Callable[...,typing.Awaitable[None]]):
         self.debug = get_config().debug or True

@@ -70,11 +70,11 @@ class BaseResponse:
         self._body = self.render(body)
         self.headers = headers or {}
         
-        self.content_type :str | None = content_type
+        self.content_type :typing.Optional[str] = content_type
         if setup:
             self._init_headers()
 
-    def render(self, content: typing.Any) -> bytes | memoryview:
+    def render(self, content: typing.Any) -> typing.Union[bytes , memoryview]:
         if content is None:
             return b""
         if isinstance(content, (bytes, memoryview)):
@@ -94,7 +94,7 @@ class BaseResponse:
         ):
             content_length = str(len(body))
             self.header("content-length",content_length,overide=True)
-        content_type :str | None = self.content_type
+        content_type :typing.Optional[str]  = self.content_type
         if content_type is not None and populate_content_type:
             if content_type.startswith("text/") and "charset=" not in content_type.lower():
                 content_type += "; charset=" + self.charset
@@ -106,13 +106,13 @@ class BaseResponse:
         self,
         key: str,
         value: str  = "",
-        max_age: int | None = None,
-        expires: datetime | str | int | None = None,
-        path: str | None = "/",
-        domain: str | None = None,
-        secure: bool = False,
-        httponly: bool = False,
-        samesite: typing.Literal["lax", "strict", "none"] | None = "lax",
+        max_age: typing.Optional[int] = None,
+        expires: typing.Union[datetime , str , int , None] = None,
+        path: typing.Optional[str]  = "/",
+        domain: typing.Optional[str] = None,
+        secure: typing.Optional[bool] = False,
+        httponly: typing.Optional[bool] = False,
+        samesite: typing.Optional[typing.Literal["lax", "strict", "none"]]  = "lax",
     ) -> None:
         cookie: http.cookies.BaseCookie[str] = http.cookies.SimpleCookie()
         cookie[key] = value
@@ -217,7 +217,7 @@ class BaseResponse:
 
 
 class PlainTextResponse(BaseResponse):
-    def __init__(self, body:JSONType =  "", status_code: int = 200, headers: Dict[str, str] | None = None, content_type: str = "text/plain"):
+    def __init__(self, body:JSONType =  "", status_code: int = 200, headers: typing.Optional[Dict[str, str]]  = None, content_type: str = "text/plain"):
         super().__init__(body, status_code, headers, content_type)
 class JSONResponse(BaseResponse):
     """
@@ -674,7 +674,7 @@ class NexiosResponse:
         domain: Optional[str] = None,
         secure: bool = True,
         httponly: bool = False,
-        samesite: typing.Literal["lax", "strict", "none"] | None = "lax",
+        samesite: typing.Optional[typing.Literal["lax", "strict", "none"]]  = "lax",
     ):
         """Set a response cookie."""
         self._response.set_cookie(

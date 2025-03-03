@@ -2,6 +2,7 @@ from typing import Dict,Any,Union
 from nexios.config import get_config,MakeConfig
 from datetime import datetime,timedelta,timezone
 import secrets
+import typing
 
 class BaseSessionInterface:
 
@@ -68,7 +69,7 @@ class BaseSessionInterface:
             return "session_id"
         return self.session_config.session_cookie_name or "session_id"
 
-    def get_cookie_domain(self) -> str | None:
+    def get_cookie_domain(self) -> typing.Optional[str]:
         """Returns the domain for which the cookie is valid. Uses `config.SESSION_COOKIE_DOMAIN`."""
         if not self.session_config:
             return None
@@ -80,31 +81,31 @@ class BaseSessionInterface:
             return None
         return self.session_config.session_cookie_path
 
-    def get_cookie_httponly(self) -> bool | None:
+    def get_cookie_httponly(self) -> typing.Optional[bool] :
         """Returns whether the session cookie should be HTTPOnly. Uses `session_config.session_cookie_httponly`."""
         if not self.session_config:
             return None
         return self.session_config.session_cookie_httponly
 
-    def get_cookie_secure(self) -> bool | None:
+    def get_cookie_secure(self) -> typing.Optional[bool]:
         """Returns whether the session cookie should be secure. Uses `session_config.session_cookie_secure`."""
         if not self.session_config:
             return None
         return self.session_config.session_cookie_secure
 
-    def get_cookie_samesite(self) -> str | None:
+    def get_cookie_samesite(self) -> typing.Optional[str]:
         """Returns the SameSite attribute for the cookie. Uses `session_config.session_cookie_samesite`."""
         if not self.session_config:
             return None
         return self.session_config.session_cookie_samesite
 
-    def get_cookie_partitioned(self) -> bool | None:
+    def get_cookie_partitioned(self) -> typing.Optional[bool]:
         """Returns whether the cookie should be partitioned. Uses `session_config.session_cookie_partitioned`."""
         if not self.session_config:
             return None
         return self.session_config.session_cookie_partitioned
 
-    def get_expiration_time(self) -> datetime | None:
+    def get_expiration_time(self) -> typing.Optional[datetime]:
         """Returns the expiration time for the session. Uses `self.session_config.session_expiration_time`."""
         if not self.session_config:
             return datetime.now(timezone.utc) + timedelta(minutes=86400) #type: ignore

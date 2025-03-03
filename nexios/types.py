@@ -1,6 +1,6 @@
 from __future__ import annotations
 from enum import Enum
-from typing import TypeAlias,Callable,Type,Awaitable,Any
+from typing import Callable,Type,Awaitable,Any
 import typing
 from .http.request import Request
 from .http.response import NexiosResponse,Response
@@ -26,7 +26,7 @@ MiddlewareType = Callable[
     [Request, NexiosResponse, Callable[..., Awaitable[None]]], 
     Awaitable[typing.Union[NexiosResponse , None]]
 ]
-WsMiddlewareType :TypeAlias = Callable[[Type[WebSocket],Type[Callable[...,Awaitable[Message]]]], Type[Send]]  
+WsMiddlewareType  = Callable[[Type[WebSocket],Type[Callable[...,Awaitable[Message]]]], Type[Send]]  
 
 WsHandlerType =  typing.Callable[[WebSocket], typing.Awaitable[None]]
 HandlerType = Callable[..., Awaitable[Any]]

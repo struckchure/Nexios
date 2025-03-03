@@ -1,10 +1,9 @@
 from nexios.exceptions import HTTPException
 from typing import Dict, Any, Optional
-from typing_extensions import TypeAlias
 from nexios.http import Request
 from nexios.http.response import NexiosResponse
 
-HeadersType: TypeAlias = Dict[str, Any]  # Alias for better readability
+HeadersType = Dict[str, Any]  # Alias for better readability
 
 
 class AuthException(HTTPException):

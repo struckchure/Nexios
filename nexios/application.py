@@ -463,7 +463,7 @@ class NexiosApp(Router):
         
         url = self.__normalize_path(ws.url.path)
         
-        handler :WsHandlerType | None = None
+        handler :Optional[WsHandlerType] = None
         for route in self.ws_routes:
             match = route.pattern.match(url)
             if match:
