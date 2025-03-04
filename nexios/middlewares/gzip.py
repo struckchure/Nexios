@@ -25,16 +25,13 @@ class GzipMiddleware(BaseMiddleware):
             await call_next()
             return
         await call_next()
-        print(response.headers)
         if  self.should_compress(response):
-            print("Hello worls")
             self.compress_response(response)
 
     def should_compress(self, response: Response) -> bool:
         content_length = int(response.headers.get('Content-Length', 0))
         content_type = response.content_type #type:ignore
        
-        print(content_length)
         return (
             content_length >= self.minimum_size and
             content_type in self.content_types
@@ -51,5 +48,4 @@ class GzipMiddleware(BaseMiddleware):
         response.header('Vary','Accept-Encoding')
 
     async def process_response(self, request: Request, response: Response):
-        print(response.headers)
         pass
