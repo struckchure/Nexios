@@ -26,11 +26,9 @@ async def send_redirect_response(req: Request, res :Response):
 async def send_streaming_response(req: Request, res :Response):
     
     async def numbers(minimum: int, maximum: int):
-            for i in range(minimum, maximum + 1):
-                yield str(i)
-                if i != maximum:
-                    yield ", "
-                await anyio.sleep(0)
+        for i in range(10):
+            yield f"Chunk {i}\n".encode("utf-8")
+            await anyio.sleep(1)
     generator = numbers(1, 5)
     return res.stream(generator) #type: ignore
 
@@ -95,6 +93,7 @@ async def test_redirect_response(async_client :Client):
     
 async def test_streaming_response(async_client :Client):
     response  = await async_client.get("/response/stream")
+    print(response)
     assert response.text == "1, 2, 3, 4, 5"
     
     

@@ -177,7 +177,7 @@ async def test_routers_with_prefix(async_client: Client):
     
     
     response = await async_client.get("/api/resource")
-    
+    print(response)
     assert response.status_code == 200
     
 

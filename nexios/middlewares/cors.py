@@ -73,7 +73,6 @@ class CORSMiddleware(BaseMiddleware):
    
     async def simple_response(self, request: Request, response: Response,call_next :typing.Callable[..., typing.Awaitable[Any]]):
         config = get_config().cors
-
         if not config:
             return None
         origin = request.origin

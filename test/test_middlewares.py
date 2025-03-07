@@ -11,7 +11,7 @@ async def async_client():
         yield c
 async def test_middleware_modifies_response(async_client:Client):
     
-    app.routes.clear()
+    app.router.routes.clear()
     app.http_middlewares.clear()
 
     async def header_middleware(request: Request,response :Response, call_next):
@@ -33,7 +33,7 @@ async def test_middleware_modifies_response(async_client:Client):
 
 async def test_middleware_modifies_request(async_client:Client):
     
-    app.routes.clear()
+    app.router.routes.clear()
     app.http_middlewares.clear()
 
     async def modify_request(request: Request, response :Response,call_next):
@@ -52,8 +52,8 @@ async def test_middleware_modifies_request(async_client:Client):
 
 async def test_middleware_order(async_client:Client):
     
-    app.routes.clear()
-    app.middlewares.clear()
+    app.router.routes.clear()
+    app.http_middlewares.clear()
 
     async def first_middleware(equest: Request, response :Response,call_next):
         await call_next()
@@ -82,7 +82,7 @@ async def test_middleware_order(async_client:Client):
 
 async def test_middleware_short_circuit(async_client:Client):
     
-    app.routes.clear()
+    app.router.routes.clear()
     app.http_middlewares.clear()
 
     async def blocking_middleware(request: Request,response :Response, call_next):
@@ -109,7 +109,7 @@ async def test_middleware_short_circuit(async_client:Client):
 
 async def test_middleware_exception_handling(async_client:Client):
     
-    app.routes.clear()
+    app.router.routes.clear()
     app.http_middlewares.clear()
 
     async def exception_middleware(request: Request, response :Response,call_next):

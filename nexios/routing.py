@@ -6,12 +6,41 @@ from enum import Enum
 from nexios.types import MiddlewareType,WsMiddlewareType,HandlerType,WsHandlerType
 from nexios.decorators import allowed_methods
 from typing_extensions import Doc,Annotated #type: ignore
-from nexios.structs import URLPath
+from nexios.structs import URLPath,RouteParam
 from nexios.http import Request,Response
-from ._routing_utils import Convertor,CONVERTOR_TYPES
+from nexios.types import Scope,Send,Receive,ASGIApp
+from ._routing_utils import Convertor,CONVERTOR_TYPES,get_route_path
 from nexios.websockets import WebSocket
+from nexios.middlewares.core import BaseHTTPMiddleware
+from nexios.middlewares.core import Middleware, wrap_middleware
+from nexios.exceptions import NotFoundException
 T = TypeVar("T")
 allowed_methods_default = ['get','post','delete','put','patch','options']
+
+
+
+def request_response(
+    func: typing.Callable[[Request,Response], typing.Awaitable[Response]],
+) -> ASGIApp:
+    """
+    Takes a function or coroutine `func(request) -> response`,
+    and returns an ASGI application.
+    """
+    
+
+    async def app(scope: Scope, receive: Receive, send: Send) -> None:
+        request = Request(scope, receive, send)
+        response = Response()
+
+        
+        await func(request, response)
+        response = response.get_response()
+        return await response(scope, receive, send)
+
+
+    return app
+
+
 
 def replace_params(
     path: str,
@@ -208,10 +237,8 @@ class Routes:
         self.pattern: Pattern[str] = self.route_info.pattern
         self.param_names = self.route_info.param_names
         self.route_type = self.route_info.route_type
-        self.router_middleware = None
         self.middlewares = middlewares
         self.kwargs = kwargs
-
     def match(self, path: str) -> typing.Tuple[Any,Any]:
         """
         Match a path against this route's pattern and return captured parameters.
@@ -266,7 +293,7 @@ class Routes:
     
     
     
-    async def handle(self, request: Request, response: Response) -> Any:
+    async def handle(self, scope :Scope, receive :Receive, send :Send) -> Any:
         """
         Process an incoming request using the route's handler.
 
@@ -277,26 +304,17 @@ class Routes:
         Returns:
             Response: The processed HTTP response object.
         """
-        middlewares =  self.middlewares.copy()
-        middlewares.append(self.handler)
         
-        index = -1
-
-        async def next_middleware() -> None:
-            nonlocal index
-            index += 1
-
-            if index < len(middlewares):
-                middleware = middlewares[index]
-
-                if index == len(middlewares) - 1:
-                    
-                    return await middleware(request, response)
-                else:
-                    await middleware(request, response, next_middleware)
-                return
-
-        return await next_middleware()
+        async def apply_middlewares(app: ASGIApp) -> ASGIApp:
+            middleware = []
+            for mdw in self.middlewares:
+                middleware.append(wrap_middleware(mdw))
+            for cls, args, kwargs in reversed(middleware):
+                app = cls(app, *args, **kwargs)
+            return app
+        app = await apply_middlewares(request_response(self.handler))
+        
+        await app(scope, receive, send)
         
             
            
@@ -325,10 +343,30 @@ class Router(BaseRouter):
         self.prefix.rstrip("/")
         self.routes: List[Routes] =  list(routes) if routes else []
         self.middlewares: List[MiddlewareType] = []
+        self.sub_routers: Dict[str, ASGIApp] = {}
         
         if self.prefix and not self.prefix.startswith("/"):
             warnings.warn("Router prefix should start with '/'")
             self.prefix = f"/{self.prefix}"
+            
+        
+        
+       
+    
+    
+    def build_middleware_stack(self, app: ASGIApp) -> ASGIApp:
+        """
+        Builds the middleware stack by applying all registered middlewares to the app.
+
+        Args:
+            app: The base ASGI application.
+
+        Returns:
+            ASGIApp: The application wrapped with all middlewares.
+        """
+        for cls, args, kwargs in reversed(self.middlewares):
+            app = cls(app, *args, **kwargs)
+        return app
     
     def add_route(
         self, 
@@ -353,27 +391,19 @@ class Router(BaseRouter):
             ```
         """
             
-        route.raw_path = f"{self.prefix}{route.raw_path}"
-    
-        route.route_info = RouteBuilder.create_pattern(route.raw_path)
-        route.pattern = route.route_info.pattern
-        route.param_names = route.route_info.param_names
-        route.route_type = route.route_info.route_type
+       
         
         self.routes.append(route)
     
     def add_middleware(self, middleware: MiddlewareType) -> None:
         """Add middleware to the router"""
         if callable(middleware):
-            self.middlewares.append(middleware)
-    
+            mdw = Middleware(BaseHTTPMiddleware, dispatch = middleware)
+            self.middlewares.insert(0,mdw)
 
 
-    def mount_router(self, router :"Router") -> None:
-        """Mount a router and all its routes to the application"""
-        for route in router.routes:
-            setattr(route,"router_middleware",router.middlewares)
-        self.routes.extend(router.routes)
+
+
 
     def get(
         self,
@@ -768,6 +798,62 @@ class Router(BaseRouter):
     def __repr__(self) -> str:
         return f"<Router prefix='{self.prefix}' routes={len(self.routes)}>"
 
+
+    
+    
+    
+    
+       
+
+
+    async def __call__(self,scope :Scope,receive :Receive, send :Send,) -> Any:
+        # return super().__call__(*args, **kwds)
+        app = self.build_middleware_stack(self.app)
+        await app(scope, receive,send)
+        
+        
+    async def app(self,scope :Scope,receive :Receive,send :Send):
+        url = get_route_path(scope)
+        for mount_path, sub_app in self.sub_routers.items():
+            if url.startswith(mount_path):
+                scope["path"] = url[len(mount_path):]
+                await sub_app(scope, receive, send)
+                return
+        for route in self.routes:
+            match,matched_params = route.match(url)
+            if match:
+                route.handler = allowed_methods(route.methods)(route.handler)
+            
+               
+                scope["route_params"] = RouteParam(matched_params)
+
+                await route.handle(scope, receive,send) 
+                return
+        raise NotFoundException 
+    
+    
+    def mount_router(self, app: "Router",path: typing.Optional[str] = None) -> None:
+        """
+        Mount an ASGI application (e.g., another Router) under a specific path prefix.
+
+        Args:
+            path: The path prefix under which the app will be mounted.
+            app: The ASGI application (e.g., another Router) to mount.
+        """
+        
+        if not path:
+            path = app.prefix
+        path = path.rstrip("/")
+        
+        if path == "" :
+            self.sub_routers[path] = app
+            return
+        if not path.startswith("/"):
+            path = f"/{path}"
+        
+        self.sub_routers[path] = app
+            
+            
 
 
     

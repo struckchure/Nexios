@@ -1,9 +1,7 @@
 import re
 from typing import Any, Callable, List, Union
-from .http.request import Request
 from .http.response import NexiosResponse
-from .decorators import allowed_methods
-from .routing import Router, WSRouter, WebsocketRoutes
+from .routing import Router, WSRouter, WebsocketRoutes,Routes
 from .structs import RouteParam
 from .websockets import get_websocket_session, WebSocket
 import traceback, typing
@@ -11,8 +9,12 @@ from .exception_handler import ExceptionMiddleware
 from typing_extensions import Doc, Annotated  # type:ignore
 from nexios.config import MakeConfig
 from typing import Awaitable, Optional
-from nexios.exceptions import NotFoundException
 from nexios.logging import getLogger
+from nexios.middlewares.core import BaseHTTPMiddleware
+from nexios.middlewares.core import Middleware
+from nexios.middlewares.errors.server_error_handler import ServerErrorMiddleware
+from nexios.structs import URLPath
+
 from .types import (
     MiddlewareType,
     Scope,
@@ -32,7 +34,7 @@ AppType = typing.TypeVar("AppType", bound="NexiosApp")
 
 
 logger = getLogger("nexios")
-class NexiosApp(Router):
+class NexiosApp(object):
     def __init__(
         self,
         config: Annotated[
@@ -66,7 +68,7 @@ class NexiosApp(Router):
         super().__init__()
         self.ws_router = WSRouter()
         self.ws_routes: List[WebsocketRoutes] = []
-        self.http_middlewares: List[MiddlewareType] = middlewares or []
+        self.http_middlewares: List[MiddlewareType] =  middlewares or []
         self.ws_middlewares: List[WsMiddlewareType] = []
         self.startup_handlers: List[Callable[[], Awaitable[None]]] = []
         self.shutdown_handlers: List[Callable[[], Awaitable[None]]] = []
@@ -74,8 +76,11 @@ class NexiosApp(Router):
             server_error_handler or ExceptionMiddleware()
         )
         
-        self.request_class = Request
-        self.response_manager = NexiosResponse
+        self.app = Router()
+        self.router = self.app
+        self.route = self.router.route
+        self.add_middleware(self.exceptions_handler)
+        self.add_middleware(ServerErrorMiddleware(handler=server_error_handler))
 
     def on_startup(self, handler: Callable[[], Awaitable[None]]) -> None:
         """
@@ -229,76 +234,7 @@ class NexiosApp(Router):
 
         return path.rstrip("/")  
 
-    async def __execute_middleware_stack(
-        self,
-        request: Request,
-        response: NexiosResponse,
-        handler: Optional[HandlerType] = None,# type: ignore
-    ) -> Any:
-        """Execute middleware stack including the handler as the last 'middleware'."""
-
-        async def default_handler(req: Request, res: NexiosResponse):
-           raise NotFoundException
-
-        handler: Optional[HandlerType] = handler or default_handler  # type: ignore
-        stack: List[MiddlewareType] = [
-            *self.http_middlewares.copy(),
-            self.exceptions_handler,
-        ]  # type: ignore
-
-        if handler:  # type:ignore
-            stack.append(handler)  # type:ignore
-
-        index = -1
-
-        async def next_middleware() -> None:
-            nonlocal index
-            index += 1
-
-            if index < len(stack):
-                middleware = stack[index]
-                if index == len(stack) - 1:
-                    
-                    return await middleware(request, response)  # type:ignore
-                else:
-                    await middleware(request, response, next_middleware)
-                return
-
-        return await next_middleware()
-
-    async def __handle_http_request(
-        self, scope: Scope, receive: Receive, send: Send
-    ) -> None:
-        request = self.request_class(scope,receive,send)
-        response = self.response_manager()
-        request.scope["config"] = self.config
-
-        handler = None
-        for route in self.routes:
-            url = self.__normalize_path(request.url.path)
-            match,matched_params = route.match(url)
-            if match:
-                route.handler = allowed_methods(route.methods)(route.handler)
-            
-               
-                scope["route_params"] = RouteParam(matched_params)
-
-                if route.router_middleware and len(route.router_middleware) > 0:
-                    self.http_middlewares.extend(route.router_middleware)
-                   
-                def handler_wrapper(req: Request, res: NexiosResponse):
-                    return route.handle(req, res)
-                
-                handler = handler_wrapper
-                break
-        await self.__execute_middleware_stack(request, response, handler)  # type: ignore
-
-        if handler:
-            [self.http_middlewares.remove(x) for x in route.router_middleware or []]  # type: ignore
-
-        await response.get_response()(scope, receive, send)
-        return
-
+    
     
     def add_middleware(
         self,
@@ -332,8 +268,8 @@ class NexiosApp(Router):
             app.add_middleware(logging_middleware)
             ```
         """
-        if callable(middleware):
-            self.http_middlewares.append(middleware)
+        
+        self.http_middlewares.insert(0,Middleware(BaseHTTPMiddleware, dispatch = middleware))
     
     def add_ws_route(
         self, 
@@ -390,7 +326,9 @@ class NexiosApp(Router):
         """
         for route in router.routes:
             self.add_route(route)
-
+    def mount_router(self,router :Router, path :typing.Optional[str] = None):
+        self.router.mount_router(router, path=path)
+        
     def mount_ws_router(
         self,
         router: Annotated[
@@ -517,19 +455,366 @@ class NexiosApp(Router):
         if callable(middleware):
             self.ws_middlewares.append(middleware)
 
+    def handle_http_request(self):
+        app = self.router
+        for cls, args, kwargs in reversed(self.http_middlewares):
+            app = cls(app,*args,**kwargs)
+        return app
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """ASGI application callable"""
         scope['app'] = self
         if scope["type"] == "lifespan":
             await self.__handle_lifespan(receive, send)
         elif scope["type"] == "http":
-            await self.__handle_http_request(scope, receive, send)
+            await self.handle_http_request()(scope, receive, send)
 
         else:
             await self.__handle_websocket(scope, receive, send)
 
    
+   
+   
+    def get(
+        self,
+        path: Annotated[
+            str,
+            Doc("The URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.")
+        ],
+        name: Annotated[
+            Optional[str],
+            Doc("A unique name for the route.")
+        ] = None,
+        middlewares : Annotated[
+            List[Any],
+            Doc("Optional Middleware that should be executed before the route handler")
+         ] = [],
+        **kwargs: Annotated[
+            Dict[str, Any],
+            Doc("Additional arguments to pass to the Routes class.")
+        ]
+    ) -> Callable[..., Any]:
+        """
+        Registers a GET route.
 
+        This decorator allows you to define an endpoint that handles HTTP GET requests. 
+        GET requests are typically used for retrieving resources.
+
+        Args:
+            route (Routes): The route definition, including path and handler function.
+            validator (Callable, optional): A function to validate the request data before passing it to the handler.
+
+        Returns:
+            Callable: The decorated handler function.
+
+        Example:
+            ```python
+            @app.get("/users")
+            async def get_users(request,response):
+                return response.json({"users": ["Alice", "Bob"]})
+            ```
+        """
+        return self.route(path=f"{path}", 
+                           methods=["GET"], 
+                           name=name,
+                           middlewares = middlewares,
+                            **kwargs)
+
+
+    def post(
+        self,
+        path: Annotated[
+            str,
+            Doc("The URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.")
+        ],
+        name: Annotated[
+            Optional[str],
+            Doc("A unique name for the route.")
+        ] = None,
+        middlewares : Annotated[
+            List[Any],
+            Doc("Optional Middleware that should be executed before the route handler")
+        ] = [],
+       
+        **kwargs: Annotated[
+            Dict[str, Any],
+            Doc("Additional arguments to pass to the Routes class.")
+        ]
+    ) -> Callable[..., Any]:
+        """
+        Registers a POST route.
+
+        This decorator is used to define an endpoint that handles HTTP POST requests, 
+        typically for creating resources.
+
+        Args:
+            route (Routes): The route definition, including path and handler function.
+            validator (Callable, optional): A function to validate the request data before passing it to the handler.
+
+        Returns:
+            Callable: The decorated handler function.
+
+        Example:
+            ```python
+            @app.post("/users")
+            async def create_user(request,response):
+                return response.json({"message": "User created"})
+            ```
+        """
+        return self.route(path=f"{path}", 
+                           methods=["POST"], 
+                           name=name,
+                           middlewares = middlewares,
+                            **kwargs)
+
+
+    def delete(
+        self,
+        path: Annotated[
+            str,
+            Doc("The URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.")
+        ],
+        name: Annotated[
+            Optional[str],
+            Doc("A unique name for the route.")
+        ] = None,
+        middlewares : Annotated[
+            List[Any],
+            Doc("Optional Middleware that should be executed before the route handler")
+        ] = [],
+       
+        **kwargs: Annotated[
+            Dict[str, Any],
+            Doc("Additional arguments to pass to the Routes class.")
+        ]
+    ) -> Callable[..., Any]:
+        """
+        Registers a DELETE route.
+
+        This decorator allows defining an endpoint that handles HTTP DELETE requests, 
+        typically for deleting resources.
+
+        Args:
+            route (Routes): The route definition, including path and handler function.
+            validator (Callable, optional): A function to validate the request data before passing it to the handler.
+
+        Returns:
+            Callable: The decorated handler function.
+
+        Example:
+            ```python
+            @app.delete("/users/{user_id}")
+            def delete_user(request, response):
+                user_id = request.path_params.user_id
+                return responsejson({"message": f"User {user_id} deleted"})
+            ```
+        """
+        return self.route(path=f"{path}", 
+                           methods=["DELETE"],                      
+                           name=name,
+                           middlewares = middlewares,
+                            **kwargs)
+
+
+    def put(
+        self,
+        path: Annotated[
+            str,
+            Doc("The URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.")
+        ],
+        name: Annotated[
+            Optional[str],
+            Doc("A unique name for the route.")
+        ] = None,
+        middlewares : Annotated[
+            List[Any],
+            Doc("Optional Middleware that should be executed before the route handler")
+        ] = [],
+        **kwargs: Annotated[
+            Dict[str, Any],
+            Doc("Additional arguments to pass to the Routes class.")
+        ]
+    ) -> Callable[..., Any]:
+        """
+        Registers a PUT route.
+
+        This decorator defines an endpoint that handles HTTP PUT requests, 
+        typically for updating or replacing a resource.
+
+        Args:
+            route (Routes): The route definition, including path and handler function.
+            validator (Callable, optional): A function to validate the request data before passing it to the handler.
+
+        Returns:
+            Callable: The decorated handler function.
+
+        Example:
+            ```python
+            @app.delete("/users/{user_id}")
+            def delete_user(request, response):
+                user_id = request.path_params.user_id
+                return responsejson({"message": f"User {user_id} updated"})
+        """
+        return self.route(path=f"{path}", 
+                           methods=["PUT"], 
+                           name=name,
+                           middlewares = middlewares,
+                            **kwargs)
+
+    def patch(
+        self,
+        path: Annotated[
+            str,
+            Doc("The URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.")
+        ],
+        name: Annotated[
+            Optional[str],
+            Doc("A unique name for the route.")
+        ] = None,
+        middlewares : Annotated[
+            List[Any],
+            Doc("Optional Middleware that should be executed before the route handler")
+        ] = [],
+       
+        **kwargs: Annotated[
+            Dict[str, Any],
+            Doc("Additional arguments to pass to the Routes class.")
+        ]
+    ) -> Callable[..., Any]:
+        """
+        Registers a PATCH route.
+
+        This decorator defines an endpoint that handles HTTP PATCH requests, 
+        which are used to apply partial modifications to a resource.
+
+        Args:
+            route (Routes): The route definition, including path and handler function.
+            validator (Callable, optional): A function to validate the request data before passing it to the handler.
+
+        Returns:
+            Callable: The decorated handler function.
+
+        Example:
+            ```python
+            @app.patch("/users/{user_id}")
+            def partial_update_user(request, response):
+                user_id = request.path_params.user_id
+            
+                return respoonse.json({"message": f"User {user_id} partially updated"})
+            ```
+        """
+        return self.route(path=f"{path}", 
+                           methods=["PATCH"], 
+                           name=name,
+                           middlewares = middlewares,
+                            **kwargs)
+
+
+    def options(
+        self,
+        path: Annotated[
+            str,
+            Doc("The URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.")
+        ],
+        name: Annotated[
+            Optional[str],
+            Doc("A unique name for the route.")
+        ] = None,
+        middlewares : Annotated[
+            List[Any],
+            Doc("Optional Middleware that should be executed before the route handler")
+        ] = [],
+        **kwargs: Annotated[
+            Dict[str, Any],
+            Doc("Additional arguments to pass to the Routes class.")
+        ]
+    ) -> Callable[..., Any]:
+        """
+        Registers an OPTIONS route.
+
+        This decorator defines an endpoint that handles HTTP OPTIONS requests, 
+        which are used to describe the communication options for the target resource. 
+        OPTIONS requests are commonly used in CORS (Cross-Origin Resource Sharing) 
+        to check allowed methods, headers, and authentication rules.
+
+        Args:
+            route (Routes): The route definition, including path and handler function.
+            validator (Callable, optional): A function to validate the request data before passing it to the handler.
+
+        Returns:
+            Callable: The decorated handler function.
+
+        Example:
+            ```python
+            @app.options("/users")
+            def options_users(request):
+                return response.json({
+                    "Allow": "GET, POST, DELETE, OPTIONS"
+                })
+            ```
+        """
+        return self.route(path=f"{path}", 
+                           methods=["OPTIONS"], 
+                           name=name,
+                           *middlewares,
+                            **kwargs)
+
+
+
+    def head(
+        self,
+        path: Annotated[
+            str,
+            Doc("The URL path pattern for the endpoint. Supports dynamic parameters using curly brace syntax.")
+        ],
+
+        name: Annotated[
+            Optional[str],
+            Doc("A unique name for the route.")
+        ] = None,
+        middlewares : Annotated[
+            List[Any],
+            Doc("Optional Middleware that should be executed before the route handler")
+        ] = [],
+        **kwargs: Annotated[
+            Dict[str, Any],
+            Doc("Additional arguments to pass to the Routes class.")
+        ]
+    ) -> Callable[..., Any]:
+        
+         return self.route(path=f"{path}", 
+                           methods=["HEAD"], 
+                           name=name,
+                           middlewares = [],
+                            **kwargs)
+
+    
+    def add_route(
+        self, 
+        route: Annotated[Routes, 
+                         Doc("An instance of the Routes class representing an HTTP route.")]
+    ) -> None:
+        """
+        Adds an HTTP route to the application.
+
+        This method registers an HTTP route, allowing the application to handle requests for a specific URL path.
+
+        Args:
+            route (Routes): The HTTP route configuration.
+
+        Returns:
+            None
+
+        Example:
+            ```python
+            route = Routes("/home", home_handler, methods=["GET", "POST"])
+            app.add_route(route)
+            ```
+        """
+        
+        self.router.add_route(route)
+        
+        
+    
     def add_exception_handler(
         self,
         exc_class_or_status_code: Union[typing.Type[Exception], int],
@@ -538,4 +823,7 @@ class NexiosApp(Router):
         self.exceptions_handler.add_exception_handler(exc_class_or_status_code, handler)
         
         
+
         
+    def url_for(self, _name: str, **path_params: Any) -> URLPath:
+        return self.router.url_for(_name,**path_params)

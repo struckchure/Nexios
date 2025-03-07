@@ -500,20 +500,21 @@ class StreamingResponse(BaseResponse):
             'headers': self._headers,
         })
 
-        async for chunk in self.content_iterator:
-            if isinstance(chunk, str):
-                chunk = chunk.encode('utf-8')
+        try:
+            async for chunk in self.content_iterator:
+                if isinstance(chunk, str):
+                    chunk = chunk.encode('utf-8')
+                await send({
+                    'type': 'http.response.body',
+                    'body': chunk,
+                    'more_body': True
+                })
+        finally:
             await send({
                 'type': 'http.response.body',
-                'body': chunk,
-                'more_body': True
+                'body': b'',
+                'more_body': False
             })
-            
-        await send({
-            'type': 'http.response.body',
-            'body': b'',
-            'more_body': False
-        })
 
 
 class RedirectResponse(BaseResponse):
@@ -539,6 +540,14 @@ class RedirectResponse(BaseResponse):
 
 
 class NexiosResponse:
+    
+    _instance = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(NexiosResponse, cls).__new__(cls)
+            cls._instance._initialized = False
+        return cls._instance
     def __init__(self):
         self._response: BaseResponse = BaseResponse(setup = False)
         self._cookies: List[Dict[str, Any]] = []

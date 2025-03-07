@@ -9,6 +9,7 @@ def set_config(config :MakeConfig) -> None:
 def get_config() -> MakeConfig: 
     if _global_config is None:
         raise RuntimeError("Configuration has not been initialized.")
+        # return {}
     return _global_config
 
 

@@ -62,7 +62,7 @@ class ClientDisconnect(Exception):
     pass
 
 
-class HTTPConnection:
+class HTTPConnection(object):
     """
     A base class for incoming HTTP connections, that is used to provide
     any functionality that is common to both `Request` and `WebSocket`.
@@ -71,6 +71,15 @@ class HTTPConnection:
     def __init__(self, scope :Scope, receive :Receive) -> None:
         assert scope["type"] in ("http", "websocket")
         self.scope = scope
+
+    def __getitem__(self, key: str) -> typing.Any:
+        return self.scope[key]
+
+    def __iter__(self) -> typing.Iterator[str]:
+        return iter(self.scope)
+
+    def __len__(self) -> int:
+        return len(self.scope)
 
 
     __eq__ = object.__eq__

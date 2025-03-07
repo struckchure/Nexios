@@ -10,10 +10,9 @@ from .middlewares.cors import CORSMiddleware
 from .middlewares.gzip import GzipMiddleware
 from typing import Sequence, Optional
 from .application import NexiosApp 
-
 from .types import MiddlewareType, ExceptionHandlerType
 from typing_extensions import Doc, Annotated  
-
+from nexios.middlewares.core import wrap_middleware
 
 def get_application(
     config: Annotated[
@@ -28,12 +27,6 @@ def get_application(
                     """
         ),
     ] = DEFAULT_CONFIG,
-    middlewares: Annotated[
-        Sequence[MiddlewareType],
-        Doc(
-            "A list of middlewares, where each middleware is either a class inherited from BaseMiddleware or an asynchronous callable function that accepts request, response, and callnext"
-        ),
-    ] = [],
     server_error_handler: Annotated[
         Optional[ExceptionHandlerType],
         Doc(
@@ -69,17 +62,16 @@ def get_application(
     set_config(config)
 
     app = NexiosApp(
-        middlewares=[
-            ServerErrorMiddleware(handler=server_error_handler),
-            CommonMiddleware(),
-            CORSMiddleware(),
-            SessionMiddleware(),
-            CSRFMiddleware(),
-            GzipMiddleware(),
-            *middlewares,
-        ],
-        config=config,
-    )
+    middlewares = [
+        wrap_middleware(CommonMiddleware()),
+        wrap_middleware(CORSMiddleware()),
+        wrap_middleware(SessionMiddleware()),
+        wrap_middleware(CSRFMiddleware()),
+        wrap_middleware(GzipMiddleware()),
+    ],
+
+    config=config,
+)
 
     return app
 
