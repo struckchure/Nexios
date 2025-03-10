@@ -9,7 +9,7 @@ from nexios.http.request import ClientDisconnect, Request
 from nexios.http.response import  NexiosResponse as Response
 from nexios.types import ASGIApp, Message, Receive, Scope, Send
 RequestResponseEndpoint = typing.Callable[[Request], typing.Awaitable[Response]]
-DispatchFunction = typing.Callable[[Request, Response,typing.Coroutine[None,None,Any]], typing.Awaitable[Response]]
+DispatchFunction = typing.Callable[[Request, Response,typing.Coroutine[None,None,typing.Any]], typing.Awaitable[Response]]
 T = typing.TypeVar("T")
 
 import sys

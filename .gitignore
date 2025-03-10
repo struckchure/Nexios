@@ -15,3 +15,4 @@ sandbox.py
 static/
 poetry.lock
 .qodo/
+.pytest_cache/
