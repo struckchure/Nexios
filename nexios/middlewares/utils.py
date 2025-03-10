@@ -10,15 +10,15 @@ def use_for_route(route: str) -> None:
     else:
         route = f"^{route}$"
 
-    def decorator(func: HandlerType) -> HandlerType:
+    def decorator(func: HandlerType) -> Any:
         @wraps(func)
         async def wrapper_func(
             request: Request,
             response: Response,
             call_next: Callable[..., Awaitable[Response]],
-        ):
+        )->Any:
             if re.match(route, request.url.path):
-                return await func(request, response, call_next)
+                return await func(request, response, call_next) #type:ignore
             else:
                 return await call_next()
 
@@ -28,9 +28,9 @@ def use_for_route(route: str) -> None:
             request: Request,
             response: Response,
             call_next: Callable[..., Awaitable[Response]],
-        ):
+        )->Any:
             if re.match(route, request.url.path):
-                return await func(self, request, response, call_next)
+                return await func(self, request, response, call_next) #type:ignore
             else:
                 return await call_next()
 

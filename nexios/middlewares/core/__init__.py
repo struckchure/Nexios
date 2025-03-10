@@ -8,9 +8,8 @@ from contextlib import contextmanager
 from nexios.http.request import ClientDisconnect, Request
 from nexios.http.response import  NexiosResponse as Response
 from nexios.types import ASGIApp, Message, Receive, Scope, Send
-
 RequestResponseEndpoint = typing.Callable[[Request], typing.Awaitable[Response]]
-DispatchFunction = typing.Callable[[Request, Response,RequestResponseEndpoint], typing.Awaitable[Response]]
+DispatchFunction = typing.Callable[[Request, Response,typing.Coroutine[None,None,Any]], typing.Awaitable[Response]]
 T = typing.TypeVar("T")
 
 import sys
@@ -33,8 +32,8 @@ def collapse_excgroups() -> typing.Generator[None, None, None]:
         yield
     except BaseException as exc:
         
-        while isinstance(exc, BaseExceptionGroup) and len(exc.exceptions) == 1:
-            exc = exc.exceptions[0]
+        while isinstance(exc, BaseExceptionGroup) and len(exc.exceptions) == 1: #type: ignore
+            exc = exc.exceptions[0] #type: ignore
 
         raise exc
 
@@ -143,7 +142,7 @@ class _CachedRequest(Request):
 
 
 class BaseHTTPMiddleware:
-    def __init__(self, app: ASGIApp, dispatch: DispatchFunction | None = None) -> None:
+    def __init__(self, app: ASGIApp, dispatch: DispatchFunction) -> None:
         self.app = app
         self.dispatch_func = dispatch
 
@@ -154,6 +153,7 @@ class BaseHTTPMiddleware:
 
         request = _CachedRequest(scope, receive)
         response = Response()
+        
         wrapped_receive = request.wrapped_receive
         response_sent = anyio.Event()
 
@@ -209,23 +209,40 @@ class BaseHTTPMiddleware:
 
             assert message["type"] == "http.response.start"
 
+            async def body_stream() -> typing.AsyncGenerator[bytes, None]:
+                async for message in recv_stream:
+                    assert message["type"] == "http.response.body"
+                    body = message.get("body", b"")
+                    if body:
+                        yield body
+                    if not message.get("more_body", False):
+                        break
+
+                if app_exc is not None:
+                    raise app_exc
+
+            response_ = response.stream(iterator=body_stream(),status_code=message["status"]) #type: ignore
+            response_._response._headers = message["headers"] #type: ignore
+            return response
             
 
-        streams: anyio.create_memory_object_stream[Message] = anyio.create_memory_object_stream()
+        streams: anyio.create_memory_object_stream[Message] = anyio.create_memory_object_stream() #type: ignore
         send_stream, recv_stream = streams
         with recv_stream, send_stream, collapse_excgroups():
             async with anyio.create_task_group() as task_group:
-                await self.dispatch_func(request, response, call_next)
+                await self.dispatch_func(request, response, call_next) #type: ignore
                 await response.get_response()(scope, wrapped_receive, send)
                 response_sent.set()
                 recv_stream.close()
+                
 
   
 
-MiddlewareType = typing.Callable[[Request,Response,RequestResponseEndpoint], typing.Awaitable[typing.Any]]
-def wrap_middleware(middleware_function :MiddlewareType):
+MiddlewareType = typing.Callable[[Request,Response,typing.Coroutine[None,None,Any]], typing.Awaitable[typing.Any]]
+def wrap_middleware(middleware_function :MiddlewareType) -> Middleware:
     return Middleware(BaseHTTPMiddleware, dispatch = middleware_function)
 __all__ = [
     "BaseHTTPMiddleware"
 ]
+
 

@@ -1,6 +1,5 @@
 import re
 from typing import Any, Callable, List, Union
-from .http.response import NexiosResponse
 from .routing import Router, WSRouter, WebsocketRoutes,Routes
 from .structs import RouteParam
 from .websockets import get_websocket_session, WebSocket
@@ -12,7 +11,7 @@ from typing import Awaitable, Optional
 from nexios.logging import getLogger
 from nexios.middlewares.core import BaseHTTPMiddleware
 from nexios.middlewares.core import Middleware
-from nexios.middlewares.errors.server_error_handler import ServerErrorMiddleware
+from nexios.middlewares.errors.server_error_handler import ServerErrorMiddleware,ServerErrHandlerType
 from nexios.structs import URLPath
 
 from .types import (
@@ -50,13 +49,13 @@ class NexiosApp(object):
             ),
         ] = None,
         middlewares: Annotated[
-            List[MiddlewareType],
+            List[Middleware],
             Doc(
                 "A list of middlewares, where each middleware is either a class inherited from BaseMiddleware or an asynchronous callable function that accepts request, response, and callnext"
             ),
         ] = [],
         server_error_handler: Annotated[
-            Optional[Awaitable[NexiosResponse]],
+            Optional[ServerErrHandlerType],
             Doc(
                 """
                         A function in Nexios responsible for handling server-side exceptions by logging errors, reporting issues, or initiating recovery mechanisms. It prevents crashes by intercepting unexpected failures, ensuring the application remains stable and operational. This function provides a structured approach to error management, allowing developers to define custom handling strategies such as retrying failed requests, sending alerts, or gracefully degrading functionality. By centralizing error processing, it improves maintainability and observability, making debugging and monitoring more efficient. Additionally, it ensures that critical failures do not disrupt the entire system, allowing services to continue running while appropriately managing faults and failures."""
@@ -68,7 +67,7 @@ class NexiosApp(object):
         super().__init__()
         self.ws_router = WSRouter()
         self.ws_routes: List[WebsocketRoutes] = []
-        self.http_middlewares: List[MiddlewareType] =  middlewares or []
+        self.http_middlewares: List[Middleware] =  middlewares or []
         self.ws_middlewares: List[WsMiddlewareType] = []
         self.startup_handlers: List[Callable[[], Awaitable[None]]] = []
         self.shutdown_handlers: List[Callable[[], Awaitable[None]]] = []
@@ -80,7 +79,7 @@ class NexiosApp(object):
         self.router = self.app
         self.route = self.router.route
         self.add_middleware(self.exceptions_handler)
-        self.add_middleware(ServerErrorMiddleware(handler=server_error_handler))
+        self.add_middleware(ServerErrorMiddleware(handler=server_error_handler)) #type: ignore
 
     def on_startup(self, handler: Callable[[], Awaitable[None]]) -> None:
         """
@@ -269,7 +268,7 @@ class NexiosApp(object):
             ```
         """
         
-        self.http_middlewares.insert(0,Middleware(BaseHTTPMiddleware, dispatch = middleware))
+        self.http_middlewares.insert(0,Middleware(BaseHTTPMiddleware, dispatch = middleware)) #type:ignore
     
     def add_ws_route(
         self, 
@@ -293,13 +292,7 @@ class NexiosApp(object):
             ```
         """
         self.ws_routes.append(route)
-    def mount_router(
-        self,
-        router: Annotated[
-            Router,
-            Doc("An instance of Router containing multiple routes to be mounted."),
-        ],
-    ) -> None:
+    def mount_router(self,router :Router, path :typing.Optional[str] = None):
         """
         Mounts a router and all its routes to the application.
 
@@ -324,9 +317,6 @@ class NexiosApp(object):
             app.mount_router(user_router)  # Mounts the user routes into the main app
             ```
         """
-        for route in router.routes:
-            self.add_route(route)
-    def mount_router(self,router :Router, path :typing.Optional[str] = None):
         self.router.mount_router(router, path=path)
         
     def mount_ws_router(
@@ -364,7 +354,7 @@ class NexiosApp(object):
         self.ws_middlewares.extend(router.middlewares)
 
     async def __execute_ws_middleware_stack(
-        self, ws: WebSocket, handler: WsHandlerType, **kwargs: Dict[str, Any]
+        self, ws: WebSocket, handler: typing.Union[WsHandlerType,None], **kwargs: Dict[str, Any]
     ) -> None:
         """Execute WebSocket middleware stack, with the handler as the last middleware."""
         stack = self.ws_middlewares.copy()
@@ -455,7 +445,7 @@ class NexiosApp(object):
         if callable(middleware):
             self.ws_middlewares.append(middleware)
 
-    def handle_http_request(self):
+    def handle_http_request(self) -> Router:
         app = self.router
         for cls, args, kwargs in reversed(self.http_middlewares):
             app = cls(app,*args,**kwargs)
@@ -722,11 +712,7 @@ class NexiosApp(object):
         middlewares : Annotated[
             List[Any],
             Doc("Optional Middleware that should be executed before the route handler")
-        ] = [],
-        **kwargs: Annotated[
-            Dict[str, Any],
-            Doc("Additional arguments to pass to the Routes class.")
-        ]
+        ] = []
     ) -> Callable[..., Any]:
         """
         Registers an OPTIONS route.
@@ -755,8 +741,8 @@ class NexiosApp(object):
         return self.route(path=f"{path}", 
                            methods=["OPTIONS"], 
                            name=name,
-                           *middlewares,
-                            **kwargs)
+                           middlewares=middlewares
+                            )
 
 
 

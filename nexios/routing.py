@@ -30,11 +30,11 @@ def request_response(
 
     async def app(scope: Scope, receive: Receive, send: Send) -> None:
         request = Request(scope, receive, send)
-        response = Response()
+        response_manager = Response()
 
         
-        await func(request, response)
-        response = response.get_response()
+        await func(request, response_manager)
+        response = response_manager.get_response()
         return await response(scope, receive, send)
 
 
@@ -237,7 +237,7 @@ class Routes:
         self.pattern: Pattern[str] = self.route_info.pattern
         self.param_names = self.route_info.param_names
         self.route_type = self.route_info.route_type
-        self.middlewares = middlewares
+        self.middlewares :typing.List[MiddlewareType] = list(middlewares)
         self.kwargs = kwargs
     def match(self, path: str) -> typing.Tuple[Any,Any]:
         """
@@ -306,9 +306,9 @@ class Routes:
         """
         
         async def apply_middlewares(app: ASGIApp) -> ASGIApp:
-            middleware = []
+            middleware :typing.List[Middleware] = []
             for mdw in self.middlewares:
-                middleware.append(wrap_middleware(mdw))
+                middleware.append(wrap_middleware(mdw)) #type: ignore
             for cls, args, kwargs in reversed(middleware):
                 app = cls(app, *args, **kwargs)
             return app
@@ -342,7 +342,7 @@ class Router(BaseRouter):
         self.prefix = prefix or ""
         self.prefix.rstrip("/")
         self.routes: List[Routes] =  list(routes) if routes else []
-        self.middlewares: List[MiddlewareType] = []
+        self.middlewares: typing.List[Middleware] = []
         self.sub_routers: Dict[str, ASGIApp] = {}
         
         if self.prefix and not self.prefix.startswith("/"):
@@ -398,8 +398,8 @@ class Router(BaseRouter):
     def add_middleware(self, middleware: MiddlewareType) -> None:
         """Add middleware to the router"""
         if callable(middleware):
-            mdw = Middleware(BaseHTTPMiddleware, dispatch = middleware)
-            self.middlewares.insert(0,mdw)
+            mdw = Middleware(BaseHTTPMiddleware, dispatch = middleware) #type: ignore
+            self.middlewares.insert(0,mdw) 
 
 
 
@@ -418,11 +418,7 @@ class Router(BaseRouter):
         middlewares : Annotated[
             List[Any],
             Doc("Optional Middleware that should be executed before the route handler")
-         ] = [],
-        **kwargs: Annotated[
-            Dict[str, Any],
-            Doc("Additional arguments to pass to the Routes class.")
-        ]
+         ] = []
     ) -> Callable[..., Any]:
         """
         Registers a GET route.
@@ -447,8 +443,7 @@ class Router(BaseRouter):
         return self.route(path=f"{path}", 
                            methods=["GET"], 
                            name=name,
-                           middlewares = middlewares,
-                            **kwargs)
+                           middlewares = middlewares)
 
 
     def post(
@@ -464,12 +459,7 @@ class Router(BaseRouter):
         middlewares : Annotated[
             List[Any],
             Doc("Optional Middleware that should be executed before the route handler")
-        ] = [],
-       
-        **kwargs: Annotated[
-            Dict[str, Any],
-            Doc("Additional arguments to pass to the Routes class.")
-        ]
+        ] = []
     ) -> Callable[..., Any]:
         """
         Registers a POST route.
@@ -494,8 +484,7 @@ class Router(BaseRouter):
         return self.route(path=f"{path}", 
                            methods=["POST"], 
                            name=name,
-                           middlewares = middlewares,
-                            **kwargs)
+                           middlewares = middlewares)
 
 
     def delete(
@@ -511,12 +500,7 @@ class Router(BaseRouter):
         middlewares : Annotated[
             List[Any],
             Doc("Optional Middleware that should be executed before the route handler")
-        ] = [],
-       
-        **kwargs: Annotated[
-            Dict[str, Any],
-            Doc("Additional arguments to pass to the Routes class.")
-        ]
+        ] = []
     ) -> Callable[..., Any]:
         """
         Registers a DELETE route.
@@ -542,8 +526,7 @@ class Router(BaseRouter):
         return self.route(path=f"{path}", 
                            methods=["DELETE"],                      
                            name=name,
-                           middlewares = middlewares,
-                            **kwargs)
+                           middlewares = middlewares)
 
 
     def put(
@@ -559,11 +542,7 @@ class Router(BaseRouter):
         middlewares : Annotated[
             List[Any],
             Doc("Optional Middleware that should be executed before the route handler")
-        ] = [],
-        **kwargs: Annotated[
-            Dict[str, Any],
-            Doc("Additional arguments to pass to the Routes class.")
-        ]
+        ] = []
     ) -> Callable[..., Any]:
         """
         Registers a PUT route.
@@ -588,8 +567,7 @@ class Router(BaseRouter):
         return self.route(path=f"{path}", 
                            methods=["PUT"], 
                            name=name,
-                           middlewares = middlewares,
-                            **kwargs)
+                           middlewares = middlewares)
 
     def patch(
         self,
@@ -604,12 +582,7 @@ class Router(BaseRouter):
         middlewares : Annotated[
             List[Any],
             Doc("Optional Middleware that should be executed before the route handler")
-        ] = [],
-       
-        **kwargs: Annotated[
-            Dict[str, Any],
-            Doc("Additional arguments to pass to the Routes class.")
-        ]
+        ] = []
     ) -> Callable[..., Any]:
         """
         Registers a PATCH route.
@@ -637,7 +610,7 @@ class Router(BaseRouter):
                            methods=["PATCH"], 
                            name=name,
                            middlewares = middlewares,
-                            **kwargs)
+                           )
 
 
     def options(
@@ -653,11 +626,8 @@ class Router(BaseRouter):
         middlewares : Annotated[
             List[Any],
             Doc("Optional Middleware that should be executed before the route handler")
-        ] = [],
-        **kwargs: Annotated[
-            Dict[str, Any],
-            Doc("Additional arguments to pass to the Routes class.")
-        ]
+        ] = []
+       
     ) -> Callable[..., Any]:
         """
         Registers an OPTIONS route.
@@ -686,8 +656,7 @@ class Router(BaseRouter):
         return self.route(path=f"{path}", 
                            methods=["OPTIONS"], 
                            name=name,
-                           *middlewares,
-                            **kwargs)
+                           middlewares=middlewares)
 
 
 
@@ -705,18 +674,13 @@ class Router(BaseRouter):
         middlewares : Annotated[
             List[Any],
             Doc("Optional Middleware that should be executed before the route handler")
-        ] = [],
-        **kwargs: Annotated[
-            Dict[str, Any],
-            Doc("Additional arguments to pass to the Routes class.")
-        ]
+        ] = []
     ) -> Callable[..., Any]:
         
          return self.route(path=f"{path}", 
                            methods=["HEAD"], 
                            name=name,
-                           middlewares = [],
-                            **kwargs)
+                           middlewares = middlewares)
     
     def route(
         self,
@@ -735,12 +699,7 @@ class Router(BaseRouter):
         middlewares : Annotated[
             List[Any],
             Doc("Optional Middleware that should be executed before the route handler")
-        ] = [],
-       
-        **kwargs: Annotated[
-            Dict[str, Any],
-            Doc("Additional arguments to pass to the Routes class.")
-        ]
+        ] = []
     ) -> Callable[...,Any]:
         """
         Registers a route with the specified HTTP methods and an optional validator.
@@ -770,7 +729,7 @@ class Router(BaseRouter):
                            methods=methods, 
                            name=name,
                            middlewares = middlewares,
-                            **kwargs
+                           
                            )
             self.add_route(route)
             return _handler  

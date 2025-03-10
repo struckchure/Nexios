@@ -29,7 +29,7 @@ class GzipMiddleware(BaseMiddleware):
             self.compress_response(response)
 
     def should_compress(self, response: Response) -> bool:
-        content_length = int(response.headers.get('Content-Length', 0))
+        content_length = int(response.headers.get('Content-Length', "0") or 0) #dirty code, fix later
         content_type = response.content_type #type:ignore
        
         return (

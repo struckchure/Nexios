@@ -1,4 +1,5 @@
 import re
+# from typing_extensions import Annotated, Doc
 from nexios.middlewares.base import BaseMiddleware
 from nexios.http import Request,Response
 from nexios.config import get_config
@@ -16,7 +17,7 @@ SAFELISTED_HEADERS = {"accept", "accept-language", "content-language", "content-
 class CORSMiddleware(BaseMiddleware):
     def __init__(self):
         config = get_config().cors
-
+        
         if not config:
             return None
         self.allow_origins :List[str] = config.allow_origins or []
@@ -49,9 +50,11 @@ class CORSMiddleware(BaseMiddleware):
             self.allow_headers :List[str] = [*list(SAFELISTED_HEADERS),*config.allow_headers]
         else:
             self.allow_headers  = list(SAFELISTED_HEADERS)
+            
+  
     async def process_request(self, request: Request,response :  Response, call_next :  typing.Callable[..., typing.Awaitable[Any]]):
-        
         config = get_config().cors
+        
         if not config:
             await call_next()
             return None
@@ -73,6 +76,7 @@ class CORSMiddleware(BaseMiddleware):
    
     async def simple_response(self, request: Request, response: Response,call_next :typing.Callable[..., typing.Awaitable[Any]]):
         config = get_config().cors
+        await call_next()
         if not config:
             return None
         origin = request.origin
@@ -86,7 +90,6 @@ class CORSMiddleware(BaseMiddleware):
         if self.expose_headers:
             response.header("Access-Control-Expose-Headers",  ", ".join(self.expose_headers))
             
-        return await call_next()
 
     def is_allowed_origin(self, origin: Optional[str]) -> bool:
         if origin in self.blacklist_origins:

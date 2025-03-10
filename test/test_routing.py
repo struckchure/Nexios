@@ -165,7 +165,6 @@ async def test_routers_no_prefix(async_client: Client):
     
     
 async def test_routers_with_prefix(async_client: Client):
-    
     router = Router(prefix="/api")
     
     @router.get("/resource")
@@ -176,13 +175,13 @@ async def test_routers_with_prefix(async_client: Client):
     
     
     
-    response = await async_client.get("/api/resource")
-    print(response)
+    response = await async_client.get("api/resource")
     assert response.status_code == 200
     
 
 
 async def test_path_prams(async_client :Client):
+    app  = get_application()
     @app.get("/item/{id}")
     async def get_items(req:Request, res:Response):
         id = req.path_params.id

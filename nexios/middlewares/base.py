@@ -2,7 +2,6 @@ from nexios.http import Request, Response
 import typing
 from typing_extensions import Annotated, Doc,Any
 
-
 class BaseMiddleware:
     """
     Base middleware class for handling request-response processing in Nexios.
@@ -47,7 +46,7 @@ class BaseMiddleware:
         response:Annotated[
                            Response,Doc("The HTTP response object that will be returned to the client.")],
         call_next: Annotated[
-            typing.Callable[..., typing.Awaitable[Any]],
+            typing.Coroutine[None,None,typing.Awaitable[Any]],
             Doc("The next middleware function in the processing chain."),
         ],
     ) ->Any:
@@ -67,9 +66,9 @@ class BaseMiddleware:
             Response: The final HTTP response object.
         """
         self._call_next = False
-        async def wrapped_call_next():
+        async def wrapped_call_next() -> Any:
             self._call_next = True
-            return await call_next()
+            return await call_next() #type:ignore
         await self.process_request(request, response,wrapped_call_next)
         if self._call_next:
             await self.process_response(request, response)

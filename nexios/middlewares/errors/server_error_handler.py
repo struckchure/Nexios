@@ -2,7 +2,6 @@ from nexios.middlewares.base import BaseMiddleware
 from nexios.http import Request,Response
 from nexios.config import get_config
 import traceback,html,sys,inspect,typing
-from nexios.types import HandlerType
 from nexios.logging import DEBUG,create_logger
 logger = create_logger(__name__,log_level=DEBUG)
 STYLES = """
@@ -151,14 +150,14 @@ CENTER_LINE = """
 
 
 
-
+ServerErrHandlerType = typing.Callable[[Request, Response, Exception], typing.Any]
 class ServerErrorMiddleware(BaseMiddleware):
-    def __init__(self, handler :typing.Optional[HandlerType]= None):
+    def __init__(self, handler :typing.Optional[ServerErrHandlerType]= None):
         self.handler = handler
-    async def __call__(self, request :Request, response :Response, next_middleware : typing.Callable[...,typing.Awaitable[None]]):
+    async def __call__(self, request :Request, response :Response, next_middleware : typing.Coroutine[None,None,typing.Awaitable[None]]) -> typing.Any:
         self.debug = get_config().debug or True
         try:
-            await next_middleware()
+            return await next_middleware() #type:ignore
             
         except Exception as exc:
             if self.handler:

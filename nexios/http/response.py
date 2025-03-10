@@ -18,7 +18,9 @@ from urllib.parse import quote
 import hashlib
 import anyio.to_thread
 from nexios.structs import MutableHeaders
+from nexios.http.request import ClientDisconnect
 import stat
+from functools import partial
 Scope = typing.MutableMapping[str, typing.Any]
 Message = typing.MutableMapping[str, typing.Any]
 
@@ -190,6 +192,19 @@ class BaseResponse:
         })
 
 
+    
+    
+    @property
+    def body(self):
+        
+        return self._body
+    
+    @property
+    def raw_headers(self):
+        
+        return self._headers
+    
+    
     def _generate_etag(self) -> str:
         """Generate an ETag for the response content."""
         content_hash = sha1()
@@ -481,7 +496,7 @@ class StreamingResponse(BaseResponse):
         headers: Optional[Dict[str, str]] = None,
         content_type: str = "text/plain",
     ):
-        super().__init__(headers=headers)
+        super().__init__(headers=headers,setup=False)
         
         self.content_iterator = content
         self.status_code = status_code
@@ -492,30 +507,44 @@ class StreamingResponse(BaseResponse):
         
         self.headers.pop('content-length', None)
 
+    async def listen_for_disconnect(self, receive: Receive) -> None:
+        while True:
+            message = await receive()
+            if message["type"] == "http.disconnect":
+                break
+
+    async def stream_response(self, send: Send) -> None:
+        await send(
+            {
+                "type": "http.response.start",
+                "status": self.status_code,
+                "headers": self.raw_headers,
+            }
+        )
+        async for chunk in self.content_iterator:
+            if not isinstance(chunk, (bytes, memoryview)):
+                chunk = chunk.encode(self.charset)   #type:ignore
+            await send({"type": "http.response.body", "body": chunk, "more_body": True})
+
+        await send({"type": "http.response.body", "body": b"", "more_body": False})
+
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        """Stream the content."""
-        await send({
-            'type': 'http.response.start',
-            'status': self.status_code,
-            'headers': self._headers,
-        })
+        spec_version = tuple(map(int, scope.get("asgi", {}).get("spec_version", "2.0").split(".")))
 
-        try:
-            async for chunk in self.content_iterator:
-                if isinstance(chunk, str):
-                    chunk = chunk.encode('utf-8')
-                await send({
-                    'type': 'http.response.body',
-                    'body': chunk,
-                    'more_body': True
-                })
-        finally:
-            await send({
-                'type': 'http.response.body',
-                'body': b'',
-                'more_body': False
-            })
+        if spec_version >= (2, 4):
+            try:
+                await self.stream_response(send)
+            except OSError:
+                raise ClientDisconnect()
+        else:
+            async with anyio.create_task_group() as task_group:
 
+                async def wrap(func: typing.Callable[[], typing.Awaitable[None]]) -> None:
+                    await func()
+                    task_group.cancel_scope.cancel()
+
+                task_group.start_soon(wrap, partial(self.stream_response, send))
+                await wrap(partial(self.listen_for_disconnect, receive))
 
 class RedirectResponse(BaseResponse):
     """
@@ -543,10 +572,10 @@ class NexiosResponse:
     
     _instance = None
 
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs): #type:ignore
         if cls._instance is None:
             cls._instance = super(NexiosResponse, cls).__new__(cls)
-            cls._instance._initialized = False
+            cls._instance._initialized = False #type:ignore
         return cls._instance
     def __init__(self):
         self._response: BaseResponse = BaseResponse(setup = False)
@@ -639,11 +668,11 @@ class NexiosResponse:
         self._response = self._preserve_headers_and_cookies(new_response)
         return self
 
-    def stream(self, iterator: Generator[Union[str, bytes], Any, Any], content_type: str = "text/plain"):
+    def stream(self, iterator: Generator[Union[str, bytes], Any, Any], content_type: str = "text/plain",status_code :Optional[int] = None):
         """Send streaming response."""
         new_response = StreamingResponse(
             content=iterator,  # type: ignore
-            status_code=self._status_code,
+            status_code=status_code or self._status_code,
             headers=self._response.headers,
             content_type=content_type
         )
