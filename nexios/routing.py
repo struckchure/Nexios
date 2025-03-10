@@ -8,6 +8,7 @@ from nexios.decorators import allowed_methods
 from typing_extensions import Doc,Annotated #type: ignore
 from nexios.structs import URLPath,RouteParam
 from nexios.http import Request,Response
+from nexios.http.response import JSONResponse
 from nexios.types import Scope,Send,Receive,ASGIApp
 from ._routing_utils import Convertor,CONVERTOR_TYPES,get_route_path
 from nexios.websockets import WebSocket
@@ -239,7 +240,7 @@ class Routes:
         self.route_type = self.route_info.route_type
         self.middlewares :typing.List[MiddlewareType] = list(middlewares)
         self.kwargs = kwargs
-    def match(self, path: str) -> typing.Tuple[Any,Any]:
+    def match(self, path: str, method:str) -> typing.Tuple[Any,Any,Any]:
         """
         Match a path against this route's pattern and return captured parameters.
 
@@ -255,8 +256,9 @@ class Routes:
             matched_params = match.groupdict()
             for key, value in matched_params.items():
                 matched_params[key] = self.route_info.convertor[key].convert(value) #type:ignore
-            return match,matched_params
-        return None, None
+            is_method_allowed = method.lower() in [m.lower() for m in self.methods]
+            return match,matched_params,is_method_allowed
+        return None, None,False
     
     def url_path_for(self, _name: str, **path_params: Any) -> URLPath:
         """
@@ -773,21 +775,36 @@ class Router(BaseRouter):
         
     async def app(self,scope :Scope,receive :Receive,send :Send):
         url = get_route_path(scope)
+        
         for mount_path, sub_app in self.sub_routers.items():
             if url.startswith(mount_path):
                 scope["path"] = url[len(mount_path):]
                 await sub_app(scope, receive, send)
                 return
-        for route in self.routes:
-            match,matched_params = route.match(url)
-            if match:
-                route.handler = allowed_methods(route.methods)(route.handler)
             
-               
-                scope["route_params"] = RouteParam(matched_params)
+        path_matched = False
+        allowed_methods_ :typing.Set[str] = set()
+        for route in self.routes:
+            match,matched_params,is_allowed = route.match(url,scope['method'])
+            
+            if match:
+                path_matched = True
+                if is_allowed:
+                    route.handler = allowed_methods(route.methods)(route.handler)
+                    scope["route_params"] = RouteParam(matched_params)
+                    await route.handle(scope, receive, send)
+                    return
+                else:
+                    allowed_methods_.update(route.methods)
+        if path_matched:
+            response = JSONResponse(
+                content="Method not allowed",
+                status_code=405,
+                headers={"Allow": ", ".join(allowed_methods_)},
+            )
+            await response(scope, receive, send)
+            return
 
-                await route.handle(scope, receive,send) 
-                return
         raise NotFoundException 
     
     
