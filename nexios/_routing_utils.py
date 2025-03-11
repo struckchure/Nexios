@@ -1,6 +1,6 @@
 """
 implemented from from starlatte,
-this is module is considered aninternal structure and should not be used by users
+this is module is considered an internal structure and should not be used by users
 
 
 """

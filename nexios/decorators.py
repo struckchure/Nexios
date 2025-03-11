@@ -49,6 +49,6 @@ class allowed_methods(RouteDecorator):
                     }
                 )
 
-            return await handler(*args, **kwargs)
+            return await handler(*args, **kwargs) #type:ignore
         wrapper._is_wrapped = True  # type: ignore
         return wrapper  # type: ignore

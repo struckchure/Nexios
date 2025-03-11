@@ -81,3 +81,80 @@ async def test_url_for_with_params(async_client):
 
     url = app.url_for("name", age=0)
     assert url == "/get/name/0"
+
+
+async def test_url_parameters(async_client):
+    client, app = async_client
+
+    @app.get("/user/{user_id}")
+    async def handle_user(req: Request, res: Response):
+        user_id = req.path_params["user_id"]
+        return res.json({"user_id": user_id})
+
+    # Test with a specific user ID
+    response = await client.get("/user/123")
+    assert response.status_code == 200
+    assert response.json() == {"user_id": "123"}
+    
+async def test_route_prefixes(async_client):
+    client, app = async_client
+
+    # Create a router with a prefix
+    router = Router(prefix="/api")
+
+    @router.get("/users")
+    async def handle_users(req: Request, res: Response):
+        return res.json({"message": "Users Route"})
+
+    @router.post("/posts")
+    async def handle_posts(req: Request, res: Response):
+        return res.json({"message": "Posts Route"})
+
+    # Mount the router under the app
+    app.mount_router(router)
+
+    # Test the prefixed routes
+    users_response = await client.get("/api/users")
+    assert users_response.status_code == 200
+    assert users_response.json() == {"message": "Users Route"}
+
+    posts_response = await client.post("/api/posts")
+    assert posts_response.status_code == 200
+    assert posts_response.json() == {"message": "Posts Route"}
+    
+    
+async def test_invalid_routes(async_client):
+    client, app = async_client
+
+    # Define a valid route
+    @app.get("/valid")
+    async def handle_valid(req: Request, res: Response):
+        return res.text("Valid Route")
+
+    # Test an invalid route
+    invalid_response = await client.get("/invalid")
+    
+    
+async def test_nested_routers(async_client):
+    client, app = async_client
+
+    # Create a parent router
+    parent_router = Router(prefix="/parent")
+
+    # Create a child router
+    child_router = Router(prefix="/child")
+
+    @child_router.get("/nested")
+    async def handle_nested(req: Request, res: Response):
+        return res.text("Nested Router Works")
+
+    # Mount the child router under the parent router
+    parent_router.mount_router(child_router)
+
+    # Mount the parent router under the app
+    app.mount_router(parent_router)
+
+    # Test the nested route
+    response = await client.get("/parent/child/nested")
+    assert response.status_code == 200
+    assert response.text == "Nested Router Works"
