@@ -962,10 +962,7 @@ class WSRouter(BaseRouter):
             warnings.warn("WSRouter prefix should start with '/'")
             self.prefix = f"/{self.prefix}"
             
-        if middleware is not None:
-            for cls, args, kwargs in reversed(middleware):
-                self.app = cls(self.app, *args, **kwargs)
-
+        
     
     def add_ws_route(
         self, 
@@ -1033,7 +1030,7 @@ class WSRouter(BaseRouter):
     def build_middleware_stack(self, scope: Scope, receive: Receive, send: Send) -> ASGIApp:
         app = self.app
         for mdw in reversed(self.middlewares):
-            app =   mdw(app)
+            app =   mdw(app) #type:ignore[assignment]
         return app
     
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
