@@ -1,9 +1,6 @@
-import re
 from typing import Any, Callable, List, Union
 from .routing import Router, WSRouter, WebsocketRoutes,Routes
-from .structs import RouteParam
-from .websockets import get_websocket_session, WebSocket
-import traceback, typing
+import  typing
 from .exception_handler import ExceptionMiddleware
 from typing_extensions import Doc, Annotated  # type:ignore
 from nexios.config import MakeConfig
@@ -19,9 +16,9 @@ from .types import (
     Scope,
     Send,
     Receive,
-    WsMiddlewareType,
     Message,
-    HandlerType
+    HandlerType,
+    ASGIApp
 )
 
 allowed_methods_default = ["get", "post", "delete", "put", "patch", "options"]
@@ -67,7 +64,7 @@ class NexiosApp(object):
         self.ws_router = WSRouter()
         self.ws_routes: List[WebsocketRoutes] = []
         self.http_middlewares: List[Middleware] =  middlewares or []
-        self.ws_middlewares: List[WsMiddlewareType] = []
+        self.ws_middlewares: List[ASGIApp] = []
         self.startup_handlers: List[Callable[[], Awaitable[None]]] = []
         self.shutdown_handlers: List[Callable[[], Awaitable[None]]] = []
         self.exceptions_handler: Any[ExceptionMiddleware, None] = (
@@ -339,8 +336,7 @@ class NexiosApp(object):
             app.mount_ws_router(chat_router)  # Mounts the user routes into the main app
             ```
         """
-        self.ws_routes.extend(router.routes)
-        self.ws_middlewares.extend(router.middlewares)
+        self.ws_router.mount_router(router)
 
     
             
@@ -348,14 +344,14 @@ class NexiosApp(object):
     async def handle_websocket(self, scope: Scope, receive: Receive, send: Send) -> None:
         app = self.ws_router
         for mdw in reversed(self.ws_middlewares):
-            app =   mdw(app)
+            app =   mdw(app) #type:ignore
         await app(scope, receive, send)
             
 
     def add_ws_middleware(
         self,
         middleware: Annotated[
-            WsMiddlewareType,
+            ASGIApp,
             Doc(
                 "A callable function that intercepts and processes WebSocket connections."
             ),
@@ -753,6 +749,6 @@ class NexiosApp(object):
         
         
 
-        
+    
     def url_for(self, _name: str, **path_params: Any) -> URLPath:
         return self.router.url_for(_name,**path_params)

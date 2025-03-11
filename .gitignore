@@ -16,3 +16,4 @@ static/
 poetry.lock
 .qodo/
 .pytest_cache/
+.qodo

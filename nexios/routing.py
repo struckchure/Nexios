@@ -873,24 +873,7 @@ class Router(BaseRouter):
             
             
 
-def wrap_websocket(
-    func: typing.Callable[[Request,Response], typing.Awaitable[Response]],
-) -> ASGIApp:
-    """
-    Takes a function or coroutine `func(request) -> response`,
-    and returns an ASGI application.
-    """
-    
 
-    async def app(scope: Scope, receive: Receive, send: Send) -> None:
-        ws =  WebSocket(scope,receive,send)
-
-        
-        await func(ws)
-        return await response(scope, receive, send)
-
-
-    return app
 
 
 
@@ -973,8 +956,8 @@ class WSRouter(BaseRouter):
     def __init__(self, prefix: Optional[str] = None, middleware :Optional[List[Any]] = []):
         self.prefix = prefix or ""
         self.routes: List[WebsocketRoutes] = []
-        self.middlewares: List[WsMiddlewareType] = []
-        
+        self.middlewares: List[Callable[[ASGIApp], ASGIApp]] = []
+        self.sub_routers: Dict[str, ASGIApp] = {}
         if self.prefix and not self.prefix.startswith("/"):
             warnings.warn("WSRouter prefix should start with '/'")
             self.prefix = f"/{self.prefix}"
@@ -1007,17 +990,16 @@ class WSRouter(BaseRouter):
         """
         self.routes.append(route)
     
-    def add_middleware(self, middleware: WsMiddlewareType) -> None: #type: ignore[override]
+    def add_ws_middleware(self, middleware: type[ASGIApp]) -> None: #type: ignore[override]
         """Add middleware to the WebSocket router"""
-        if callable(middleware):
-            self.middlewares.append(middleware)
+        self.middlewares.insert(0,middleware) #type: ignore
     
   
 
     def ws_route(
         self, 
         path: Annotated[str, Doc("The WebSocket route path. Must be a valid URL pattern.")],
-        middlewares : Annotated[Optional[List[WsMiddlewareType]], Doc("List of middleware to be executes before the router handler")] = None,
+        middlewares : Annotated[List[WsMiddlewareType], Doc("List of middleware to be executes before the router handler")] = [],
     ) -> Union[WsHandlerType , Any]:
         """
         Registers a WebSocket route.
@@ -1041,14 +1023,14 @@ class WSRouter(BaseRouter):
             ```
     """
         def decorator(handler: WsHandlerType) -> WsHandlerType:
-            self.add_ws_route(WebsocketRoutes(f"{self.prefix}{path}", handler, middlewares=middlewares))
+            self.add_ws_route(WebsocketRoutes(path, handler, middlewares=middlewares))
             return handler
 
         return decorator
     
     
     
-    def build_middleware_stack(self, scope: Scope, receive: Receive, send: Send):
+    def build_middleware_stack(self, scope: Scope, receive: Receive, send: Send) -> ASGIApp:
         app = self.app
         for mdw in reversed(self.middlewares):
             app =   mdw(app)
@@ -1063,6 +1045,11 @@ class WSRouter(BaseRouter):
     async def app(self, scope: Scope, receive: Receive, send: Send) -> None:
         
         url = get_route_path(scope)
+        for mount_path, sub_app in self.sub_routers.items():
+            if url.startswith(mount_path):
+                scope["path"] = url[len(mount_path):]
+                await sub_app(scope, receive, send)
+                return
         for route in self.routes:
             match, params = route.match(url)
             if match:
@@ -1073,7 +1060,26 @@ class WSRouter(BaseRouter):
         await send({"type": "websocket.close", "code": 404})
     
 
-    
+    def mount_router(self, app: "WSRouter",path: typing.Optional[str] = None) -> None:
+        """
+        Mount an ASGI application (e.g., another Router) under a specific path prefix.
+
+        Args:
+            path: The path prefix under which the app will be mounted.
+            app: The ASGI application (e.g., another Router) to mount.
+        """
+        
+        if not path:
+            path = app.prefix
+        path = path.rstrip("/")
+        
+        if path == "" :
+            self.sub_routers[path] = app
+            return
+        if not path.startswith("/"):
+            path = f"/{path}"
+        
+        self.sub_routers[path] = app
 
     def __repr__(self) -> str:
         return f"<WSRouter prefix='{self.prefix}' routes={len(self.routes)}>"

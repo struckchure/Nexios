@@ -242,52 +242,6 @@ WebSocketDispatchFunction = typing.Callable[
     typing.Awaitable[None]
 ]
 
-class BaseWebSocketMiddleware:
-    def __init__(self, app: ASGIApp, dispatch: WebSocketDispatchFunction) -> None:
-        self.app = app
-        self.dispatch_func = dispatch
-
-    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] != "websocket":
-            await self.app(scope, receive, send)
-            return
-
-        websocket = WebSocket(scope, receive, send)
-        websocket_closed = anyio.Event()
-
-        async def call_next() -> None:
-            app_exc: Exception | None = None
-
-            async def receive_or_disconnect() -> Message:
-                if websocket_closed.is_set():
-                    return {"type": "websocket.disconnect"}
-                
-                message = await receive()
-                if message["type"] == "websocket.disconnect":
-                    websocket_closed.set()
-                return message
-
-            async def send_no_error(message: Message) -> None:
-                try:
-                    await send(message)
-                except anyio.BrokenResourceError:
-                    return
-
-            try:
-                await self.app(scope, receive_or_disconnect, send_no_error)
-            except Exception as exc:
-                app_exc = exc
-
-            if app_exc is not None:
-                raise app_exc
-
-        async with anyio.create_task_group() as task_group:
-            with collapse_excgroups():
-                await self.dispatch_func(websocket , call_next)
-                if not websocket.is_connected:
-                    await websocket.close()
-                websocket_closed.set()
-
 
 MiddlewareType = typing.Callable[[Request,Response,typing.Coroutine[None,None,Any]], typing.Awaitable[typing.Any]]
 def wrap_middleware(middleware_function :MiddlewareType) -> Middleware:
