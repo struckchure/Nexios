@@ -21,8 +21,7 @@ from .types import (
     Receive,
     WsMiddlewareType,
     Message,
-    HandlerType,
-    WsHandlerType
+    HandlerType
 )
 
 allowed_methods_default = ["get", "post", "delete", "put", "patch", "options"]
@@ -217,21 +216,7 @@ class NexiosApp(object):
             else:
                 await send({"type": "lifespan.shutdown.failed", "message": str(e)})
 
-    def __normalize_path(self, path: str) -> str:
-        options :Dict[str,Any]= self.config.to_dict() #type:ignore
-
-        if path == "/":
-            return "/"
-
-        if options.get("remove_double_slashes", True):  
-            path = re.sub(r'/+', '/', path)  
-        if options.get("lowercase", True):  
-            path = path.lower()
-
-        if options.get("append_slash", False) and not path.endswith("/"):  
-            path += "/"
-
-        return path.rstrip("/")  
+   
 
     
     
@@ -291,7 +276,11 @@ class NexiosApp(object):
             app.add_ws_route(route)
             ```
         """
-        self.ws_routes.append(route)
+        self.ws_router.add_ws_route(route)
+        
+    def ws_route(self, route :str):
+        
+        return self.ws_router.ws_route(route)
     def mount_router(self,router :Router, path :typing.Optional[str] = None):
         """
         Mounts a router and all its routes to the application.
@@ -353,61 +342,14 @@ class NexiosApp(object):
         self.ws_routes.extend(router.routes)
         self.ws_middlewares.extend(router.middlewares)
 
-    async def __execute_ws_middleware_stack(
-        self, ws: WebSocket, handler: typing.Union[WsHandlerType,None], **kwargs: Dict[str, Any]
-    ) -> None:
-        """Execute WebSocket middleware stack, with the handler as the last middleware."""
-        stack = self.ws_middlewares.copy()
-        async def default_handler(ws:WebSocket):  
-            await ws.close(code=1011, reason=f"Not Found")
-              
-        handler_ = handler or default_handler
-        stack.append(handler_)    # type: ignore
-
-        index = -1
-          
-        async def next_middleware() -> None:
-            nonlocal index
-            index += 1
-
-            if index < len(stack):
-                middleware = stack[index]
-                if index == len(stack) - 1:
-                    
-                    return await middleware(ws)  # type:ignore
-                else:
-                    return await middleware(ws, next_middleware, **kwargs)  # type: ignore
-        try:
-            
-            return await next_middleware()
-        except Exception as _:
-            error = traceback.format_exc()
-            logger.error(error)
-            await ws.close(code=1011, reason=f"Internal Server Error: {str(error)}")
+    
             
 
-    async def __handle_websocket(self, scope: Scope, receive: Receive, send: Send) -> None:
-        ws = await get_websocket_session(scope, receive, send)
-        
-        url = self.__normalize_path(ws.url.path)
-        
-        handler :Optional[WsHandlerType] = None
-        for route in self.ws_routes:
-            match = route.pattern.match(url)
-            if match:
-                route_kwargs = match.groupdict()
-                scope["route_params"] = RouteParam(route_kwargs)
-
-                if route.router_middleware and len(route.router_middleware) > 0:
-                    self.ws_middlewares.extend(route.router_middleware)
-
-              
-
-                handler = route.handle
-                break
-
-        
-        await self.__execute_ws_middleware_stack(ws, handler) #type:ignore
+    async def handle_websocket(self, scope: Scope, receive: Receive, send: Send) -> None:
+        app = self.ws_router
+        for mdw in reversed(self.ws_middlewares):
+            app =   mdw(app)
+        await app(scope, receive, send)
             
 
     def add_ws_middleware(
@@ -459,7 +401,8 @@ class NexiosApp(object):
             await self.handle_http_request()(scope, receive, send)
 
         else:
-            await self.__handle_websocket(scope, receive, send)
+            
+            await self.handle_websocket(scope, receive, send)
 
    
    

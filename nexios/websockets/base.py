@@ -179,3 +179,9 @@ class WebSocket(HTTPConnection):
 
     async def close(self, code: int = 1000, reason: Optional[str] = None) -> None:
         await self.send({"type": "websocket.close", "code": code, "reason": reason or ""})
+        
+    def is_connected(self) -> bool:
+        return self.client_state == WebSocketState.CONNECTED and self.application_state == WebSocketState.CONNECTED
+
+        
+    

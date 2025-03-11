@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Any, List, Optional, Pattern,Dict,TypeVar,Tuple,Callable,Union
 from dataclasses import dataclass
 import re
@@ -42,7 +43,24 @@ def request_response(
     return app
 
 
+def websocket_session(
+    func: typing.Callable[[WebSocket], typing.Awaitable[None]],
+) -> ASGIApp:
+    """
+    Takes a coroutine `func(session)`, and returns an ASGI application.
+    """
+    # assert asyncio.iscoroutinefunction(func), "WebSocket endpoints must be async"
 
+    async def app(scope: Scope, receive: Receive, send: Send) -> None:
+        session = WebSocket(scope, receive=receive, send=send)
+
+        async def app(scope: Scope, receive: Receive, send: Send) -> None:
+            await func(session)
+
+        # await wrap_app_handling_exceptions(app, session)(scope, receive, send)
+        await app(scope,receive,send)
+
+    return app
 def replace_params(
     path: str,
     param_convertors: dict[str, Convertor[typing.Any]],
@@ -138,15 +156,39 @@ class RouteBuilder:
         return RoutePattern(pattern=path_regex, raw_path=path,param_names=param_names,route_type=path_format,convertor=param_convertors) #type:ignore
 
 class BaseRouter:
-    def add_route(self, route: 'Routes') -> None:
+    routes:List[Any] = []
+    def add_route(self, route: Routes) -> None:
         raise NotImplementedError("Not implemented")
     
     def get_routes(self): #type:ignore
         raise NotImplementedError("Not implemented")
     
-    def add_middleware(self, middleware: MiddlewareType) -> Any: #type:ignore
+    def add_middleware(self, middleware: Any) -> Any: #type:ignore
         raise NotImplementedError("Not implemented")
+    
+    
+    
+    def url_for(self, _name: str, **path_params: Any) -> URLPath:
+        """
+        Generate a URL path for the route with the given name and parameters.
 
+        Args:
+            name: The name of the route.
+            path_params: A dictionary of path parameters to substitute into the route's path.
+
+        Returns:
+            str: The generated URL path.
+
+        Raises:
+            ValueError: If the route name does not match or if required parameters are missing.
+        """
+        for route in self.routes:
+            if route.name == _name:
+                return route.url_path_for(_name, **path_params)
+        raise ValueError(f"Route name '{_name}' not found in router.")
+
+
+    
 class Routes:
     """
     Encapsulates all routing information for an API endpoint, including path handling,
@@ -831,8 +873,26 @@ class Router(BaseRouter):
             
             
 
-
+def wrap_websocket(
+    func: typing.Callable[[Request,Response], typing.Awaitable[Response]],
+) -> ASGIApp:
+    """
+    Takes a function or coroutine `func(request) -> response`,
+    and returns an ASGI application.
+    """
     
+
+    async def app(scope: Scope, receive: Receive, send: Send) -> None:
+        ws =  WebSocket(scope,receive,send)
+
+        
+        await func(ws)
+        return await response(scope, receive, send)
+
+
+    return app
+
+
 
 class WebsocketRoutes:
     def __init__(
@@ -870,26 +930,15 @@ class WebsocketRoutes:
             return match,matched_params
         return None, None
     
-    async def handle(self, ws :WebSocket):
-        stack = self.middlewares.copy()
-       
-        stack.append(self.handler)    # type: ignore
+    async def handle(self, websocket: WebSocket) -> None:
+        """
+        Handles the WebSocket connection by calling the route's handler.
 
-        index = -1
-          
-        async def next_middleware() -> None:
-            nonlocal index
-            index += 1
-
-            if index < len(stack):
-                middleware = stack[index]
-                if index == len(stack) - 1:
-                    
-                    return await middleware(ws)  # type:ignore
-                else:
-                    return await middleware(ws, next_middleware)  # type: ignore
-
-        return await next_middleware()
+        Args:
+            websocket: The WebSocket connection.
+            params: The extracted route parameters.
+        """
+        await self.handler(websocket)
     
     
     
@@ -921,7 +970,7 @@ class WebsocketRoutes:
 
 
 class WSRouter(BaseRouter):
-    def __init__(self, prefix: Optional[str] = None):
+    def __init__(self, prefix: Optional[str] = None, middleware :Optional[List[Any]] = []):
         self.prefix = prefix or ""
         self.routes: List[WebsocketRoutes] = []
         self.middlewares: List[WsMiddlewareType] = []
@@ -929,6 +978,11 @@ class WSRouter(BaseRouter):
         if self.prefix and not self.prefix.startswith("/"):
             warnings.warn("WSRouter prefix should start with '/'")
             self.prefix = f"/{self.prefix}"
+            
+        if middleware is not None:
+            for cls, args, kwargs in reversed(middleware):
+                self.app = cls(self.app, *args, **kwargs)
+
     
     def add_ws_route(
         self, 
@@ -963,7 +1017,7 @@ class WSRouter(BaseRouter):
     def ws_route(
         self, 
         path: Annotated[str, Doc("The WebSocket route path. Must be a valid URL pattern.")],
-        middlewares : Annotated[List[WsMiddlewareType], Doc("List of middleware to be executes before the router handler")],
+        middlewares : Annotated[Optional[List[WsMiddlewareType]], Doc("List of middleware to be executes before the router handler")] = None,
     ) -> Union[WsHandlerType , Any]:
         """
         Registers a WebSocket route.
@@ -992,6 +1046,31 @@ class WSRouter(BaseRouter):
 
         return decorator
     
+    
+    
+    def build_middleware_stack(self, scope: Scope, receive: Receive, send: Send):
+        app = self.app
+        for mdw in reversed(self.middlewares):
+            app =   mdw(app)
+        return app
+    
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "websocket":
+            return
+        app = self.build_middleware_stack(scope,receive,send)
+        await app(scope, receive, send)
+        
+    async def app(self, scope: Scope, receive: Receive, send: Send) -> None:
+        
+        url = get_route_path(scope)
+        for route in self.routes:
+            match, params = route.match(url)
+            if match:
+                websocket = WebSocket(scope, receive, send)
+                scope["route_params"] = params
+                await route.handle(websocket)
+                return
+        await send({"type": "websocket.close", "code": 404})
     
 
     
