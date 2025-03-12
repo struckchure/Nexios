@@ -16,6 +16,7 @@ from nexios.websockets import WebSocket
 from nexios.middlewares.core import BaseHTTPMiddleware
 from nexios.middlewares.core import Middleware, wrap_middleware
 from nexios.exceptions import NotFoundException
+from nexios.websockets.errors import WebSocketErrorMiddleware
 T = TypeVar("T")
 allowed_methods_default = ['get','post','delete','put','patch','options']
 
@@ -1037,6 +1038,7 @@ class WSRouter(BaseRouter):
         if scope["type"] != "websocket":
             return
         app = self.build_middleware_stack(scope,receive,send)
+        app = WebSocketErrorMiddleware(app)
         await app(scope, receive, send)
         
     async def app(self, scope: Scope, receive: Receive, send: Send) -> None:
