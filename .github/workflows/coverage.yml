@@ -14,12 +14,11 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Install Dependencies
-        run: |
-          pip install pytest pytest-cov codecov
+      - name: Install Tox
+        run: pip install tox
 
-      - name: Run Tests with Coverage
-        run: pytest -v -s --cov=nexios --cov-report=xml
+      - name: Run Tests with Tox
+        run: tox
 
       - name: Upload Coverage to Codecov
         uses: codecov/codecov-action@v4
