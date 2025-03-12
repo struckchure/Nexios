@@ -17,7 +17,7 @@ def _lookup_exception_handler(exc_handlers :typing.Dict[typing.Any[int ,Exceptio
         if cls in exc_handlers: #type: ignore
             return exc_handlers[cls]
     return None
-async def wrap_app_handling_exceptions(request :Request, response :Response, call_next :typing.Callable[...,typing.Awaitable[None]], exception_handlers :typing.Dict[type[Exception],ExceptionHandlerType], status_handlers:typing.Dict[int ,ExceptionHandlerType] ) -> typing.Any:
+async def wrap_http_exceptions(request :Request, response :Response, call_next :typing.Callable[...,typing.Awaitable[None]], exception_handlers :typing.Dict[type[Exception],ExceptionHandlerType], status_handlers:typing.Dict[int ,ExceptionHandlerType] ) -> typing.Any:
    
     try:
         exception_handlers, status_handlers =  exception_handlers, status_handlers
@@ -66,7 +66,7 @@ class ExceptionMiddleware:
     async def __call__(self, request: Request,response :Response,call_next :typing.Callable[...,typing.Awaitable[None]],) -> Response:
 
 
-        return await wrap_app_handling_exceptions(
+        return await wrap_http_exceptions(
             request=request,
             response=response,
             call_next=call_next,
