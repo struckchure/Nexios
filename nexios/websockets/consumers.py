@@ -112,7 +112,7 @@ class WebSocketEndpoint:
             channel_id: The UUID of the target channel.
             payload: The message payload to send.
         """
-        for group_name, channels in ChannelBox.CHANNEL_GROUPS.items():
+        for _, channels in ChannelBox.CHANNEL_GROUPS.items():
             for channel in channels:
                 if channel.uuid == channel_id:
                     await channel._send(payload)
