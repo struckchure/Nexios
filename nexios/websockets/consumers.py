@@ -8,6 +8,7 @@ import uuid
 
 class WebSocketEndpoint:
    
+    channel: typing.Optional[Channel] = None
 
     def __init__(self, logging_enabled: bool = True, logger: typing.Optional[logging.Logger] = None):
         """
@@ -18,7 +19,6 @@ class WebSocketEndpoint:
         self.logging_enabled = logging_enabled
         self.logger = logger if logger else logging.getLogger("nexios")
         self.encoding: typing.Optional[str] = None
-        self.channel: typing.Optional[Channel] = None
 
     async def __call__(self, ws: WebSocket) -> None:
         self.websocket = ws
