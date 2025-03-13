@@ -2,7 +2,7 @@ import sys
 import os
 import time
 import uuid
-import logging
+from nexios import logging as nexios_logger
 from .utils import (
     ChannelAddStatusEnum,
     ChannelRemoveStatusEnum,
@@ -13,7 +13,7 @@ from .utils import (
 import typing
 from nexios.websockets import WebSocket
 
-
+logging = nexios_logger.getLogger("nexios")
 class Channel:
     def __init__(
         self,
