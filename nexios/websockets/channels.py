@@ -18,8 +18,8 @@ class Channel:
     def __init__(
         self,
         websocket: WebSocket,
-        expires: int,
         payload_type: str,
+        expires: typing.Optional[int] = None,
     ) -> None:
         """Main websocket channel class.
 
@@ -70,6 +70,8 @@ class Channel:
         self.created = time.time()  # renew created time for active connecitons
 
     async def _is_expired(self) -> bool:
+        if not self.expires:
+            return False
         return (self.expires + int(self.created)) < time.time()
 
     def __repr__(self) -> str:
