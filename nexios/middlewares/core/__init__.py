@@ -142,7 +142,7 @@ class _CachedRequest(Request):
                 return {"type": "http.disconnect"}
 
 
-class BaseHTTPMiddleware:
+class BaseMiddleware:
     def __init__(self, app: ASGIApp, dispatch: DispatchFunction) -> None:
         self.app = app
         self.dispatch_func = dispatch
@@ -245,9 +245,9 @@ WebSocketDispatchFunction = typing.Callable[
 
 MiddlewareType = typing.Callable[[Request,Response,typing.Coroutine[None,None,Any]], typing.Awaitable[typing.Any]]
 def wrap_middleware(middleware_function :MiddlewareType) -> Middleware:
-    return Middleware(BaseHTTPMiddleware, dispatch = middleware_function)
+    return Middleware(BaseMiddleware, dispatch = middleware_function)
 __all__ = [
-    "BaseHTTPMiddleware"
+    "BaseMiddleware"
 ]
 
 

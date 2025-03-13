@@ -13,7 +13,7 @@ from nexios.http.response import JSONResponse
 from nexios.types import Scope,Send,Receive,ASGIApp
 from ._routing_utils import Convertor,CONVERTOR_TYPES,get_route_path
 from nexios.websockets import WebSocket
-from nexios.middlewares.core import BaseHTTPMiddleware
+from nexios.middlewares.core import BaseMiddleware
 from nexios.middlewares.core import Middleware, wrap_middleware
 from nexios.exceptions import NotFoundException
 from nexios.websockets.errors import WebSocketErrorMiddleware
@@ -443,7 +443,7 @@ class Router(BaseRouter):
     def add_middleware(self, middleware: MiddlewareType) -> None:
         """Add middleware to the router"""
         if callable(middleware):
-            mdw = Middleware(BaseHTTPMiddleware, dispatch = middleware) #type: ignore
+            mdw = Middleware(BaseMiddleware, dispatch = middleware) #type: ignore
             self.middlewares.insert(0,mdw) 
 
 

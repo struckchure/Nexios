@@ -6,7 +6,7 @@ from typing_extensions import Doc, Annotated  # type:ignore
 from nexios.config import MakeConfig
 from typing import Awaitable, Optional
 from nexios.logging import getLogger
-from nexios.middlewares.core import BaseHTTPMiddleware
+from nexios.middlewares.core import BaseMiddleware
 from nexios.middlewares.core import Middleware
 from nexios.middlewares.errors.server_error_handler import ServerErrorMiddleware,ServerErrHandlerType
 from nexios.structs import URLPath
@@ -250,7 +250,7 @@ class NexiosApp(object):
             ```
         """
         
-        self.http_middlewares.insert(0,Middleware(BaseHTTPMiddleware, dispatch = middleware)) #type:ignore
+        self.http_middlewares.insert(0,Middleware(BaseMiddleware, dispatch = middleware)) #type:ignore
     
     def add_ws_route(
         self, 
@@ -380,8 +380,7 @@ class NexiosApp(object):
             app.add_ws_middleware(ws_auth_middleware)
             ```
         """
-        if callable(middleware):
-            self.ws_middlewares.append(middleware)
+        self.ws_middlewares.append(middleware)
 
     def handle_http_request(self) -> Router:
         app = self.router
