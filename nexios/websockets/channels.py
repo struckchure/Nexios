@@ -210,3 +210,18 @@ class ChannelBox:
                     del cls.CHANNEL_GROUPS[group_name]
                 except KeyError:
                     logging.debug("No such group")
+    @classmethod
+    async def close_all_connections(cls) -> None:
+        """
+        Close all WebSocket connections in all groups.
+        """
+        for group_name, channels in cls.CHANNEL_GROUPS.items():
+            for channel in list(channels.keys()):  # Use list() to avoid RuntimeError due to dict size change
+                try:
+                    await channel.websocket.close()
+                    logging.debug(f"Closed connection for channel {channel.uuid} in group {group_name}")
+                except Exception as e:
+                    logging.error(f"Failed to close connection for channel {channel.uuid}: {e}")
+
+        cls.CHANNEL_GROUPS = {}
+        logging.debug("All connections closed and groups cleared.")

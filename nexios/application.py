@@ -4,7 +4,7 @@ import  typing
 from .exception_handler import ExceptionMiddleware
 from typing_extensions import Doc, Annotated  # type:ignore
 from nexios.config import MakeConfig
-from typing import Awaitable, Optional
+from typing import Awaitable, Optional, AsyncIterator
 from nexios.logging import getLogger
 from nexios.middlewares.core import BaseMiddleware
 from nexios.middlewares.core import Middleware
@@ -57,6 +57,7 @@ class NexiosApp(object):
                         A function in Nexios responsible for handling server-side exceptions by logging errors, reporting issues, or initiating recovery mechanisms. It prevents crashes by intercepting unexpected failures, ensuring the application remains stable and operational. This function provides a structured approach to error management, allowing developers to define custom handling strategies such as retrying failed requests, sending alerts, or gracefully degrading functionality. By centralizing error processing, it improves maintainability and observability, making debugging and monitoring more efficient. Additionally, it ensures that critical failures do not disrupt the entire system, allowing services to continue running while appropriately managing faults and failures."""
             ),
         ] = None,
+        lifespan: Optional[Callable[["NexiosApp"], AsyncIterator[None]]] = None,
     ):
         self.config = config
         self.server_error_handler = None
@@ -74,8 +75,8 @@ class NexiosApp(object):
         self.app = Router()
         self.router = self.app
         self.route = self.router.route
-        # self.add_middleware(self.exceptions_handler)
-        # self.add_middleware(ServerErrorMiddleware(handler=server_error_handler)) #type: ignore
+        self.lifespan_context :Optional[Callable[["NexiosApp"], AsyncIterator[None]]] = lifespan
+       
 
     def on_startup(self, handler: Callable[[], Awaitable[None]]) -> None:
         """
@@ -181,33 +182,46 @@ class NexiosApp(object):
                 raise e
 
     async def __handle_lifespan(self, receive: Receive, send: Send) -> None:
-        """Handle ASGI lifespan protocol events"""
+        """Handle ASGI lifespan protocol events."""
         try:
             while True:
                 message: Message = await receive()
 
                 if message["type"] == "lifespan.startup":
                     try:
-                        await self._startup()
+                        if self.lifespan_context:
+                            # If a lifespan context manager is provided, use it
+                            self.lifespan_manager :Any  = self.lifespan_context(self)
+                            await self.lifespan_manager.__aenter__()
+                        else:
+                            # Otherwise, fall back to the default startup handlers
+                            await self._startup()
                         await send({"type": "lifespan.startup.complete"})
                     except Exception as e:
-                        await send(
-                            {"type": "lifespan.startup.failed", "message": str(e)}
-                        )
+                        await send({"type": "lifespan.startup.failed", "message": str(e)})
                         return
 
                 elif message["type"] == "lifespan.shutdown":
                     try:
-                        await self._shutdown()
+                        if self.lifespan_context:
+                            # If a lifespan context manager is provided, use it
+                            await self.lifespan_manager.__aexit__(None, None, None)
+                        else:
+                            # Otherwise, fall back to the default shutdown handlers
+                            await self._shutdown()
                         await send({"type": "lifespan.shutdown.complete"})
                         return
                     except Exception as e:
-                        await send(
-                            {"type": "lifespan.shutdown.failed", "message": str(e)}
-                        )
+                        await send({"type": "lifespan.shutdown.failed", "message": str(e)})
                         return
 
         except Exception as e:
+            if message["type"].startswith("lifespan.startup"):  # type: ignore
+                await send({"type": "lifespan.startup.failed", "message": str(e)})
+            else:
+                await send({"type": "lifespan.shutdown.failed", "message": str(e)})
+
+        except Exception as e: #type:ignore
             if message["type"].startswith("lifespan.startup"):  # type: ignore
                 await send({"type": "lifespan.startup.failed", "message": str(e)})
             else:

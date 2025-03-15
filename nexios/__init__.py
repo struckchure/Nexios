@@ -7,7 +7,7 @@ from .config import set_config, DEFAULT_CONFIG
 from .routing import Router  # type:ignore
 from .middlewares.cors import CORSMiddleware
 from .middlewares.gzip import GzipMiddleware
-from typing import Optional
+from typing import Optional,Callable,AsyncIterator
 from .application import NexiosApp 
 from .types import  ExceptionHandlerType
 from typing_extensions import Doc, Annotated  
@@ -33,6 +33,7 @@ def get_application(
                         A function in Nexios responsible for handling server-side exceptions by logging errors, reporting issues, or initiating recovery mechanisms. It prevents crashes by intercepting unexpected failures, ensuring the application remains stable and operational. This function provides a structured approach to error management, allowing developers to define custom handling strategies such as retrying failed requests, sending alerts, or gracefully degrading functionality. By centralizing error processing, it improves maintainability and observability, making debugging and monitoring more efficient. Additionally, it ensures that critical failures do not disrupt the entire system, allowing services to continue running while appropriately managing faults and failures."""
         ),
     ] = None,
+    lifespan: Optional[Callable[["NexiosApp"], AsyncIterator[None]]] = None,
 ) -> NexiosApp:
     """
     Initializes and returns a `Nexios` application instance, serving as the core entry point for building web applications.
@@ -68,8 +69,9 @@ def get_application(
         wrap_middleware(CSRFMiddleware()),
         wrap_middleware(GzipMiddleware()),
     ],
-
+    server_error_handler=server_error_handler, #type:ignore
     config=config,
+    lifespan=lifespan
 )
 
     return app
