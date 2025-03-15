@@ -29,6 +29,9 @@ AppType = typing.TypeVar("AppType", bound="NexiosApp")
 
 
 logger = getLogger("nexios")
+
+
+
 class NexiosApp(object):
     def __init__(
         self,
@@ -181,12 +184,12 @@ class NexiosApp(object):
             except Exception as e:
                 raise e
 
-    async def __handle_lifespan(self, receive: Receive, send: Send) -> None:
+    async def handle_lifespan(self, receive: Receive, send: Send) -> None:
         """Handle ASGI lifespan protocol events."""
         try:
             while True:
                 message: Message = await receive()
-
+                print("message : ",message)
                 if message["type"] == "lifespan.startup":
                     try:
                         if self.lifespan_context:
@@ -411,7 +414,7 @@ class NexiosApp(object):
         """ASGI application callable"""
         scope['app'] = self
         if scope["type"] == "lifespan":
-            await self.__handle_lifespan(receive, send)
+            await self.handle_lifespan(receive, send)
         elif scope["type"] == "http":
             await self.handle_http_request()(scope, receive, send)
 
