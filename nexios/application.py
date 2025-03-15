@@ -74,8 +74,8 @@ class NexiosApp(object):
         self.app = Router()
         self.router = self.app
         self.route = self.router.route
-        self.add_middleware(self.exceptions_handler)
-        self.add_middleware(ServerErrorMiddleware(handler=server_error_handler)) #type: ignore
+        # self.add_middleware(self.exceptions_handler)
+        # self.add_middleware(ServerErrorMiddleware(handler=server_error_handler)) #type: ignore
 
     def on_startup(self, handler: Callable[[], Awaitable[None]]) -> None:
         """
@@ -381,10 +381,16 @@ class NexiosApp(object):
             ```
         """
         self.ws_middlewares.append(middleware)
-
+    
     def handle_http_request(self) -> Router:
         app = self.router
-        for cls, args, kwargs in reversed(self.http_middlewares):
+        middleware = (
+            [Middleware(BaseMiddleware, dispatch = ServerErrorMiddleware(handler=self.server_error_handler))] +
+            self.http_middlewares +
+            [Middleware(BaseMiddleware, dispatch =self.exceptions_handler)]
+            
+        )
+        for cls, args, kwargs in reversed(middleware):
             app = cls(app,*args,**kwargs)
         return app
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:

@@ -1,10 +1,10 @@
 from .base import WebSocket
 from nexios import status
 import typing, json
-from nexios.types import Message
 from .channels import Channel, ChannelBox, PayloadTypeEnum
 from nexios import logging
 import uuid
+Message = typing.MutableMapping[str, typing.Any]
 
 class WebSocketEndpoint:
    
@@ -42,7 +42,6 @@ class WebSocketEndpoint:
                 elif message["type"] == "websocket.disconnect":
                     close_code = int(message.get("code") or status.WS_1000_NORMAL_CLOSURE)
                     break
-            await self.websocket.close()
         except Exception as exc:
             close_code = status.WS_1011_INTERNAL_ERROR
             raise exc

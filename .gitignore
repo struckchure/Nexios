@@ -30,6 +30,7 @@ __pycache__/
 index.py
 sandbox.py
 dev/
+sandbox/
 
 # ==============================
 # 🔹 Documentation & Static Files

@@ -4,6 +4,9 @@ import asyncio
 import time
 from typing import Callable, Optional, Awaitable, List, Any, Dict
 from nexios.http import Request, Response
+from nexios.logging import getLogger
+
+logger = getLogger("nexios")
 
 HandlerType = Callable[..., Awaitable[Response]]
 
@@ -35,7 +38,7 @@ def before_request(
             if for_routes and req.url.path not in for_routes:
                 return await handler(*args, **kwargs)
             if log_level:
-                print(f"[{log_level}] Before Request: {req.method} {req.url}")
+                logger.info(f"[{log_level}] Before Request: {req.method} {req.url}")
             if func:
                 await func(req, res)
             return await handler(*args, **kwargs)
@@ -73,9 +76,9 @@ def after_request(
             if for_routes and req.url.path not in for_routes:
                 return response
             if log_level:
-                print(
+                logger.info(
                     f"[{log_level}] After Request: {req.method} {req.url} - Status: {response._status_code}" #type:ignore
-                )  # type: ignore
+                )  
             if func:
                 await func(req, response)
             return response
@@ -97,7 +100,7 @@ def analytics(func: HandlerType) -> HandlerType:
         start_time = time.time()
         response = await func(*args, **kwargs)
         elapsed_time = time.time() - start_time
-        print(
+        logger.info(
             f"Analytics: {req.method} {req.url} - {response._status_code} in {elapsed_time:.2f}s" #type:ignore
         )  # type:ignore
         return response
