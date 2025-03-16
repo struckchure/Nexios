@@ -206,7 +206,7 @@ class BaseMiddleware:
             except anyio.EndOfStream:
                 if app_exc is not None:
                     raise app_exc
-                raise RuntimeError("No response returned.")
+                pass
 
             assert message["type"] == "http.response.start"
 
