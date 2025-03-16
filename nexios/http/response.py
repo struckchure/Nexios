@@ -298,7 +298,7 @@ class FileResponse(BaseResponse):
         headers: Optional[Dict[str, str]] = None,
         content_disposition_type: str = "inline",
     ):
-        super().__init__(headers=headers)
+        super().__init__(headers=headers,setup=False)
         self.path = Path(path)
         self.filename = filename or self.path.name
         self.content_disposition_type = content_disposition_type
@@ -355,7 +355,7 @@ class FileResponse(BaseResponse):
             for range_str in ranges.split(','):
                 range = range_str.split('-')
                 start :int = int(range[0])
-                end :int =int(range[-1]) if range[-1] != "" else 0 #Partial fix (Experimental)
+                end :int =int(range[-1]) if range[-1] != "" else 0 #Partial fix
                 start = int(start) if start else 0
                 end :int = int(end) if end else file_size - 1
 
