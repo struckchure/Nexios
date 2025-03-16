@@ -355,7 +355,7 @@ class FileResponse(BaseResponse):
             for range_str in ranges.split(','):
                 range = range_str.split('-')
                 start :int = int(range[0])
-                end :int =int(range[-1])
+                end :int =int(range[-1]) if range[-1] != "" else 0
                 start = int(start) if start else 0
                 end :int = int(end) if end else file_size - 1
 
