@@ -1,12 +1,10 @@
 from .application import NexiosApp
 from .sessions.middleware import SessionMiddleware
-from .middlewares.common import CommonMiddleware
 from .middlewares.csrf import CSRFMiddleware
 from .config.base import MakeConfig
 from .config import set_config, DEFAULT_CONFIG  
 from .routing import Router  # type:ignore
 from .middlewares.cors import CORSMiddleware
-from .middlewares.gzip import GzipMiddleware
 from typing import Optional,Callable,AsyncIterator
 from .application import NexiosApp 
 from .types import  ExceptionHandlerType
@@ -63,11 +61,9 @@ def get_application(
     set_config(config)
     app = NexiosApp(
     middlewares = [
-        wrap_middleware(CommonMiddleware()),
         wrap_middleware(CORSMiddleware()),
         wrap_middleware(SessionMiddleware()),
         wrap_middleware(CSRFMiddleware()),
-        wrap_middleware(GzipMiddleware()),
     ],
     server_error_handler=server_error_handler, #type:ignore
     config=config,

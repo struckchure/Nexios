@@ -355,7 +355,7 @@ class FileResponse(BaseResponse):
             for range_str in ranges.split(','):
                 range = range_str.split('-')
                 start :int = int(range[0])
-                end :int =int(range[-1])
+                end :int =int(range[-1]) if range[-1] != "" else 0 #Partial fix (Experimental)
                 start = int(start) if start else 0
                 end :int = int(end) if end else file_size - 1
 
@@ -377,7 +377,6 @@ class FileResponse(BaseResponse):
                 self.status_code = 206  
 
         except ValueError as _: 
-         
             self.header('content-range',f'bytes */{file_size}')
             self.status_code = 416  
 
