@@ -599,6 +599,15 @@ class NexiosResponse:
     def content_type(self):
         return self._response.content_type
     
+    @property
+    def content_length(self):
+        content_length = self.headers.get("content-length")
+        if not content_length:
+            return str(len(self.body))
+        
+        return content_length
+        
+    
     def status_code(self):
         return self._response.status_code
     
@@ -789,12 +798,18 @@ class NexiosResponse:
             self.set_cookie(**cookie)
         return self
     
-    def set_headers(self, headers: Dict[str, str]):
+    def set_headers(self, headers: Dict[str, str], overide_all :bool = False):
+        if overide_all:
+            self._response._headers =  [(bytes(str(k), 'utf-8'), bytes(str(v), 'utf-8')) for k, v in d.items()] #type:ignore
+            return
         """Set multiple headers at once."""
         for key, value in headers.items():
             self.header(key, value)
         return self
 
+    
+    def set_body(self, new_body :Any):
+        self._response._body = new_body #type:ignore
     def get_response(self) -> BaseResponse:
         """Make the response ASGI-compatible."""
         return self._response
