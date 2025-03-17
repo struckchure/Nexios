@@ -812,6 +812,23 @@ class NexiosResponse:
         """Add a Content Security Policy header."""
         self.header("Content-Security-Policy", policy)
         return self
+    
+    
+    def make_response(self, response_class: BaseResponse) -> "NexiosResponse":
+        """
+        Create a response using a custom response class.
+
+        Args:
+            response_class (Type[BaseResponse]): The custom response class to use.
+            *args: Positional arguments to pass to the custom response class.
+            **kwargs: Keyword arguments to pass to the custom response class.
+
+        Returns:
+            NexiosResponse: The current instance for method chaining.
+        """
+        
+        self._response = self._preserve_headers_and_cookies(response_class)
+        return self
     def __str__(self):
         return f"Response [{self._status_code} {self.body}]"
     
