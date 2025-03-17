@@ -190,7 +190,7 @@ class BaseMiddleware:
                     await send_stream.send(message)
                 except anyio.BrokenResourceError:
                     # recv_stream has been closed, i.e. response_sent has been set.
-                    return
+                    raise RuntimeError("No response returned")
 
             async def coro() -> None:
                 nonlocal app_exc
@@ -211,9 +211,9 @@ class BaseMiddleware:
             except anyio.EndOfStream:
                 if app_exc is not None:
                     raise app_exc
-                pass #Partial fix 
+                raise RuntimeError ("No response returned.")
 
-            assert message["type"] == "http.response.start" #type: ignore
+            assert message["type"] == "http.response.start"
 
             async def body_stream() -> typing.AsyncGenerator[bytes, None]:
                 async for message in recv_stream:

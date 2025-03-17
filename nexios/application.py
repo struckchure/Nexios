@@ -399,7 +399,7 @@ class NexiosApp(object):
         self.ws_middlewares.append(middleware)
     
     def handle_http_request(self) -> Router:
-        app = self.router
+        app = self.app
         middleware = (
             [Middleware(BaseMiddleware, dispatch = ServerErrorMiddleware(handler=self.server_error_handler))] +
             self.http_middlewares +
@@ -773,3 +773,34 @@ class NexiosApp(object):
     
     def url_for(self, _name: str, **path_params: Any) -> URLPath:
         return self.router.url_for(_name,**path_params)
+    
+    
+   
+        
+    def wrap_with_middleware(
+        self,
+        middleware_cls: Annotated[
+            Callable[[ASGIApp],Any],
+            Doc(
+                "An ASGI middleware class or callable that takes an app as its first argument and returns an ASGI app"
+            ),
+        ]
+    ) -> None:
+        """
+        Wraps the entire application with an ASGI middleware.
+        
+        This method allows adding middleware at the ASGI level, which intercepts all requests
+        (HTTP, WebSocket, and Lifespan) before they reach the application.
+        
+        Args:
+            middleware_cls: An ASGI middleware class or callable that follows the ASGI interface
+            *args: Additional positional arguments to pass to the middleware
+            **kwargs: Additional keyword arguments to pass to the middleware
+            
+        Returns:
+            NexiosApp: The application instance for method chaining
+            
+       
+        """
+        self.app = middleware_cls(self.app)
+            
