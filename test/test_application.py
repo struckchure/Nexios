@@ -1,6 +1,6 @@
 from nexios import get_application,NexiosApp
 from nexios.routing import Routes,Router
-from nexios.cbc import APIHandler
+from nexios.views import APIView
 import pytest
 from nexios.http import Request,Response
 from nexios.testing import Client
@@ -10,7 +10,7 @@ router = Router("/mounted")
 async def homepage(req: Request, res :Response):
     
     return res.text("Hello from nexios")
-class ClassBasedHandler(APIHandler):
+class ClassBasedHandler(APIView):
     
     async def get(self, req:Request, res:Response):
         return res.text("Hello from nexios")
@@ -26,7 +26,7 @@ async def route_prams(req:Request, res:Response):
     name =  req.path_params.name #type: ignore
     return res.text(f"hello, {name}")
     
-app.add_route(Routes("/class/home",ClassBasedHandler()))
+app.add_route(ClassBasedHandler.as_route("/class/home"))
 app.mount_router(router=router)
 
 
