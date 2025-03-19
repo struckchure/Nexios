@@ -851,14 +851,6 @@ class Router(BaseRouter):
     def __repr__(self) -> str:
         return f"<Router prefix='{self.prefix}' routes={len(self.routes)}>"
 
-
-    
-    
-    
-    
-       
-
-
     async def __call__(self,scope :Scope,receive :Receive, send :Send,) -> Any:
         # return super().__call__(*args, **kwds)
         app = self.build_middleware_stack(self.app)
@@ -918,6 +910,11 @@ class Router(BaseRouter):
             return
         if not path.startswith("/"):
             path = f"/{path}"
+            
+            
+            
+        if path in self.sub_routers.keys():
+            raise ValueError("Router with prefix exists !")
         
         self.sub_routers[path] = app
             
