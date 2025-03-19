@@ -3,12 +3,11 @@ from __future__ import annotations
 import typing
 
 import anyio
-
-from contextlib import contextmanager
 from nexios.http.request import ClientDisconnect, Request
 from nexios.http.response import  NexiosResponse as Response
 from nexios.types import ASGIApp, Message, Receive, Scope, Send
 from nexios.websockets import WebSocket
+from nexios._utils.async_helpers  import collapse_excgroups
 RequestResponseEndpoint = typing.Callable[[Request], typing.Awaitable[Response]]
 DispatchFunction = typing.Callable[[Request, Response,typing.Coroutine[None,None,typing.Any]], typing.Awaitable[Response]]
 T = typing.TypeVar("T")
@@ -25,23 +24,8 @@ else:  # pragma: no cover
 from nexios.types import ASGIApp
 
 P = ParamSpec("P")
-has_exceptiongroups = True
-if sys.version_info < (3, 11):  # pragma: no cover
-    try:
-        from exceptiongroup import BaseExceptionGroup  # type: ignore[unused-ignore,import-not-found]
-    except ImportError:
-        has_exceptiongroups = False
 
-@contextmanager
-def collapse_excgroups() -> typing.Generator[None, None, None]:
-    try:
-        yield
-    except BaseException as exc:
-        if has_exceptiongroups:  # pragma: no cover
-            while isinstance(exc, BaseExceptionGroup) and len(exc.exceptions) == 1: #type:ignore
-                exc = exc.exceptions[0]  #type:ignore
 
-        raise exc
 
 class _MiddlewareFactory(Protocol[P]):
     def __call__(self, app: ASGIApp, /, *args: P.args, **kwargs: P.kwargs) -> ASGIApp: ...  # pragma: no cover

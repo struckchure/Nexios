@@ -1,9 +1,11 @@
 from __future__ import annotations
+from tkinter import SE
 from typing import Any, List, Optional, Pattern,Dict,TypeVar,Tuple,Callable,Union
 from dataclasses import dataclass
 import re
 import warnings,typing
 from enum import Enum
+from abc import abstractmethod,ABC
 from nexios.types import MiddlewareType,WsMiddlewareType,HandlerType,WsHandlerType
 from nexios.decorators import allowed_methods
 from typing_extensions import Doc,Annotated #type: ignore
@@ -11,7 +13,7 @@ from nexios.structs import URLPath,RouteParam
 from nexios.http import Request,Response
 from nexios.http.response import JSONResponse
 from nexios.types import Scope,Send,Receive,ASGIApp
-from ._routing_utils import Convertor,CONVERTOR_TYPES,get_route_path
+from .routing_utils import Convertor,CONVERTOR_TYPES,get_route_path
 from nexios.websockets import WebSocket
 from nexios.middlewares.core import BaseMiddleware
 from nexios.middlewares.core import Middleware, wrap_middleware
@@ -156,37 +158,83 @@ class RouteBuilder:
         path_regex, path_format, param_convertors,param_names = compile_path(path) #type:ignore #REVIEW
         return RoutePattern(pattern=path_regex, raw_path=path,param_names=param_names,route_type=path_format,convertor=param_convertors) #type:ignore
 
-class BaseRouter:
-    routes:List[Any] = []
-    def add_route(self, route: Routes) -> None:
-        raise NotImplementedError("Not implemented")
-    
-    def get_routes(self): #type:ignore
-        raise NotImplementedError("Not implemented")
-    
-    def add_middleware(self, middleware: Any) -> Any: #type:ignore
-        raise NotImplementedError("Not implemented")
-    
-    
-    
-    def url_for(self, _name: str, **path_params: Any) -> URLPath:
+class BaseRouter(ABC):
+    """
+    Base class for routers. This class should not be instantiated directly.
+    Subclasses should implement the `__call__` method to handle specific routing logic.
+    """
+
+    def __init__(self, prefix: Optional[str] = None):
+        self.prefix = prefix or ""
+        self.routes: List[Any] = []
+        self.middlewares: List[Any] = []
+        self.sub_routers: Dict[str, ASGIApp] = {}
+
+        if self.prefix and not self.prefix.startswith("/"):
+            warnings.warn("Router prefix should start with '/'")
+            self.prefix = f"/{self.prefix}"
+
+    @abstractmethod
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """
-        Generate a URL path for the route with the given name and parameters.
+        Abstract method to handle incoming requests. Subclasses must implement this method.
 
         Args:
-            name: The name of the route.
-            path_params: A dictionary of path parameters to substitute into the route's path.
-
-        Returns:
-            str: The generated URL path.
+            scope: The ASGI scope dictionary.
+            receive: The ASGI receive callable.
+            send: The ASGI send callable.
 
         Raises:
-            ValueError: If the route name does not match or if required parameters are missing.
+            NotImplementedError: If the method is not implemented by a subclass.
         """
-        for route in self.routes:
-            if route.name == _name:
-                return route.url_path_for(_name, **path_params)
-        raise ValueError(f"Route name '{_name}' not found in router.")
+        raise NotImplementedError("Subclasses must implement this method")
+
+    def add_middleware(self, middleware: MiddlewareType) -> None:
+        """
+        Add middleware to the router.
+
+        Args:
+            middleware: The middleware to add.
+        """
+
+        self.middlewares.append(middleware)
+
+    def build_middleware_stack(self, app: ASGIApp) -> ASGIApp:
+        """
+        Builds the middleware stack by applying all registered middlewares to the app.
+
+        Args:
+            app: The base ASGI application.
+
+        Returns:
+            ASGIApp: The application wrapped with all middlewares.
+        """
+        for mdw in reversed(self.middlewares):
+            app = mdw(app)
+        return app
+
+    def mount_router(self, app: Union["Router", "WSRouter"], path: Optional[str] = None) -> None:
+        """
+        Mount an ASGI application (e.g., another Router) under a specific path prefix.
+
+        Args:
+            path: The path prefix under which the app will be mounted.
+            app: The ASGI application (e.g., another Router) to mount.
+        """
+        if not path:
+            path = app.prefix
+        path = path.rstrip("/")
+
+        if path == "":
+            self.sub_routers[path] = app
+            return
+        if not path.startswith("/"):
+            path = f"/{path}"
+
+        self.sub_routers[path] = app
+
+    def __repr__(self) -> str:
+        return f"<BaseRouter prefix='{self.prefix}' routes={len(self.routes)}>"
 
 
     
@@ -389,6 +437,7 @@ class Router(BaseRouter):
         self.routes: List[Routes] =  list(routes) if routes else []
         self.middlewares: typing.List[Middleware] = []
         self.sub_routers: Dict[str, ASGIApp] = {}
+        self.route_class = Routes
         
         if self.prefix and not self.prefix.startswith("/"):
             warnings.warn("Router prefix should start with '/'")
@@ -769,7 +818,7 @@ class Router(BaseRouter):
         """
         def decorator(handler: HandlerType) -> HandlerType: #type: ignore
             _handler:HandlerType = allowed_methods(methods)(handler)  
-            route = Routes(path=f"{path}", 
+            route = self.route_class(path=f"{path}", 
                            handler=_handler, 
                            methods=methods, 
                            name=name,
@@ -851,7 +900,7 @@ class Router(BaseRouter):
         raise NotFoundException 
     
     
-    def mount_router(self, app: "Router",path: typing.Optional[str] = None) -> None:
+    def mount_router(self, app: "Router",path: typing.Optional[str] = None) -> None: #type:ignore
         """
         Mount an ASGI application (e.g., another Router) under a specific path prefix.
 
@@ -1028,7 +1077,7 @@ class WSRouter(BaseRouter):
     
     
     
-    def build_middleware_stack(self, scope: Scope, receive: Receive, send: Send) -> ASGIApp:
+    def build_middleware_stack(self, scope: Scope, receive: Receive, send: Send) -> ASGIApp: #type:ignore
         app = self.app
         for mdw in reversed(self.middlewares):
             app =   mdw(app) #type:ignore[assignment]
@@ -1059,7 +1108,7 @@ class WSRouter(BaseRouter):
         await send({"type": "websocket.close", "code": 404})
     
 
-    def mount_router(self, app: "WSRouter",path: typing.Optional[str] = None) -> None:
+    def mount_router(self, app: "WSRouter",path: typing.Optional[str] = None) -> None: #type:ignore
         """
         Mount an ASGI application (e.g., another Router) under a specific path prefix.
 

@@ -6,7 +6,7 @@ from http import cookies as http_cookies
 
 import anyio #type:ignore
 
-from nexios.utils.async_helpers import AwaitableOrContextManager, AwaitableOrContextManagerWrapper
+from nexios._utils.async_helpers import AwaitableOrContextManager, AwaitableOrContextManagerWrapper
 from nexios.structs import URL, Address, FormData, Headers, QueryParams, State
 from .formparsers import FormParser, MultiPartException, MultiPartParser
 
