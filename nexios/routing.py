@@ -1,5 +1,4 @@
 from __future__ import annotations
-from tkinter import SE
 from typing import Any, List, Optional, Pattern,Dict,TypeVar,Tuple,Callable,Union
 from dataclasses import dataclass
 import re
