@@ -33,6 +33,9 @@ class APIView:
         """
         Dispatch the request to the appropriate handler method.
         """
+        
+        self.request = req
+        self.res = res
         try:
             for key, value in self.dependencies.items():
                 setattr(req.state, key, value)
