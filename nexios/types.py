@@ -5,14 +5,7 @@ import typing
 from .http.request import Request
 from .http.response import NexiosResponse,Response
 from .websockets import WebSocket
-class HTTPMethod(str, Enum):
-    GET = "GET"
-    POST = "POST"
-    PUT = "PUT"
-    DELETE = "DELETE"
-    PATCH = "PATCH"
-    HEAD = "HEAD"
-    OPTIONS = "OPTIONS"
+
     
 AppType = typing.TypeVar("AppType")
 

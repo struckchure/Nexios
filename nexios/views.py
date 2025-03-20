@@ -1,7 +1,5 @@
 from typing import Any, Dict, List, Optional, Type, Callable, Coroutine
-from pydantic import BaseModel, ValidationError
 from nexios.http import Request, Response
-from nexios.types import HandlerType
 from nexios.routing import Routes as Route
 import logging
 from nexios.types import MiddlewareType
