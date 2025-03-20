@@ -11,7 +11,6 @@ class APIView:
     """
     middlewares: List[MiddlewareType] = []
 
-    dependencies: Dict[str, Any] = {}
 
     error_handlers: Dict[Type[Exception], Callable[[Request, Response, Exception], Coroutine[Any, Any, Response]]] = {}
 
@@ -37,9 +36,7 @@ class APIView:
         self.request = req
         self.res = res
         try:
-            for key, value in self.dependencies.items():
-                setattr(req.state, key, value)
-
+            
             method = req.method.lower()
             handler = getattr(self, method, self.method_not_allowed)
             return await handler(req, res, **kwargs)
