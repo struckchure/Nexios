@@ -5,7 +5,7 @@ from .exception_handler import ExceptionMiddleware
 from typing_extensions import Doc, Annotated  # type:ignore
 from nexios.config import MakeConfig
 from typing import Awaitable, Optional, AsyncIterator
-from nexios.logging import getLogger
+from nexios.logging import create_logger
 from nexios.middlewares.core import BaseMiddleware
 from nexios.middlewares.core import Middleware
 from nexios.middlewares.errors.server_error_handler import ServerErrorMiddleware,ServerErrHandlerType
@@ -28,7 +28,7 @@ from typing import Dict, Any
 AppType = typing.TypeVar("AppType", bound="NexiosApp")
 
 
-logger = getLogger("nexios")
+logger = create_logger("nexios")
 
 
 

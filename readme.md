@@ -5,12 +5,12 @@
 #  Nexios – The Future of Python Frameworks!  
 
 <p align="center">
-  <img src="./docs/_media/icon.svg" width="1000" alt="Nexios Logo"/>
+  <img src="./docs/_media/icon.svg" width="100" alt="Nexios Logo"/>
 </p>  
 
 ### 🌟 The lightweight, blazing-fast Python framework you've been waiting for!  
 
-[![GitHub stars](https://github.com/nexios-labs/nexios?style=for-the-badge)](https://github.com/nexios-labs/Nexios)  
+[![GitHub stars](https://github.com/nexios-labs/nexios?style=for-the-badge)](https://github.com/nexios-labs/nexios)  
 [![PyPI Downloads](https://img.shields.io/pypi/dm/nexios?style=for-the-badge)](https://pypi.org/project/nexios/)  
 [![Documentation](https://img.shields.io/badge/Docs-Read%20Now-blue?style=for-the-badge)](https://nexios-labs.github.io/Nexios/)  
 
