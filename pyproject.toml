@@ -7,7 +7,7 @@ include = ["nexios/py.typed"]
 
 [tool.poetry]
 name = "nexios"
-version = "2.2.3"
+version = "2.2.4"
 description = "Nexios is a modern, high-performance ASGI web framework for Python."
 authors = ["Chidebele Dunamis <techwithdunamix@example.com>"]
 license = "MIT"
@@ -35,11 +35,11 @@ keywords = [
 
 [tool.poetry.dependencies]
 python = ">=3.9"
-uvicorn = "0.22.0"
+uvicorn = ">=0.22.0"
 anyio = "4.3.0"
-itsdangerous = "2.1.2"
-python-multipart = "0.0.6"
-pyjwt = "2.7.0"
+itsdangerous = ">=2.1.2"
+python-multipart = ">=0.0.6"
+pyjwt = ">=2.7.0"
 typing-extensions = "4.12.2"
 
 [tool.poetry.group.dev.dependencies]
