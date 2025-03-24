@@ -1,21 +1,21 @@
-:  
+Here’s the updated and refined version of your README with the Uvicorn run command, the correct media logo URL, and an updated star badge:
 
 ---
 
-#  Nexios – The Future of Python Frameworks!  
+# Nexios – The Future of Python Frameworks!  
 
 <p align="center">
-  <img src="./docs/_media/icon.svg" width="100" alt="Nexios Logo"/>
+  <img src="https://github.com/nexios-labs/Nexios/blob/main/docs/_media/icon.svg" width="100" alt="Nexios Logo"/>
 </p>  
 
 ### 🌟 The lightweight, blazing-fast Python framework you've been waiting for!  
 
-[![GitHub stars](https://github.com/nexios-labs/nexios?style=for-the-badge)](https://github.com/nexios-labs/nexios)  
+[![GitHub stars](https://img.shields.io/github/stars/nexios-labs/Nexios?style=for-the-badge&logo=github)](https://github.com/nexios-labs/nexios)  
 [![PyPI Downloads](https://img.shields.io/pypi/dm/nexios?style=for-the-badge)](https://pypi.org/project/nexios/)  
 [![Documentation](https://img.shields.io/badge/Docs-Read%20Now-blue?style=for-the-badge)](https://nexios-labs.github.io/Nexios/)  
 
 ## ⚡ What is Nexios?  
-Think **FastAPI meets Express.js** but with its own **swagger**!  Nexios is a modern Python framework designed to help you **build, deploy, and scale** applications **effortlessly**.  
+Think **FastAPI meets Express.js** but with its own **swagger**! Nexios is a modern Python framework designed to help you **build, deploy, and scale** applications **effortlessly**.  
 
 ✅ **Super lightweight** – No unnecessary bloat!  
 ✅ **Crazy fast** 🚀 – Like, seriously!  
@@ -29,28 +29,33 @@ pip install nexios
 
 ## 🚀 Quick Start  
 
-### 1️⃣ Create a New Nexios Project  
-```bash
-nexios create
-cd <myapp>
-```
+### 1️⃣ Create a Simple Nexios Application  
+```python
+from nexios import Nexios
 
-### 2️⃣ Follow the Instructions  
-The CLI will guide you through setting up your project structure.  
+app = Nexios()
 
-### 3️⃣ Expand
-```bash
-nexios run --reload
-```
+@app.get("/")
+async def home(request, response):
+    return response.json({"message": "Welcome to Nexios!"})
 
-### 4️⃣ Run Your App  
-```py
-from nexios import get_application
-app = get_application()
 @app.get("/users")
-async def get_users(request,response):
+async def get_users(request, response):
     return response.json({"users": ["Alice", "Bob"]})
 ```
+
+### 2️⃣ Run Your App with Uvicorn  
+```bash
+uvicorn main:app --reload
+```
+
+Visit `http://127.0.0.1:8000/` in your browser to see your app in action!  
+
+### 3️⃣ Expand  
+Nexios is designed to grow with your needs. Add more routes, integrate with your favorite ORM, and scale effortlessly!  
+
+---
+
 ## 🤯 Nexios vs. The World  
 | Feature      | Nexios 🚀 | FastAPI ⚡ | Django 🏗 | Flask 🍶 |
 |-------------|----------|----------|---------|--------|
@@ -62,8 +67,12 @@ async def get_users(request,response):
 | Built-in Admin Panel | Coming Soon | ❌ | ✅ | ❌ |
 | Best For | APIs & Full Apps | APIs | Full-stack Web Apps | Small Apps |
 
+---
+
 ## 📖 Read the Full Documentation  
-👉  <a href="https://github.com/nexios-labs/Nexios/">https://github.com/nexios-labs/Nexios</a>
+👉  <a href="https://nexios-labs.gitbook.io/nexios">https://nexios-labs.gitbook.io/nexios</a>
+
+---
 
 ## ⭐ Star Nexios on GitHub!  
 If you love **Nexios**, show some ❤️ by **starring** the repo!  
@@ -71,4 +80,3 @@ If you love **Nexios**, show some ❤️ by **starring** the repo!
 🔗 [**GitHub Repo**](https://github.com/nexios-labs/Nexios)  
 
 ---
-
