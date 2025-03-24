@@ -1,20 +1,18 @@
-Here’s the updated and refined version of your README with the Uvicorn run command, the correct media logo URL, and an updated star badge:
 
----
 
 # Nexios – The Future of Python Frameworks!  
 
 <p align="center">
-  <img src="https://github.com/nexios-labs/Nexios/blob/main/docs/_media/icon.svg" width="100" alt="Nexios Logo"/>
+  <img src="https://raw.githubusercontent.com/nexios-labs/Nexios/90122b22fdd3a57fc1146f472087d483324df0e5/docs/_media/icon.svg" width="100" alt="Nexios Logo"/>
 </p>  
 
-### 🌟 The lightweight, blazing-fast Python framework you've been waiting for!  
+**The lightweight, blazing-fast Python framework you've been waiting for!**
 
 [![GitHub stars](https://img.shields.io/github/stars/nexios-labs/Nexios?style=for-the-badge&logo=github)](https://github.com/nexios-labs/nexios)  
 [![PyPI Downloads](https://img.shields.io/pypi/dm/nexios?style=for-the-badge)](https://pypi.org/project/nexios/)  
 [![Documentation](https://img.shields.io/badge/Docs-Read%20Now-blue?style=for-the-badge)](https://nexios-labs.gitbook.io/)  
 
-## ⚡ What is Nexios?  
+##  What is Nexios?  
 Think **FastAPI meets Express.js** but with its own **swagger**! Nexios is a modern Python framework designed to help you **build, deploy, and scale** applications **effortlessly**.  
 
 ✅ **Super lightweight** – No unnecessary bloat!  
@@ -31,9 +29,9 @@ pip install nexios
 
 ### 1️⃣ Create a Simple Nexios Application  
 ```python
-from nexios import Nexios
+from nexios import get_application
 
-app = Nexios()
+app = get_application()
 
 @app.get("/")
 async def home(request, response):
