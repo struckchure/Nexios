@@ -3,13 +3,14 @@ from nexios import status
 import typing, json
 from .channels import Channel, ChannelBox, PayloadTypeEnum
 from nexios import logging
+from nexios.routing import WebsocketRoutes
 import uuid
 Message = typing.MutableMapping[str, typing.Any]
 
 class WebSocketEndpoint:
    
     channel: typing.Optional[Channel] = None
-
+    middleware = []
     def __init__(self, logging_enabled: bool = True, logger: typing.Optional[logging.Logger] = None):
         """
         Args:
@@ -19,11 +20,19 @@ class WebSocketEndpoint:
         self.logging_enabled = logging_enabled
         self.logger = logger if logger else logging.getLogger("nexios")
         self.encoding: typing.Optional[str] = None
+    @classmethod
+    def as_route(cls, path: str) -> WebsocketRoutes:
+        """
+        Convert the WebSocketConsumer class into a Route that can be registered with the app or router.
+        """
+        async def handler(websocket: WebSocket, **kwargs) -> None:
+            instance = cls()
+            await instance(websocket, **kwargs)
 
+        return WebsocketRoutes(path, handler,  middlewares=cls.middleware)
     async def __call__(self, ws: WebSocket) -> None:
         self.websocket = ws
 
-        # Create a channel for this WebSocket connection
         self.channel = Channel(
             websocket=self.websocket,
             expires=3600,  # Set your desired TTL for the channel
