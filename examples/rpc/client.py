@@ -1,9 +1,3 @@
-import sys
-from pathlib import Path
-
-BASE_DIR = Path(__file__).parent.parent.parent
-sys.path.append(str(BASE_DIR))
-
 from nexios.plugins.rpc.client import RpcClient
 
 # Initialize the client with the URL of your RPC server

@@ -1,15 +1,8 @@
-import sys
-from pathlib import Path
-
+from nexios import get_application
 from nexios.config.base import MakeConfig
+from nexios.plugins import HTMLPlugin
 from nexios.plugins.rpc.server import RpcPlugin
 from nexios.plugins.static_file import StaticFilePlugin
-
-BASE_DIR = Path(__file__).parent.parent.parent
-sys.path.append(str(BASE_DIR))
-
-from nexios import get_application
-from nexios.plugins import HTMLPlugin
 
 config = MakeConfig({"secret_key": "hello"})
 config.cors = {
