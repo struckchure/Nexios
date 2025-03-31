@@ -6,6 +6,7 @@ from nexios.application import NexiosApp
 from nexios.http import Request, Response
 from nexios.logging import create_logger
 from nexios.routing import Routes
+from nexios.types import HandlerType
 
 logger = create_logger("nexios")
 
@@ -73,10 +74,12 @@ class FileRouterPlugin:
                     % (method, path, len(middlewares))
                 )
 
+                handler: HandlerType = getattr(module, method.lower())
+
                 handlers.append(
                     Routes(
                         path,
-                        getattr(module, method.lower()),
+                        handler,
                         methods=[method],
                         middlewares=middlewares,
                     )
